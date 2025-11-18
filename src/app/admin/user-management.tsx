@@ -12,14 +12,17 @@ import { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { LicenseManagementDialog } from './license-management';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface User {
     id: string;
     email: string;
-    role: string;
+    role: 'User' | 'Assistant' | 'Admin' | 'SuperAdmin';
     isSuspended: boolean;
     oneXBetId?: string;
 }
+
+const ROLES: User['role'][] = ['User', 'Assistant', 'Admin'];
 
 export function UserManagementTable() {
     const firestore = useFirestore();
@@ -42,6 +45,14 @@ export function UserManagementTable() {
             isSuspended: !user.isSuspended
         });
     };
+    
+    const handleRoleChange = async (userId: string, newRole: User['role']) => {
+        if (!firestore) return;
+        const userRef = doc(firestore, 'users', userId);
+        await updateDoc(userRef, {
+            role: newRole
+        });
+    };
 
     const filteredUsers = users?.filter(user => {
         return (
@@ -55,8 +66,8 @@ export function UserManagementTable() {
         <>
             <Card>
                 <CardHeader>
-                    <CardTitle>User Management</CardTitle>
-                    <CardDescription>View, search, and manage all users on the platform.</CardDescription>
+                    <CardTitle>User & Staff Management</CardTitle>
+                    <CardDescription>View, search, and manage all users and staff roles on the platform.</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 p-4 border rounded-lg">
@@ -94,7 +105,7 @@ export function UserManagementTable() {
                                         <TableCell><Skeleton className="h-5 w-48" /></TableCell>
                                         <TableCell><Skeleton className="h-5 w-32" /></TableCell>
                                         <TableCell><Skeleton className="h-5 w-24" /></TableCell>
-                                        <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                                        <TableCell><Skeleton className="h-8 w-24" /></TableCell>
                                         <TableCell><Skeleton className="h-5 w-20" /></TableCell>
                                         <TableCell className="space-x-2"><Skeleton className="h-8 w-20" /><Skeleton className="h-8 w-12 ml-auto" /></TableCell>
                                     </TableRow>
@@ -106,7 +117,20 @@ export function UserManagementTable() {
                                         <TableCell className="font-code text-xs">{user.id}</TableCell>
                                         <TableCell className="font-code text-xs">{user.oneXBetId || 'N/A'}</TableCell>
                                         <TableCell>
-                                            <Badge variant={user.role === 'SuperAdmin' ? 'destructive' : 'secondary'}>{user.role}</Badge>
+                                            {user.role === 'SuperAdmin' ? (
+                                                <Badge variant='destructive'>SuperAdmin</Badge>
+                                            ) : (
+                                                <Select value={user.role} onValueChange={(newRole: User['role']) => handleRoleChange(user.id, newRole)}>
+                                                    <SelectTrigger className="w-[120px]">
+                                                        <SelectValue placeholder="Select role" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        {ROLES.map(role => (
+                                                            <SelectItem key={role} value={role}>{role}</SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                            )}
                                         </TableCell>
                                         <TableCell>
                                             <Badge variant={user.isSuspended ? 'outline' : 'default'} className={user.isSuspended ? 'border-warning text-warning' : 'bg-success'}>
