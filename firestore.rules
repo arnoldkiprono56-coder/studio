@@ -36,6 +36,11 @@ service cloud.firestore {
          allow read, write: if isOwner(userId) || isAdmin();
       }
     }
+
+    // New Rule: Allow admins to list all licenses across all users for reporting.
+    match /{path=**}/licenses/{licenseId} {
+      allow list: if isAdmin();
+    }
     
     // Transactions can be created by any user, read by owner, and listed by admins.
     // They cannot be updated or deleted by clients.
