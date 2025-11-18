@@ -84,6 +84,18 @@ export function LicenseManagementDialog({ user, open, onOpenChange }: LicenseMan
         }
     };
 
+    const handleDeactivateLicense = async (license: License) => {
+        if (!firestore) return;
+        const licenseRef = doc(firestore, 'users', user.id, 'licenses', license.id);
+        try {
+            await updateDoc(licenseRef, { roundsRemaining: 0, isActive: false });
+            toast({ title: 'Success', description: `${license.gameType} license has been deactivated.` });
+            logAdminAction('license_deactivated', { targetUserId: user.id, targetUserEmail: user.email, gameType: license.gameType });
+        } catch (error: any) {
+             toast({ variant: 'destructive', title: 'Error', description: `Failed to deactivate license: ${error.message}` });
+        }
+    };
+
     const userLicenses = ALL_GAME_TYPES.map(gameType => {
         const foundLicense = licenses?.find(l => l.gameType === gameType);
         return foundLicense || { id: gameType, gameType, roundsRemaining: 0, paymentVerified: false, isActive: false, userId: user.id };
@@ -141,7 +153,7 @@ export function LicenseManagementDialog({ user, open, onOpenChange }: LicenseMan
                                             {licenses?.some(l => l.id === license.id) ? (
                                                 <>
                                                     <Button variant="outline" size="sm" onClick={() => handleResetRounds(license as License)}>Reset Rounds</Button>
-                                                    {/* More actions can be added here */}
+                                                    <Button variant="destructive" size="sm" onClick={() => handleDeactivateLicense(license as License)} disabled={!license.isActive}>Deactivate</Button>
                                                 </>
                                             ) : (
                                                 <Button size="sm" onClick={() => handleActivateLicense(license.gameType)}>Activate</Button>
