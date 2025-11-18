@@ -1,7 +1,7 @@
 'use client';
 
 import { useCollection } from '@/firebase/firestore/use-collection';
-import { useFirestore } from '@/firebase';
+import { useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, doc, updateDoc } from 'firebase/firestore';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -18,7 +18,11 @@ interface User {
 
 export function UserManagementTable() {
     const firestore = useFirestore();
-    const usersCollection = collection(firestore, 'users');
+    const usersCollection = useMemoFirebase(() => {
+        if (!firestore) return null;
+        return collection(firestore, 'users');
+    }, [firestore]);
+
     const { data: users, isLoading } = useCollection<User>(usersCollection);
 
     const handleSuspendToggle = async (user: User) => {

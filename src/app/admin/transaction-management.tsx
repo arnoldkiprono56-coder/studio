@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useCollection } from '@/firebase/firestore/use-collection';
-import { useFirestore } from '@/firebase';
+import { useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, doc, updateDoc, writeBatch, query, where, getDocs } from 'firebase/firestore';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -28,7 +28,11 @@ interface PaymentTransaction {
 
 export function TransactionManagement() {
     const firestore = useFirestore();
-    const transactionsCollection = collection(firestore, 'transactions');
+    const transactionsCollection = useMemoFirebase(() => {
+        if (!firestore) return null;
+        return collection(firestore, 'transactions');
+    }, [firestore]);
+
     const { data: transactions, isLoading } = useCollection<PaymentTransaction>(transactionsCollection);
     const { toast } = useToast();
 
