@@ -44,7 +44,7 @@ Personas:
 
 Here is the conversation history:
 {{#each history}}
-{{#if (eq this.role 'user')}}
+{{#if (this.role === 'user')}}
 User: {{this.parts.[0].text}}
 {{else}}
 Support: {{this.parts.[0].text}}
