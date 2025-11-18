@@ -11,21 +11,20 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useProfile } from "@/context/profile-context";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PromptManagement } from "./prompt-management";
-import { useFirestore, useCollection } from "@/firebase";
+import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
 import { collection, collectionGroup, query, where } from "firebase/firestore";
-import { useMemo } from "react";
 
 export default function AdminDashboardPage() {
     const { userProfile, isProfileLoading } = useProfile();
     const firestore = useFirestore();
 
-    const usersQuery = useMemo(() => firestore ? collection(firestore, 'users') : null, [firestore]);
+    const usersQuery = useMemoFirebase(() => firestore ? collection(firestore, 'users') : null, [firestore]);
     const { data: users, isLoading: usersLoading } = useCollection(usersQuery);
 
-    const licensesQuery = useMemo(() => firestore ? query(collectionGroup(firestore, 'licenses'), where('isActive', '==', true)) : null, [firestore]);
+    const licensesQuery = useMemoFirebase(() => firestore ? query(collectionGroup(firestore, 'licenses'), where('isActive', '==', true)) : null, [firestore]);
     const { data: activeLicenses, isLoading: licensesLoading } = useCollection(licensesQuery);
 
-    const alertsQuery = useMemo(() => firestore ? query(collection(firestore, 'auditlogs'), where('action', 'in', ['bypass_attempt', 'security_alert'])) : null, [firestore]);
+    const alertsQuery = useMemoFirebase(() => firestore ? query(collection(firestore, 'auditlogs'), where('action', 'in', ['bypass_attempt', 'security_alert'])) : null, [firestore]);
     const { data: securityAlerts, isLoading: alertsLoading } = useCollection(alertsQuery);
 
 
