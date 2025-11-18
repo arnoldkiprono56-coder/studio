@@ -6,7 +6,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Loader2, ArrowLeft, Gem, Bomb } from "lucide-react";
 import { generateGamePredictions, GenerateGamePredictionsOutput } from '@/ai/flows/generate-game-predictions';
 import Link from 'next/link';
-import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 
 const GRID_SIZE = 25;

@@ -2,7 +2,7 @@ import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
-import { ArrowRight, Zap, Shield, Gem, Bomb } from "lucide-react";
+import { ArrowRight, Zap, Shield, Gem } from "lucide-react";
 
 const games = [
     { 
