@@ -1,55 +1,90 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams } from 'next/navigation';
-import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
+import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Send } from 'lucide-react';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Send, ChevronLeft, Bot, User, Loader2 } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
-import { ChevronLeft } from 'lucide-react';
-
+import { generateSupportResponse } from '@/ai/flows/generate-support-response';
 
 type Message = {
     id: number;
     text: string;
-    sender: 'user' | 'support';
+    sender: 'user' | 'model';
 };
 
 export default function ChatPage() {
     const params = useParams();
     const chatType = Array.isArray(params.chatType) ? params.chatType[0] : params.chatType;
+    const scrollAreaRef = useRef<HTMLDivElement>(null);
+    const [isLoading, setIsLoading] = useState(false);
 
     const [messages, setMessages] = useState<Message[]>([
-        { id: 1, text: `Welcome to ${chatType} support! How can I help you?`, sender: 'support' }
+        { id: 1, text: `Welcome to ${chatType.replace('-', ' ')} support! How can I help you today?`, sender: 'model' }
     ]);
     const [input, setInput] = useState('');
-
-    const handleSendMessage = () => {
-        if (input.trim()) {
-            const newMessage: Message = { id: messages.length + 1, text: input, sender: 'user' };
-            setMessages([...messages, newMessage]);
-            setInput('');
-            
-            // Simulate a support reply
-            setTimeout(() => {
-                const reply: Message = {id: messages.length + 2, text: `This is a simulated reply for your query about "${input}".`, sender: 'support' };
-                setMessages(prev => [...prev, reply]);
-            }, 1000);
-        }
-    };
 
     const getChatTitle = () => {
         if (!chatType) return 'Support Chat';
         return chatType.charAt(0).toUpperCase() + chatType.slice(1).replace('-', ' ') + ' Chat';
     }
 
+    const scrollToBottom = () => {
+        setTimeout(() => {
+            const scrollViewport = scrollAreaRef.current?.querySelector('[data-radix-scroll-area-viewport]');
+            if (scrollViewport) {
+                scrollViewport.scrollTo({ top: scrollViewport.scrollHeight, behavior: 'smooth' });
+            }
+        }, 100);
+    };
+
+    const handleSendMessage = async () => {
+        if (input.trim() && !isLoading) {
+            const userMessage: Message = { id: messages.length + 1, text: input, sender: 'user' };
+            const currentInput = input;
+            setInput('');
+            
+            const conversationHistory = [...messages, userMessage].map(m => ({
+                role: m.sender,
+                parts: [{ text: m.text }]
+            }));
+            
+            setMessages(prev => [...prev, userMessage]);
+            setIsLoading(true);
+            scrollToBottom();
+
+            try {
+                const result = await generateSupportResponse({
+                    message: currentInput,
+                    chatType: chatType,
+                    history: conversationHistory,
+                });
+                
+                const aiMessage: Message = { id: messages.length + 2, text: result.response, sender: 'model' };
+                setMessages(prev => [...prev, aiMessage]);
+            } catch (error) {
+                console.error("Failed to get AI response:", error);
+                const errorMessage: Message = { id: messages.length + 2, text: "Sorry, I'm having trouble connecting. Please try again later.", sender: 'model' };
+                setMessages(prev => [...prev, errorMessage]);
+            } finally {
+                setIsLoading(false);
+                scrollToBottom();
+            }
+        }
+    };
+    
+    useEffect(() => {
+        scrollToBottom();
+    }, [messages]);
+
 
     return (
-        <div className="flex flex-col h-[80vh]">
+        <div className="flex flex-col h-[85vh]">
             <div className="flex items-center mb-4">
                 <Button variant="ghost" size="icon" asChild>
                     <Link href="/support">
@@ -60,31 +95,41 @@ export default function ChatPage() {
             </div>
             <Card className="flex-grow flex flex-col">
                 <CardContent className="flex-grow p-0">
-                    <ScrollArea className="h-full p-6">
-                        <div className="space-y-4">
+                    <ScrollArea className="h-full p-6" ref={scrollAreaRef}>
+                        <div className="space-y-6">
                             {messages.map((message) => (
                                 <div key={message.id} className={cn(
-                                    "flex items-end gap-2",
+                                    "flex items-start gap-3",
                                     message.sender === 'user' ? 'justify-end' : 'justify-start'
                                 )}>
-                                    {message.sender === 'support' && (
-                                        <Avatar className="h-8 w-8">
-                                            <AvatarFallback>S</AvatarFallback>
+                                    {message.sender === 'model' && (
+                                        <Avatar className="h-8 w-8 border">
+                                            <AvatarFallback><Bot className="h-4 w-4" /></AvatarFallback>
                                         </Avatar>
                                     )}
                                     <div className={cn(
-                                        "rounded-lg px-4 py-2 max-w-[75%]",
+                                        "rounded-lg px-4 py-2 max-w-[80%] whitespace-pre-wrap",
                                         message.sender === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted'
                                     )}>
                                         <p className="text-sm">{message.text}</p>
                                     </div>
                                      {message.sender === 'user' && (
-                                        <Avatar className="h-8 w-8">
-                                            <AvatarFallback>U</AvatarFallback>
+                                        <Avatar className="h-8 w-8 border">
+                                            <AvatarFallback><User className="h-4 w-4" /></AvatarFallback>
                                         </Avatar>
                                     )}
                                 </div>
                             ))}
+                             {isLoading && (
+                                <div className="flex items-start gap-3 justify-start">
+                                    <Avatar className="h-8 w-8 border">
+                                        <AvatarFallback><Bot className="h-4 w-4" /></AvatarFallback>
+                                    </Avatar>
+                                    <div className="rounded-lg px-4 py-2 bg-muted flex items-center">
+                                        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </ScrollArea>
                 </CardContent>
@@ -98,8 +143,9 @@ export default function ChatPage() {
                             value={input}
                             onChange={(e) => setInput(e.target.value)}
                             onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
+                            disabled={isLoading}
                         />
-                        <Button type="submit" size="icon" onClick={handleSendMessage}>
+                        <Button type="submit" size="icon" onClick={handleSendMessage} disabled={isLoading || !input.trim()}>
                             <Send className="h-4 w-4" />
                             <span className="sr-only">Send</span>
                         </Button>
