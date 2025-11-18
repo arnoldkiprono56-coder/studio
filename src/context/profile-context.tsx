@@ -57,6 +57,12 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     }
   }, [userProfile, updateUserProfile]);
   
+  useEffect(() => {
+    if(userProfile?.oneXBetId) {
+        setOneXBetId(userProfile.oneXBetId);
+    }
+  }, [userProfile?.oneXBetId]);
+
 
   const handleSaveOneXBetId = async () => {
     if (!oneXBetId) {
@@ -96,10 +102,10 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     <ProfileContext.Provider value={value}>
       {children}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]" style={{ background: 'linear-gradient(145deg, #1d6a9f, #0e3b5e)', color: 'white', borderColor: '#1d6a9f' }}>
+        <DialogContent className="sm:max-w-[425px] bg-card border-border">
           <DialogHeader>
             <DialogTitle>Enter Your 1xBet ID</DialogTitle>
-            <DialogDescription className="text-blue-200">
+            <DialogDescription>
               PredictPro works exclusively with 1xBet. Please enter your 1xBet Account ID to continue.
             </DialogDescription>
           </DialogHeader>
@@ -112,13 +118,13 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
                 id="1xbet-id"
                 value={oneXBetId}
                 onChange={(e) => setOneXBetId(e.target.value)}
-                className="col-span-3 bg-blue-900/50 border-blue-400 text-white placeholder:text-blue-300"
+                className="col-span-3"
                 placeholder="Your 1xBet numeric ID"
               />
             </div>
           </div>
           <DialogFooter>
-            <Button onClick={handleSaveOneXBetId} className="bg-blue-400 hover:bg-blue-500 text-black">Save ID</Button>
+            <Button onClick={handleSaveOneXBetId}>Save ID</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

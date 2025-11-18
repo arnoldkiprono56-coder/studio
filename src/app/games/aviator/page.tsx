@@ -99,7 +99,7 @@ export default function AviatorPage() {
                             {!userProfile?.oneXBetId && <p className='text-sm text-amber-500 mt-2'>Please set your 1xBet ID to generate predictions.</p>}
                         </div>
                     )}
-                    <Button onClick={handleGetPrediction} disabled={isLoading} size="lg">
+                    <Button onClick={handleGetPrediction} disabled={isLoading || !userProfile?.oneXBetId} size="lg">
                         {isLoading ? 'Generating...' : 'Get Prediction'}
                     </Button>
                 </CardContent>

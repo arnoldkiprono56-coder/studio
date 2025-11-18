@@ -90,7 +90,7 @@ export default function VipSlipPage() {
     };
     
     const roundsRemaining = activeLicense?.roundsRemaining ?? 0;
-    const canGenerate = !!activeLicense;
+    const canGenerate = !!activeLicense && !!userProfile?.oneXBetId;
 
     const renderStatus = () => {
         if (!userProfile?.oneXBetId) {

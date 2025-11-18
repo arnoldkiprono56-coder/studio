@@ -107,7 +107,7 @@ export default function GemsAndMinesPage() {
                                 )}
                             </div>
                         )}
-                        <Button onClick={handleGetPrediction} disabled={isLoading} size="lg">
+                        <Button onClick={handleGetPrediction} disabled={isLoading || !userProfile?.oneXBetId} size="lg">
                             {isLoading ? 'Generating...' : 'Get Prediction'}
                         </Button>
                     </CardContent>
