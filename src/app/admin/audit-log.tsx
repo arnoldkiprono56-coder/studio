@@ -2,7 +2,7 @@
 
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { useFirestore, useMemoFirebase } from '@/firebase';
-import { collection } from 'firebase/firestore';
+import { collection, orderBy, query } from 'firebase/firestore';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -20,14 +20,13 @@ interface AuditLog {
 
 export function AuditLogViewer() {
     const firestore = useFirestore();
-    const auditLogsCollection = useMemoFirebase(() => {
+    const auditLogsQuery = useMemoFirebase(() => {
         if (!firestore) return null;
-        return collection(firestore, 'auditlogs');
+        // Query to order logs by timestamp in descending order
+        return query(collection(firestore, 'auditlogs'), orderBy('timestamp', 'desc'));
     }, [firestore]);
 
-    const { data: auditLogs, isLoading } = useCollection<AuditLog>(auditLogsCollection);
-
-    const sortedLogs = auditLogs?.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    const { data: auditLogs, isLoading } = useCollection<AuditLog>(auditLogsQuery);
 
     const getActionVariant = (action: string) => {
         switch (action) {
@@ -46,9 +45,9 @@ export function AuditLogViewer() {
             <CardHeader>
                 <div className="flex items-center gap-2">
                     <ShieldAlert className="h-6 w-6 text-warning" />
-                    <CardTitle>Security Audit Log</CardTitle>
+                    <CardTitle>Prediction & Security Logs</CardTitle>
                 </div>
-                <CardDescription>Review important system and user actions. Potential fraud or bypass attempts are highlighted.</CardDescription>
+                <CardDescription>Review all prediction requests, failed attempts, and potential bypass logs.</CardDescription>
             </CardHeader>
             <CardContent>
                 <Table>
@@ -73,14 +72,14 @@ export function AuditLogViewer() {
                                 </TableRow>
                             ))
                         ) : (
-                            sortedLogs?.map(log => (
-                                <TableRow key={log.id}>
+                            auditLogs?.map(log => (
+                                <TableRow key={log.id} className={getActionVariant(log.action) === 'destructive' ? 'bg-destructive/10' : ''}>
                                     <TableCell className="text-xs">{new Date(log.timestamp).toLocaleString()}</TableCell>
                                     <TableCell className="font-code text-xs">{log.userId}</TableCell>
                                     <TableCell>
                                         <Badge variant={getActionVariant(log.action)}>{log.action}</Badge>
                                     </TableCell>
-                                    <TableCell className="text-xs max-w-sm truncate">{log.details}</TableCell>
+                                    <TableCell className="text-xs max-w-sm truncate" title={log.details}>{log.details}</TableCell>
                                     <TableCell className="font-code text-xs">{log.ipAddress}</TableCell>
                                 </TableRow>
                             ))
