@@ -3,13 +3,15 @@
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { Loader2, ArrowLeft, Gem, ShieldAlert } from "lucide-react";
+import { Loader2, ArrowLeft, Gem, ShieldAlert, AlertCircle } from "lucide-react";
 import { generateGamePredictions, GenerateGamePredictionsOutput } from '@/ai/flows/generate-game-predictions';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { useProfile } from '@/context/profile-context';
-import { useFirestore, errorEmitter, FirestorePermissionError } from '@/firebase';
-import { addDoc, collection } from 'firebase/firestore';
+import { useFirestore, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
+import { addDoc, collection, doc, query, where, updateDoc } from 'firebase/firestore';
+import { useCollection } from '@/firebase/firestore/use-collection';
+import type { License } from '@/lib/types';
 
 const GRID_SIZE = 25;
 
@@ -26,12 +28,29 @@ export default function GemsAndMinesPage() {
     const { userProfile, openOneXBetDialog } = useProfile();
     const firestore = useFirestore();
 
+    const licensesQuery = useMemoFirebase(() => {
+        if (!userProfile?.id || !firestore) return null;
+        return query(
+            collection(firestore, 'users', userProfile.id, 'licenses'),
+            where('gameType', '==', 'Mines & Gems') 
+        );
+    }, [userProfile?.id, firestore]);
+
+    const { data: licenses, isLoading: licensesLoading } = useCollection<License>(licensesQuery);
+    
+    const activeLicense = licenses?.find(l => l.isActive && l.paymentVerified && l.roundsRemaining > 0);
+    const pendingLicense = licenses?.find(l => !l.paymentVerified);
+    const expiredLicense = licenses?.find(l => l.paymentVerified && l.roundsRemaining <= 0);
+
     const handleGetPrediction = async () => {
         if (!userProfile?.oneXBetId) {
             openOneXBetDialog();
             return;
         }
-        if (!userProfile?.id || !firestore) return;
+        if (!activeLicense || !firestore || !userProfile) {
+            console.error("No active license found, firestore not available, or user not loaded.");
+            return;
+        }
 
         setIsLoading(true);
         setPrediction(null);
@@ -41,6 +60,7 @@ export default function GemsAndMinesPage() {
             
             const auditLogData = {
                 userId: userProfile.id,
+                licenseId: activeLicense.id,
                 action: 'prediction_request',
                 details: `Game: Gems & Mines, Prediction: ${JSON.stringify(result.predictionData)}`,
                 timestamp: new Date().toISOString(),
@@ -56,6 +76,21 @@ export default function GemsAndMinesPage() {
                     }));
                 });
 
+             // Decrement rounds remaining
+            const licenseRef = doc(firestore, 'users', userProfile.id, 'licenses', activeLicense.id);
+            const licenseUpdateData = {
+                roundsRemaining: activeLicense.roundsRemaining - 1,
+                isActive: (activeLicense.roundsRemaining - 1) > 0,
+            };
+            updateDoc(licenseRef, licenseUpdateData)
+                .catch(error => {
+                    errorEmitter.emit('permission-error', new FirestorePermissionError({
+                        path: licenseRef.path,
+                        operation: 'update',
+                        requestResourceData: licenseUpdateData
+                    }));
+                });
+
         } catch (error) {
             console.error("Failed to get prediction:", error);
             // Optionally, show an error message to the user
@@ -65,6 +100,40 @@ export default function GemsAndMinesPage() {
     };
     
     const gemsMinesData = prediction?.predictionData as GemsMinesPredictionData | undefined;
+    const roundsRemaining = activeLicense?.roundsRemaining ?? 0;
+    const canGenerate = !!activeLicense && !!userProfile?.oneXBetId && roundsRemaining > 0;
+
+    const renderStatus = () => {
+        if (licensesLoading) {
+            return <p>Checking license status...</p>
+        }
+        if (!userProfile?.oneXBetId) {
+            return <p className='text-sm text-amber-500 mt-2'>Please set your 1xBet ID to generate predictions.</p>
+        }
+        if (licenses && licenses.length === 0) {
+            return (
+                <div className='text-center'>
+                    <p>No Mines & Gems license found.</p>
+                    <Button asChild variant="link"><Link href="/purchase/mines-gems">Purchase a License</Link></Button>
+                </div>
+            )
+        }
+        if (pendingLicense) {
+            return <p className="font-semibold text-warning flex items-center gap-2"><AlertCircle size={16}/> Payment verification is pending.</p>
+        }
+        if (expiredLicense) {
+             return (
+                <div className='text-center'>
+                    <p className="font-semibold text-warning">Your license has expired.</p>
+                    <Button asChild variant="link"><Link href="/purchase/mines-gems">Renew License</Link></Button>
+                </div>
+             )
+        }
+        if (activeLicense) {
+            return <p>Ready to generate prediction.</p>
+        }
+        return <p>Purchase a license to generate predictions.</p>
+    };
 
     return (
         <div className="space-y-8">
@@ -84,10 +153,10 @@ export default function GemsAndMinesPage() {
                 <Card>
                     <CardHeader>
                         <CardTitle>New Prediction</CardTitle>
-                        <CardDescription>Click the button to get the latest prediction from our AI.</CardDescription>
+                        <CardDescription>Click the button to get the latest prediction. This consumes one round.</CardDescription>
                     </CardHeader>
-                    <CardContent className="flex flex-col items-center justify-center gap-6 min-h-[200px]">
-                        {isLoading ? (
+                    <CardContent className="flex flex-col items-center justify-center gap-6 min-h-[300px]">
+                        {isLoading || licensesLoading ? (
                              <Loader2 className="h-12 w-12 animate-spin text-primary" />
                         ): (
                             <div className="text-center">
@@ -101,21 +170,28 @@ export default function GemsAndMinesPage() {
                                     </div>
                                 ) : (
                                     <div className="text-center text-muted-foreground">
-                                        <p>No prediction generated yet.</p>
-                                        {!userProfile?.oneXBetId && <p className='text-sm text-amber-500 mt-2'>Please set your 1xBet ID to generate predictions.</p>}
+                                       {renderStatus()}
                                     </div>
                                 )}
                             </div>
                         )}
-                        <Button onClick={handleGetPrediction} disabled={isLoading || !userProfile?.oneXBetId} size="lg">
-                            {isLoading ? 'Generating...' : 'Get Prediction'}
-                        </Button>
+                        
                     </CardContent>
-                    {prediction && (
-                        <CardFooter>
-                            <p className="text-xs text-center text-muted-foreground w-full">{prediction.disclaimer}</p>
-                        </CardFooter>
-                    )}
+                    <CardFooter className="flex-col gap-4 border-t pt-6">
+                        <div className="flex w-full items-center justify-between">
+                            <p className="text-sm">Rounds Remaining: <span className="font-bold">{roundsRemaining}</span></p>
+                             <Button 
+                                onClick={handleGetPrediction} 
+                                disabled={isLoading || licensesLoading || !canGenerate} 
+                                size="lg"
+                            >
+                                {isLoading || licensesLoading ? 'Loading...' : 'Get Prediction'}
+                            </Button>
+                        </div>
+                        {prediction && (
+                            <p className="text-xs text-center text-muted-foreground w-full pt-4">{prediction.disclaimer}</p>
+                        )}
+                    </CardFooter>
                 </Card>
 
                  <Card>
