@@ -124,5 +124,3 @@ export function PromptManagement() {
         </Card>
     );
 }
-
-    
