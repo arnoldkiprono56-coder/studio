@@ -43,7 +43,7 @@ export default function GemsAndMinesPage() {
                 </Button>
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight">Gems & Mines Predictions</h1>
-                    <p className="text-muted-foreground">Generate AI-powered predictions for the Gems & Mines game.</p>
+                    <p className="text-muted-foreground">Generate AI-powered predictions for the Gems & Mines game on 1xBet.</p>
                 </div>
             </div>
 
