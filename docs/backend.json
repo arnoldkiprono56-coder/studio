@@ -161,7 +161,11 @@
         },
         "paymentMethod": {
           "type": "string",
-          "description": "Payment method used (MPESA, Airtel Money)."
+          "description": "Payment method used (MPESA, Airtel Money).",
+          "enum": [
+            "MPESA",
+            "Airtel Money"
+          ]
         },
         "amount": {
           "type": "number",
