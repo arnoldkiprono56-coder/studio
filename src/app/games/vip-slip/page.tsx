@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { Loader2, ArrowLeft, Ticket } from "lucide-react";
+import { Loader2, ArrowLeft, Ticket, AlertCircle } from "lucide-react";
 import { generateVipSlip, GenerateVipSlipOutput } from '@/ai/flows/generate-vip-slip';
 import Link from 'next/link';
 import { useProfile } from '@/context/profile-context';
@@ -28,7 +28,13 @@ export default function VipSlipPage() {
 
     const { data: licenses, isLoading: licensesLoading } = useCollection<License>(licensesQuery);
     
-    const activeLicense = licenses?.find(l => l.isActive && l.roundsRemaining > 0);
+    // An active license requires verified payment and rounds remaining.
+    const activeLicense = licenses?.find(l => l.paymentVerified && l.roundsRemaining > 0);
+    // A license that exists but is pending payment verification.
+    const pendingLicense = licenses?.find(l => !l.paymentVerified);
+    // A license that is paid for but has no rounds left.
+    const expiredLicense = licenses?.find(l => l.paymentVerified && l.roundsRemaining <= 0);
+
 
     const handleGetPrediction = async () => {
         if (!userProfile?.oneXBetId) {
@@ -50,9 +56,10 @@ export default function VipSlipPage() {
 
             // Decrement roundsRemaining
             const licenseRef = doc(firestore, 'users', userProfile.id, 'licenses', activeLicense.id);
+            const newRounds = activeLicense.roundsRemaining - 1;
             await updateDoc(licenseRef, {
-                roundsRemaining: activeLicense.roundsRemaining - 1,
-                isActive: activeLicense.roundsRemaining - 1 > 0, // Deactivate if rounds hit 0
+                roundsRemaining: newRounds,
+                isActive: newRounds > 0, // Deactivate if rounds hit 0
             });
 
         } catch (error) {
@@ -64,7 +71,27 @@ export default function VipSlipPage() {
     };
     
     const roundsRemaining = activeLicense?.roundsRemaining ?? 0;
-    const hasActiveLicense = roundsRemaining > 0;
+    const canGenerate = !!activeLicense;
+
+    const renderStatus = () => {
+        if (!userProfile?.oneXBetId) {
+            return <p className='text-sm text-amber-500 mt-2'>Please set your 1xBet ID to generate predictions.</p>
+        }
+        if (licenses && licenses.length === 0) {
+            return <p>No VIP Slip license found.</p>
+        }
+        if (pendingLicense) {
+            return <p className="font-semibold text-warning flex items-center gap-2"><AlertCircle size={16}/> Payment verification is pending. Please wait or contact support.</p>
+        }
+        if (expiredLicense) {
+             return <p className="font-semibold text-warning">Your license has expired after completing 100 rounds. Please renew to continue.</p>
+        }
+        if (activeLicense) {
+            return <p>Ready to generate your VIP Slip.</p>
+        }
+        return <p>Purchase a license to generate VIP slips.</p>
+    };
+
 
     return (
         <div className="space-y-8">
@@ -110,15 +137,7 @@ export default function VipSlipPage() {
                     ) : (
                          <div className="text-center text-muted-foreground">
                             <Ticket className="h-16 w-16 mx-auto mb-4" />
-                            {userProfile?.oneXBetId ? (
-                                hasActiveLicense ? (
-                                    <p>Ready to generate your VIP Slip.</p>
-                                ) : (
-                                    <p className="font-semibold text-warning">Your license has expired after completing 100 rounds. Please renew to continue.</p>
-                                )
-                            ) : (
-                                <p className='text-sm text-amber-500 mt-2'>Please set your 1xBet ID to generate predictions.</p>
-                            )}
+                            {renderStatus()}
                         </div>
                     )}
                 </CardContent>
@@ -127,7 +146,7 @@ export default function VipSlipPage() {
                         <p className="text-sm">Rounds Remaining: <span className="font-bold">{roundsRemaining}</span></p>
                         <Button 
                             onClick={handleGetPrediction} 
-                            disabled={isLoading || licensesLoading || !hasActiveLicense} 
+                            disabled={isLoading || licensesLoading || !canGenerate} 
                             size="lg"
                         >
                             {isLoading || licensesLoading ? 'Loading...' : 'Generate VIP Slip'}

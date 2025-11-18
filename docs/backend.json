@@ -56,11 +56,12 @@
         },
         "gameType": {
           "type": "string",
-          "description": "Type of game the license is for (Crash, Aviator, Mines & Gems).",
+          "description": "Type of game the license is for (Crash, Aviator, Mines & Gems, VIP Slip).",
           "enum": [
             "Crash",
             "Aviator",
-            "Mines & Gems"
+            "Mines & Gems",
+            "VIP Slip"
           ]
         },
         "roundsRemaining": {
@@ -70,12 +71,12 @@
         },
         "paymentVerified": {
           "type": "boolean",
-          "description": "Indicates if the payment for this license has been verified.",
+          "description": "Indicates if the payment for this license has been verified by the webhook.",
           "default": false
         },
         "isActive": {
           "type": "boolean",
-          "description": "Indicates if the license is active (payment verified and rounds remaining > 0)."
+          "description": "Indicates if the license is active. A license is active if paymentVerified is true and roundsRemaining > 0."
         }
       },
       "required": [
@@ -236,7 +237,7 @@
           "schema": {
             "$ref": "#/backend/entities/License"
           },
-          "description": "Stores game licenses for a user. Each license expires after 100 prediction rounds.",
+          "description": "Stores game licenses for a user. Each license expires after 100 prediction rounds and must have a verified payment.",
           "params": [
             {
               "name": "userId",
@@ -302,6 +303,6 @@
         }
       }
     ],
-    "reasoning": "The Firestore structure is updated to align with the Master System Prompt. It defines user roles (User, Assistant, Admin, SuperAdmin) and sets the default to 'User' on registration. It maintains the core logic for Users, Licenses, Predictions, and Payments. User profiles are managed by Firebase Auth and user data is stored in Firestore. Licenses are tied to a user and expire based on 'roundsRemaining'. Predictions are linked to both a user and a license. A top-level `transactions` collection tracks payments, with verification handled by a webhook. A global `auditlogs` collection is included for security monitoring."
+    "reasoning": "The Firestore structure is updated to align with the Master System Prompt. It defines user roles (User, Assistant, Admin, SuperAdmin) and sets the default to 'User' on registration. It maintains the core logic for Users, Licenses, Predictions, and Payments. User profiles are managed by Firebase Auth and user data is stored in Firestore. Licenses are tied to a user and expire based on 'roundsRemaining' and payment verification. Predictions are linked to both a user and a license. A top-level `transactions` collection tracks payments, with verification handled by a webhook. A global `auditlogs` collection is included for security monitoring."
   }
 }
