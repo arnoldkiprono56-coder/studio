@@ -28,7 +28,7 @@ export default function VipSlipPage() {
 
     const { data: licenses, isLoading: licensesLoading } = useCollection<License>(licensesQuery);
     
-    const activeLicense = licenses?.find(l => l.paymentVerified && l.roundsRemaining > 0);
+    const activeLicense = licenses?.find(l => l.isActive && l.paymentVerified && l.roundsRemaining > 0);
     const pendingLicense = licenses?.find(l => !l.paymentVerified);
     const expiredLicense = licenses?.find(l => l.paymentVerified && l.roundsRemaining <= 0);
 
@@ -90,20 +90,33 @@ export default function VipSlipPage() {
     };
     
     const roundsRemaining = activeLicense?.roundsRemaining ?? 0;
-    const canGenerate = !!activeLicense && !!userProfile?.oneXBetId;
+    const canGenerate = !!activeLicense && !!userProfile?.oneXBetId && roundsRemaining > 0;
 
     const renderStatus = () => {
+        if (licensesLoading) {
+            return <p>Checking license status...</p>
+        }
         if (!userProfile?.oneXBetId) {
             return <p className='text-sm text-amber-500 mt-2'>Please set your 1xBet ID to generate predictions.</p>
         }
         if (licenses && licenses.length === 0) {
-            return <p>No VIP Slip license found.</p>
+            return (
+                <div className='text-center'>
+                    <p>No VIP Slip license found.</p>
+                    <Button asChild variant="link"><Link href="/purchase/vip-slip">Purchase a License</Link></Button>
+                </div>
+            )
         }
         if (pendingLicense) {
             return <p className="font-semibold text-warning flex items-center gap-2"><AlertCircle size={16}/> Payment verification is pending. Please wait or contact support.</p>
         }
         if (expiredLicense) {
-             return <p className="font-semibold text-warning">Your license has expired after completing 100 rounds. Please renew to continue.</p>
+             return (
+                <div className='text-center'>
+                    <p className="font-semibold text-warning">Your license has expired. Please renew to continue.</p>
+                    <Button asChild variant="link"><Link href="/purchase/vip-slip">Renew License</Link></Button>
+                </div>
+             )
         }
         if (activeLicense) {
             return <p>Ready to generate your VIP Slip.</p>
