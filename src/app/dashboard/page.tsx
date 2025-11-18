@@ -1,9 +1,15 @@
+'use client';
+
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useProfile } from "@/context/profile-context";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ArrowRight, Star } from "lucide-react";
 import Link from "next/link";
 import { formatCurrency } from "@/lib/utils";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const games = [
     { name: "Aviator", href: "/games/aviator", status: "active" },
@@ -18,11 +24,78 @@ const recentPredictions = [
 ]
 
 export default function DashboardPage() {
-  const userName = "PlayerOne";
-  const userPlan = "Pro Plus";
-  const planExpires = "in 25 days";
-  const walletBalance = 1250.50;
-  const activeLicenses = 2;
+  const { userProfile, isProfileLoading } = useProfile();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!isProfileLoading && userProfile) {
+      if (userProfile.role === 'SuperAdmin' || userProfile.role === 'Admin') {
+        router.replace('/admin');
+      }
+    }
+  }, [userProfile, isProfileLoading, router]);
+
+  if (isProfileLoading || !userProfile) {
+    return (
+        <div className="space-y-8">
+            <div className="flex justify-between items-center">
+                <div>
+                    <Skeleton className="h-9 w-64 mb-2" />
+                    <Skeleton className="h-5 w-80" />
+                </div>
+                <Skeleton className="h-8 w-28" />
+            </div>
+            <div className="grid gap-4 md:grid-cols-3">
+                <Card>
+                    <CardHeader><Skeleton className="h-6 w-32 mb-2" /><Skeleton className="h-4 w-24" /></CardHeader>
+                    <CardContent><Skeleton className="h-10 w-full" /></CardContent>
+                </Card>
+                <Card>
+                    <CardHeader><Skeleton className="h-6 w-32 mb-2" /><Skeleton className="h-4 w-40" /></CardHeader>
+                    <CardContent><Skeleton className="h-9 w-32" /></CardContent>
+                </Card>
+                <Card>
+                    <CardHeader><Skeleton className="h-6 w-32 mb-2" /><Skeleton className="h-4 w-36" /></CardHeader>
+                    <CardContent><Skeleton className="h-9 w-16" /></CardContent>
+                </Card>
+            </div>
+            <div>
+                <Skeleton className="h-8 w-48 mb-4" />
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                    {Array.from({ length: 4 }).map((_, i) => (
+                        <Card key={i}>
+                            <CardHeader><Skeleton className="h-6 w-24" /></CardHeader>
+                            <CardContent><Skeleton className="h-9 w-32" /></CardContent>
+                        </Card>
+                    ))}
+                </div>
+            </div>
+             <div>
+                <Skeleton className="h-8 w-56 mb-4" />
+                <Card>
+                    <CardContent className="pt-6">
+                        <div className="space-y-4">
+                            <Skeleton className="h-6 w-full" />
+                            <Skeleton className="h-6 w-full" />
+                            <Skeleton className="h-6 w-full" />
+                        </div>
+                    </CardContent>
+                </Card>
+            </div>
+        </div>
+    )
+  }
+
+  // Only render user dashboard if role is not Admin/SuperAdmin
+  if (userProfile.role === 'SuperAdmin' || userProfile.role === 'Admin') {
+    return null; // or a loading indicator while redirecting
+  }
+
+  const userName = userProfile.email?.split('@')[0] || "Player";
+  const userPlan = "Pro Plus"; // Mock data
+  const planExpires = "in 25 days"; // Mock data
+  const walletBalance = 1250.50; // Mock data
+  const activeLicenses = 2; // Mock data
 
   return (
     <div className="space-y-8">
