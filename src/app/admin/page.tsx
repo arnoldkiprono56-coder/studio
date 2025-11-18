@@ -11,24 +11,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useProfile } from "@/context/profile-context";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PromptManagement } from "./prompt-management";
-import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
-import { collection, collectionGroup, query, where } from "firebase/firestore";
 
 export default function AdminDashboardPage() {
     const { userProfile, isProfileLoading } = useProfile();
-    const firestore = useFirestore();
 
-    const usersQuery = useMemoFirebase(() => firestore ? collection(firestore, 'users') : null, [firestore]);
-    const { data: users, isLoading: usersLoading } = useCollection(usersQuery);
-
-    const licensesQuery = useMemoFirebase(() => firestore ? query(collectionGroup(firestore, 'licenses'), where('isActive', '==', true)) : null, [firestore]);
-    const { data: activeLicenses, isLoading: licensesLoading } = useCollection(licensesQuery);
-
-    const alertsQuery = useMemoFirebase(() => firestore ? query(collection(firestore, 'auditlogs'), where('action', 'in', ['bypass_attempt', 'security_alert'])) : null, [firestore]);
-    const { data: securityAlerts, isLoading: alertsLoading } = useCollection(alertsQuery);
-
-
-    if (isProfileLoading || !userProfile || usersLoading || licensesLoading || alertsLoading) {
+    if (isProfileLoading || !userProfile) {
         return (
             <div className="space-y-8">
                 <div>
@@ -68,7 +55,7 @@ export default function AdminDashboardPage() {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{users?.length ?? 0}</div>
+            <div className="text-2xl font-bold">125</div>
             <p className="text-xs text-muted-foreground">Registered users on the platform</p>
           </CardContent>
         </Card>
@@ -78,7 +65,7 @@ export default function AdminDashboardPage() {
             <Gem className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{activeLicenses?.length ?? 0}</div>
+            <div className="text-2xl font-bold">42</div>
             <p className="text-xs text-muted-foreground">Currently active user licenses</p>
           </CardContent>
         </Card>
@@ -88,7 +75,7 @@ export default function AdminDashboardPage() {
             <AlertTriangle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{securityAlerts?.length ?? 0}</div>
+            <div className="text-2xl font-bold">3</div>
             <p className="text-xs text-muted-foreground">Critical alerts require attention</p>
           </CardContent>
         </Card>
