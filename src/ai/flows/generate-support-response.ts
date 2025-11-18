@@ -50,5 +50,3 @@ const generateSupportResponseFlow = ai.defineFlow(
     return output!;
   }
 );
-
-    
