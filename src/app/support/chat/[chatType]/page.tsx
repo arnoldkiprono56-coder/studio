@@ -49,6 +49,7 @@ export default function ChatPage() {
             const currentInput = input;
             setInput('');
             
+            // Pass the full message objects to the conversation history
             const conversationHistory = [...messages, userMessage].map(m => ({
                 isUser: m.sender === 'user',
                 text: m.text
