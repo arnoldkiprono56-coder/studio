@@ -94,7 +94,7 @@ export default function RegisterPage() {
                 id: user.uid,
                 email: user.email,
                 role: 'User',
-                planType: 'Basic',
+                isSuspended: false,
                 createdAt: new Date().toISOString(),
             };
             setDocumentNonBlocking(userRef, userData, { merge: true });

@@ -4,11 +4,11 @@
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "User",
       "type": "object",
-      "description": "Represents a user of the PredictPro platform, authenticated via Supabase.",
+      "description": "Represents a user of the PredictPro platform, authenticated via Firebase.",
       "properties": {
         "id": {
           "type": "string",
-          "description": "Unique identifier for the User entity, from Supabase Auth."
+          "description": "Unique identifier for the User entity, from Firebase Auth."
         },
         "email": {
           "type": "string",
@@ -22,7 +22,12 @@
         "role": {
           "type": "string",
           "description": "User's role (User, Assistant, Admin, SuperAdmin).",
-          "enum": ["User", "Assistant", "Admin", "SuperAdmin"]
+          "enum": [
+            "User",
+            "Assistant",
+            "Admin",
+            "SuperAdmin"
+          ]
         },
         "isSuspended": {
           "type": "boolean",
@@ -52,7 +57,11 @@
         "gameType": {
           "type": "string",
           "description": "Type of game the license is for (Crash, Aviator, Mines & Gems).",
-          "enum": ["Crash", "Aviator", "Mines & Gems"]
+          "enum": [
+            "Crash",
+            "Aviator",
+            "Mines & Gems"
+          ]
         },
         "roundsRemaining": {
           "type": "number",
@@ -102,8 +111,8 @@
           "description": "JSON data containing the prediction details, formatted as a VIP Slip or game-specific data for 1xBet."
         },
         "disclaimer": {
-            "type": "string",
-            "description": "The required legal disclaimer for predictions."
+          "type": "string",
+          "description": "The required legal disclaimer for predictions."
         }
       },
       "required": [
@@ -174,16 +183,16 @@
           "description": "Currency of the transaction (KES)."
         },
         "paymentMethod": {
-            "type": "string",
-            "description": "Payment method used (Mpesa STK, Mpesa virtual card, Card, Till number)."
+          "type": "string",
+          "description": "Payment method used (Mpesa STK, Mpesa virtual card, Card, Till number)."
         },
         "status": {
           "type": "string",
           "description": "Status of the transaction (pending, verified, failed)."
         },
         "webhookVerified": {
-            "type": "boolean",
-            "description": "Set to true by Firebase webhook upon successful payment verification."
+          "type": "boolean",
+          "description": "Set to true by Firebase webhook upon successful payment verification."
         }
       },
       "required": [
@@ -211,11 +220,11 @@
           "schema": {
             "$ref": "#/backend/entities/User"
           },
-          "description": "Stores user profiles. Managed via Supabase, but profile data mirrored for app logic.",
+          "description": "Stores user profiles. Managed via Firebase, but profile data mirrored for app logic.",
           "params": [
             {
               "name": "userId",
-              "description": "Unique identifier for the user from Supabase."
+              "description": "Unique identifier for the user from Firebase."
             }
           ]
         }
@@ -293,6 +302,6 @@
         }
       }
     ],
-    "reasoning": "The Firestore structure is updated to align with the new Master System Prompt. It simplifies the entities and collections to focus on the core logic of Users, Licenses, Predictions, and Payments. User profiles are minimal, assuming Supabase is the source of truth for auth. Licenses are now tied to a user and have a `roundsRemaining` counter. Predictions are linked to both a user and a license. A top-level `transactions` collection will be used to track payments, with verification handled by a webhook. A global `auditlogs` collection is included for security monitoring as specified."
+    "reasoning": "The Firestore structure is updated to align with the Master System Prompt. It defines user roles (User, Assistant, Admin, SuperAdmin) and sets the default to 'User' on registration. It maintains the core logic for Users, Licenses, Predictions, and Payments. User profiles are managed by Firebase Auth and user data is stored in Firestore. Licenses are tied to a user and expire based on 'roundsRemaining'. Predictions are linked to both a user and a license. A top-level `transactions` collection tracks payments, with verification handled by a webhook. A global `auditlogs` collection is included for security monitoring."
   }
 }

@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Star, Copy } from "lucide-react";
+import { Star, Copy, Shield } from "lucide-react";
 import { useProfile } from "@/context/profile-context";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -38,8 +38,9 @@ export default function ProfilePage() {
     };
 
     const handleCopyReferral = () => {
-        if(userProfile?.referralCode) {
-            navigator.clipboard.writeText(userProfile.referralCode);
+        if(userProfile?.id) {
+            const referralCode = `PRO-${userProfile.id.substring(0, 6).toUpperCase()}`;
+            navigator.clipboard.writeText(referralCode);
             toast({ title: "Copied!", description: "Referral code copied to clipboard." });
         }
     };
@@ -48,14 +49,16 @@ export default function ProfilePage() {
         return <div>Loading profile...</div>;
     }
 
-    const { name, email, avatar, plan, mpesaNumber, referralCode } = {
+    const { name, email, avatar, plan, mpesaNumber, role } = {
         name: userProfile.email?.split('@')[0] || "Player",
         email: userProfile.email,
-        avatar: userProfile.avatar || `https://i.pravatar.cc/150?u=${userProfile.id}`,
+        avatar: `https://i.pravatar.cc/150?u=${userProfile.id}`,
         plan: "Pro Plus", // This seems to be mock data
         mpesaNumber: "0712345678", // This seems to be mock data
-        referralCode: `PRO-${userProfile.id.substring(0, 6).toUpperCase()}`
+        role: userProfile.role || 'User',
     };
+    
+    const referralCode = `PRO-${userProfile.id.substring(0, 6).toUpperCase()}`;
 
 
   return (
@@ -79,6 +82,10 @@ export default function ProfilePage() {
             <div className="flex-grow">
               <h3 className="font-semibold">{name}</h3>
               <p className="text-sm text-muted-foreground">{email}</p>
+              <Badge variant="secondary" className="mt-1">
+                <Shield className="mr-1.5 h-3 w-3"/>
+                {role}
+              </Badge>
             </div>
             <Button variant="outline" size="sm" disabled>Change Picture</Button>
           </div>
