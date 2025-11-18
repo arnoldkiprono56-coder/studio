@@ -1,5 +1,6 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, AlertTriangle, ShieldCheck, Gem } from "lucide-react";
+import { UserManagementTable } from "./user-management";
 
 export default function AdminDashboardPage() {
   return (
@@ -50,7 +51,8 @@ export default function AdminDashboardPage() {
           </CardContent>
         </Card>
       </div>
-      {/* Additional admin components can be added here */}
+      
+      <UserManagementTable />
     </div>
   );
 }
