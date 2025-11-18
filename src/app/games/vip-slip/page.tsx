@@ -8,7 +8,7 @@ import { generateVipSlip, GenerateVipSlipOutput } from '@/ai/flows/generate-vip-
 import Link from 'next/link';
 import { useProfile } from '@/context/profile-context';
 import { useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, query, where, getDocs, doc, updateDoc, writeBatch } from 'firebase/firestore';
+import { collection, query, where, doc, updateDoc } from 'firebase/firestore';
 import type { License } from '@/lib/types';
 import { useCollection } from '@/firebase/firestore/use-collection';
 
@@ -28,11 +28,8 @@ export default function VipSlipPage() {
 
     const { data: licenses, isLoading: licensesLoading } = useCollection<License>(licensesQuery);
     
-    // An active license requires verified payment and rounds remaining.
     const activeLicense = licenses?.find(l => l.paymentVerified && l.roundsRemaining > 0);
-    // A license that exists but is pending payment verification.
     const pendingLicense = licenses?.find(l => !l.paymentVerified);
-    // A license that is paid for but has no rounds left.
     const expiredLicense = licenses?.find(l => l.paymentVerified && l.roundsRemaining <= 0);
 
 
@@ -43,7 +40,6 @@ export default function VipSlipPage() {
         }
 
         if (!activeLicense) {
-            // This case should be handled by the UI state, but as a safeguard.
             console.error("No active license found.");
             return;
         }
@@ -54,17 +50,15 @@ export default function VipSlipPage() {
             const result = await generateVipSlip({ userId: userProfile.id, licenseId: activeLicense.id });
             setPrediction(result);
 
-            // Decrement roundsRemaining
             const licenseRef = doc(firestore, 'users', userProfile.id, 'licenses', activeLicense.id);
             const newRounds = activeLicense.roundsRemaining - 1;
             await updateDoc(licenseRef, {
                 roundsRemaining: newRounds,
-                isActive: newRounds > 0, // Deactivate if rounds hit 0
+                isActive: newRounds > 0,
             });
 
         } catch (error) {
             console.error("Failed to get VIP slip:", error);
-            // Optionally, show an error message to the user
         } finally {
             setIsLoading(false);
         }
@@ -116,23 +110,28 @@ export default function VipSlipPage() {
                     {isLoading || licensesLoading ? (
                         <Loader2 className="h-12 w-12 animate-spin text-primary" />
                     ) : prediction ? (
-                        <div className="w-full max-w-lg space-y-4">
-                            <div className="flex justify-between items-center bg-accent/50 p-3 rounded-lg">
-                                <h3 className="font-bold text-lg flex items-center gap-2"><Ticket className="text-primary"/> VIP 1xBet Slip</h3>
-                                <p className="text-sm text-muted-foreground">{new Date().toLocaleDateString()}</p>
+                        <div className="w-full max-w-2xl space-y-4 bg-card p-6 rounded-xl border-2 border-primary/20 shadow-lg">
+                            <div className="text-center pb-4 border-b border-dashed">
+                                <h3 className="font-bold text-2xl flex items-center justify-center gap-2 text-primary">🎟️ VIP 1XBET SLIP</h3>
+                                <p className="text-sm text-muted-foreground mt-1">
+                                    <span className="font-semibold">Date:</span> {new Date().toLocaleDateString()} | <span className="font-semibold">Slip Type:</span> {prediction.slipType}
+                                </p>
                             </div>
-                            <ul className="space-y-3">
+                            <ul className="space-y-3 pt-4">
                                 {prediction.matches.map((match, index) => (
-                                    <li key={index} className="p-3 bg-card rounded-md border">
-                                        <p className="font-semibold">{match.teams}</p>
-                                        <div className="flex justify-between items-center text-sm">
-                                            <span className="text-muted-foreground">{match.market}: <span className="font-medium text-foreground">{match.prediction}</span></span>
-                                            <span className="font-bold text-primary">{match.odd.toFixed(2)}</span>
+                                    <li key={index} className="p-4 bg-muted/50 rounded-lg border">
+                                        <p className="font-bold text-lg">{index + 1}) {match.teams}</p>
+                                        <div className="flex justify-between items-center text-sm mt-1">
+                                            <span className="text-muted-foreground">
+                                                Market: <span className="font-medium text-foreground">{match.market}</span>
+                                                <span className="mx-2">|</span>
+                                                Prediction: <span className="font-medium text-foreground">{match.prediction}</span>
+                                            </span>
+                                            <span className="font-bold text-primary text-base bg-primary/10 px-2 py-1 rounded">{match.odd.toFixed(2)}</span>
                                         </div>
                                     </li>
                                 ))}
                             </ul>
-                            <p className="text-xs text-center text-muted-foreground !mt-6">{prediction.disclaimer}</p>
                         </div>
                     ) : (
                          <div className="text-center text-muted-foreground">
@@ -152,6 +151,9 @@ export default function VipSlipPage() {
                             {isLoading || licensesLoading ? 'Loading...' : 'Generate VIP Slip'}
                         </Button>
                      </div>
+                      {prediction && (
+                        <p className="text-xs text-center text-muted-foreground w-full pt-4">{prediction.disclaimer}</p>
+                    )}
                 </CardFooter>
             </Card>
         </div>

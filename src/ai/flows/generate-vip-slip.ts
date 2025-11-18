@@ -12,8 +12,8 @@ import { z } from 'zod';
 
 const MatchSchema = z.object({
   teams: z.string().describe('The two teams playing, e.g., "Team A vs Team B".'),
-  market: z.string().describe('The specific 1xBet market for the prediction.'),
-  prediction: z.string().describe('The prediction for the market.'),
+  market: z.string().describe('The specific 1xBet market for the prediction (e.g., "Total Over 2.5", "1X").'),
+  prediction: z.string().describe('The prediction for the market (e.g., "Over 2.5", "Home or Draw").'),
   odd: z.number().min(1.2).max(3.0).describe('The betting odd, between 1.20 and 3.00.'),
 });
 
@@ -25,6 +25,7 @@ export type GenerateVipSlipInput = z.infer<typeof GenerateVipSlipInputSchema>;
 
 const GenerateVipSlipOutputSchema = z.object({
   matches: z.array(MatchSchema).min(3).max(5).describe('An array of 3 to 5 matches for the VIP slip.'),
+  slipType: z.string().default("Premium AI VIP").describe('The type of the slip.'),
   disclaimer: z.string().default('⚠ Predictions are approximations and not guaranteed.'),
 });
 export type GenerateVipSlipOutput = z.infer<typeof GenerateVipSlipOutputSchema>;
@@ -41,10 +42,11 @@ const prompt = ai.definePrompt({
 
 Generate a VIP slip containing 3 to 5 high-confidence matches.
 
-RULES:
+STRICT RULES FOR SLIP:
 - Predictions are exclusively for 1xBet.
 - All markets and odds must be realistic and valid for 1xBet.
-- Do not use unsafe markets like exact scores.
+- Do not use unsafe markets like exact scores. Use markets like "Total Over/Under", "1X2", "Double Chance", "Both Teams to Score".
+- Odds for each match must be between 1.20 and 3.00.
 - The user ({{userId}}) is consuming one round from their license ({{licenseId}}).
 
 Generate the matches and include the mandatory disclaimer. The output must be a JSON object that strictly conforms to the output schema.`,
