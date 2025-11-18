@@ -20,7 +20,10 @@ const GenerateGamePredictionsInputSchema = z.object({
 export type GenerateGamePredictionsInput = z.infer<typeof GenerateGamePredictionsInputSchema>;
 
 const GenerateGamePredictionsOutputSchema = z.object({
-  predictionData: z.record(z.any()).describe('The prediction data for the specified game.'),
+  predictionData: z.object({
+    multiplier: z.number().optional().describe('The predicted multiplier for Aviator game.'),
+    crashPoint: z.number().optional().describe('The predicted crash point for Crash game.'),
+  }).describe('The prediction data for the specified game. Contains game-specific fields.'),
   confidenceScore: z.number().describe('The confidence score of the prediction.'),
   volatilityAssessment: z.string().describe('The volatility assessment for the game.'),
 });
@@ -42,7 +45,9 @@ Game Type: {{{gameType}}}
 User ID: {{{userId}}}
 
 Provide predictionData, confidenceScore, and volatilityAssessment. The predictionData is game-specific and contains values important in that game.
-Make sure the predictionData conforms to JSON schema.
+- For 'aviator', provide a 'multiplier'.
+- For 'crash', provide a 'crashPoint'.
+Make sure the predictionData conforms to the output JSON schema.
 `,
 });
 
