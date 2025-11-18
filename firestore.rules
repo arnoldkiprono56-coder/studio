@@ -41,9 +41,6 @@ service cloud.firestore {
     match /{path=**}/licenses/{licenseId} {
       allow list: if isAdmin();
     }
-    match /{path=**}/auditlogs/{auditLogId} {
-      allow list: if isAdmin();
-    }
     
     // Transactions can be created by any user, read by owner, and listed by admins.
     // They cannot be updated or deleted by clients.
@@ -55,11 +52,11 @@ service cloud.firestore {
     }
 
     // Audit logs can be created by any authenticated user.
-    // Only admins can read the audit logs.
+    // Only admins can list and get the audit logs.
     // No one can update or delete logs from the client.
     match /auditlogs/{auditLogId} {
       allow create: if isUser();
-      allow read: if isAdmin();
+      allow get, list: if isAdmin();
       allow update, delete: if false;
     }
 
