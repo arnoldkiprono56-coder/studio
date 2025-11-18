@@ -7,6 +7,12 @@ import { Loader2, ArrowLeft } from "lucide-react";
 import { generateGamePredictions, GenerateGamePredictionsOutput } from '@/ai/flows/generate-game-predictions';
 import Link from 'next/link';
 
+type CrashPredictionData = {
+    targetCashout: string;
+    riskLevel: string;
+    roundConfidence: number;
+}
+
 export default function CrashPage() {
     const [prediction, setPrediction] = useState<GenerateGamePredictionsOutput | null>(null);
     const [isLoading, setIsLoading] = useState(false);
@@ -25,6 +31,8 @@ export default function CrashPage() {
             setIsLoading(false);
         }
     };
+    
+    const crashData = prediction?.predictionData as CrashPredictionData | undefined;
 
     return (
         <div className="space-y-8">
@@ -48,12 +56,13 @@ export default function CrashPage() {
                 <CardContent className="flex flex-col items-center justify-center gap-6 min-h-[200px]">
                     {isLoading ? (
                         <Loader2 className="h-12 w-12 animate-spin text-primary" />
-                    ) : prediction ? (
+                    ) : crashData ? (
                         <div className="text-center">
-                            <p className="text-muted-foreground">Target Crashout</p>
-                            <p className="text-6xl font-bold text-primary">{prediction.predictionData.crashPoint}x</p>
-                            <p className="text-sm text-muted-foreground mt-2">Confidence: {(prediction.confidenceScore * 100).toFixed(0)}%</p>
-                            <p className="text-sm text-muted-foreground">Volatility: {prediction.volatilityAssessment}</p>
+                            <p className="text-muted-foreground font-semibold">🎮 Crash Prediction (1xBet)</p>
+                            <p className="text-muted-foreground mt-2">Target Cashout</p>
+                            <p className="text-6xl font-bold text-primary">{crashData.targetCashout}</p>
+                             <p className="text-sm text-muted-foreground mt-2">Risk Level: {crashData.riskLevel}</p>
+                            <p className="text-sm text-muted-foreground">Round Confidence: {crashData.roundConfidence}%</p>
                         </div>
                     ) : (
                         <p className="text-muted-foreground">No prediction generated yet.</p>

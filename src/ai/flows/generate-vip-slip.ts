@@ -8,7 +8,7 @@
  */
 
 import { ai } from '@/ai/genkit';
-import { z } from 'genkit';
+import { z } from 'zod';
 
 const MatchSchema = z.object({
   teams: z.string().describe('The two teams playing, e.g., "Team A vs Team B".'),
@@ -46,7 +46,7 @@ RULES:
 - Do not use unsafe markets like exact scores.
 - The user ({{userId}}) is consuming one round from their license ({{licenseId}}).
 
-Generate the matches and include the mandatory disclaimer.`,
+Generate the matches and include the mandatory disclaimer. The output must be a JSON object that strictly conforms to the output schema.`,
 });
 
 const generateVipSlipFlow = ai.defineFlow(

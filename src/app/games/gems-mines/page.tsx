@@ -3,12 +3,19 @@
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { Loader2, ArrowLeft, Gem, Bomb } from "lucide-react";
+import { Loader2, ArrowLeft, Gem, ShieldAlert } from "lucide-react";
 import { generateGamePredictions, GenerateGamePredictionsOutput } from '@/ai/flows/generate-game-predictions';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 
 const GRID_SIZE = 25;
+
+type GemsMinesPredictionData = {
+    safeTiles: number;
+    avoidTiles: number;
+    pattern: string;
+    risk: string;
+}
 
 export default function GemsAndMinesPage() {
     const [prediction, setPrediction] = useState<GenerateGamePredictionsOutput | null>(null);
@@ -29,8 +36,7 @@ export default function GemsAndMinesPage() {
         }
     };
     
-    const isSafe = (index: number) => prediction?.predictionData.safeTiles?.includes(index);
-    const isGem = (index: number) => prediction?.predictionData.gemLocations?.includes(index);
+    const gemsMinesData = prediction?.predictionData as GemsMinesPredictionData | undefined;
 
     return (
         <div className="space-y-8">
@@ -57,11 +63,14 @@ export default function GemsAndMinesPage() {
                              <Loader2 className="h-12 w-12 animate-spin text-primary" />
                         ): (
                             <div className="text-center">
-                                {prediction ? (
-                                    <>
-                                        <p className="text-sm text-muted-foreground mt-2">Confidence: {(prediction.confidenceScore * 100).toFixed(0)}%</p>
-                                        <p className="text-sm text-muted-foreground">Volatility: {prediction.volatilityAssessment}</p>
-                                    </>
+                                {gemsMinesData ? (
+                                    <div className='space-y-2'>
+                                        <p className="text-muted-foreground font-semibold">💎 Mines & Gems Prediction (1xBet)</p>
+                                        <p>Safe Tiles: <span className='font-bold'>{gemsMinesData.safeTiles}</span></p>
+                                        <p>Avoid Tiles: <span className='font-bold'>{gemsMinesData.avoidTiles}</span></p>
+                                        <p>Pattern: <span className='font-bold'>{gemsMinesData.pattern}</span></p>
+                                        <p>Risk: <span className='font-bold'>{gemsMinesData.risk}</span></p>
+                                    </div>
                                 ) : (
                                     <p className="text-muted-foreground">No prediction generated yet.</p>
                                 )}
@@ -81,7 +90,7 @@ export default function GemsAndMinesPage() {
                  <Card>
                     <CardHeader>
                         <CardTitle>Prediction Grid</CardTitle>
-                        <CardDescription>Revealed safe tiles and gem locations.</CardDescription>
+                        <CardDescription>This is a conceptual grid. Use the data from the prediction.</CardDescription>
                     </CardHeader>
                     <CardContent>
                          <div className="grid grid-cols-5 gap-2">
@@ -89,14 +98,11 @@ export default function GemsAndMinesPage() {
                                 <div
                                     key={index}
                                     className={cn(
-                                        "w-full aspect-square rounded-md flex items-center justify-center border",
-                                        prediction && isSafe(index) ? "bg-success/20 border-success" : "bg-muted/30",
-                                        prediction && isGem(index) && "bg-accent-pro/20 border-accent-pro",
-                                        prediction && !isSafe(index) && !isGem(index) && "bg-destructive/20 border-destructive"
+                                        "w-full aspect-square rounded-md flex items-center justify-center border bg-muted/30",
                                     )}
                                 >
-                                    {prediction && isGem(index) && <Gem className="w-6 h-6 text-accent-pro" />}
-                                    {prediction && !isSafe(index) && !isGem(index) && <Bomb className="w-6 h-6 text-destructive" />}
+                                    {index % 4 === 0 && <Gem className="w-6 h-6 text-accent-pro" />}
+                                    {index % 7 === 0 && <ShieldAlert className="w-6 h-6 text-warning" />}
                                 </div>
                             ))}
                         </div>

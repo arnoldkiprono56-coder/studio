@@ -19,15 +19,28 @@ const GenerateGamePredictionsInputSchema = z.object({
 });
 export type GenerateGamePredictionsInput = z.infer<typeof GenerateGamePredictionsInputSchema>;
 
+const AviatorPredictionSchema = z.object({
+  targetMultiplier: z.string().describe('The predicted cashout multiplier range for Aviator, e.g., "2.3x – 4.8x".'),
+  riskLevel: z.string().describe('The risk level of the prediction (e.g., Medium).'),
+  confidence: z.number().describe('The confidence score of the prediction as a percentage (e.g., 71).'),
+});
+
+const CrashPredictionSchema = z.object({
+    targetCashout: z.string().describe('The predicted cashout point for Crash, e.g., "2.3x – 4.8x".'),
+    riskLevel: z.string().describe('The risk level of the prediction (e.g., Medium).'),
+    roundConfidence: z.number().describe('The confidence score of the prediction as a percentage (e.g., 71).'),
+});
+
+const GemsMinesPredictionSchema = z.object({
+    safeTiles: z.number().describe('The number of safe tiles.'),
+    avoidTiles: z.number().describe('The number of tiles to avoid.'),
+    pattern: z.string().describe('The recommended pattern type.'),
+    risk: z.string().describe('The risk level (Low, Medium, or High).'),
+});
+
+
 const GenerateGamePredictionsOutputSchema = z.object({
-  predictionData: z.object({
-    multiplier: z.number().optional().describe('The predicted multiplier for Aviator game, e.g., 2.3 - 4.8'),
-    crashPoint: z.number().optional().describe('The predicted crash point for Crash game, e.g. 2.3 - 4.8'),
-    safeTiles: z.array(z.number()).optional().describe('An array of indices for safe tiles in Gems & Mines.'),
-    gemLocations: z.array(z.number()).optional().describe('An array of indices for gem locations in Gems & Mines.'),
-  }).describe('The prediction data for the specified game. Contains game-specific fields for 1xBet.'),
-  confidenceScore: z.number().describe('The confidence score of the prediction.'),
-  volatilityAssessment: z.string().describe('The volatility assessment for the game.'),
+  predictionData: z.union([AviatorPredictionSchema, CrashPredictionSchema, GemsMinesPredictionSchema]).describe('The game-specific prediction data.'),
   disclaimer: z.string().default('⚠ Predictions are approximations and not guaranteed.'),
 });
 export type GenerateGamePredictionsOutput = z.infer<typeof GenerateGamePredictionsOutputSchema>;
@@ -47,12 +60,12 @@ const prompt = ai.definePrompt({
 Game Type: {{{gameType}}}
 User ID: {{{userId}}}
 
-Provide predictionData, confidenceScore, and volatilityAssessment. The predictionData is game-specific and contains values important in that game on 1xBet.
-- For 'aviator', provide a 'multiplier' range (e.g., 1.10x to 12x).
-- For 'crash', provide a 'crashPoint' range (e.g., 1.10x to 12x).
-- For 'gems-mines', provide 'safeTiles' and 'gemLocations' as arrays of tile indices.
-- Include the mandatory disclaimer.
-Make sure the predictionData conforms to the output JSON schema.
+Provide the predictionData based on the game type.
+- For 'aviator', use the format: 🎮 Aviator Prediction (1xBet), Target Cashout: {multiplier range}, Risk Level: {risk}, Round Confidence: {confidence}%.
+- For 'crash', use the format: 🎮 Crash Prediction (1xBet), Target Cashout: {cashout range}, Risk Level: {risk}, Round Confidence: {confidence}%.
+- For 'gems-mines', use the format: 💎 Mines & Gems Prediction (1xBet), Safe Tiles: {number}, Avoid Tiles: {number}, Pattern: {pattern type}, Risk: {risk}.
+
+The output must be a JSON object that strictly conforms to the output schema. Ensure you include the mandatory disclaimer.
 `,
 });
 
