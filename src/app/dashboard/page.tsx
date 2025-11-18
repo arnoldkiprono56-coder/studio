@@ -8,8 +8,7 @@ import { formatCurrency } from "@/lib/utils";
 const games = [
     { name: "Aviator", href: "/games/aviator", status: "active" },
     { name: "Crash", href: "/games/crash", status: "active" },
-    { name: "Mines", href: "/games/mines", status: "locked" },
-    { name: "Gems", href: "/games/gems", status: "locked" },
+    { name: "Gems & Mines", href: "/games/gems-mines", status: "locked" },
 ]
 
 const recentPredictions = [

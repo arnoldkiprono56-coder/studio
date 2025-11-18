@@ -23,18 +23,10 @@ const games = [
 
     },
     { 
-        name: "Mines", 
-        href: "/games/mines", 
+        name: "Gems & Mines", 
+        href: "/games/gems-mines", 
         status: "locked", 
-        description: "Navigate the grid safely by avoiding hidden mines.",
-        icon: Bomb,
-        accent: "hsl(var(--error))"
-    },
-    { 
-        name: "Gems", 
-        href: "/games/gems", 
-        status: "locked", 
-        description: "Uncover valuable gems and maximize your winnings.",
+        description: "Uncover valuable gems while avoiding hidden mines.",
         icon: Gem,
         accent: "hsl(var(--accent-pro))"
     },
@@ -77,7 +69,7 @@ export default function GamesPage() {
                                 </Button>
                             ) : (
                                 <Button asChild variant="secondary" className="w-full">
-                                    <Link href={`/purchase/${game.name.toLowerCase()}`}>
+                                    <Link href={`/purchase/${game.name.toLowerCase().replace(/ & /g, '-')}`}>
                                         Buy License <ArrowRight className="w-4 h-4 ml-2" />
                                     </Link>
                                 </Button>

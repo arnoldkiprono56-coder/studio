@@ -4,8 +4,8 @@
  * @fileOverview This file defines a Genkit flow for generating game predictions.
  *
  * - generateGamePredictions - A function that generates predictions for a specified game.
- * - GenerateGamePredictionsInput - The input type for the generateGamePredictions function.
- * - GenerateGamePredictionsOutput - The return type for the generateGamePredictions function.
+ * - GenerateGamePredictionsInput - The input type for the generateGamepredictions function.
+ * - GenerateGamePredictionsOutput - The return type for the generateGamepredictions function.
  */
 
 import {ai} from '@/ai/genkit';
@@ -13,7 +13,7 @@ import {z} from 'genkit';
 
 const GenerateGamePredictionsInputSchema = z.object({
   gameType: z
-    .enum(['aviator', 'crash', 'mines', 'gems'])
+    .enum(['aviator', 'crash', 'gems-mines'])
     .describe('The type of game for which to generate predictions.'),
   userId: z.string().describe('The ID of the user requesting the prediction.'),
 });
@@ -23,6 +23,8 @@ const GenerateGamePredictionsOutputSchema = z.object({
   predictionData: z.object({
     multiplier: z.number().optional().describe('The predicted multiplier for Aviator game.'),
     crashPoint: z.number().optional().describe('The predicted crash point for Crash game.'),
+    safeTiles: z.array(z.number()).optional().describe('An array of indices for safe tiles in Gems & Mines.'),
+    gemLocations: z.array(z.number()).optional().describe('An array of indices for gem locations in Gems & Mines.'),
   }).describe('The prediction data for the specified game. Contains game-specific fields.'),
   confidenceScore: z.number().describe('The confidence score of the prediction.'),
   volatilityAssessment: z.string().describe('The volatility assessment for the game.'),
@@ -47,6 +49,7 @@ User ID: {{{userId}}}
 Provide predictionData, confidenceScore, and volatilityAssessment. The predictionData is game-specific and contains values important in that game.
 - For 'aviator', provide a 'multiplier'.
 - For 'crash', provide a 'crashPoint'.
+- For 'gems-mines', provide 'safeTiles' and 'gemLocations' as arrays of tile indices.
 Make sure the predictionData conforms to the output JSON schema.
 `,
 });
