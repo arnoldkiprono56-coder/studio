@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { formatCurrency } from '@/lib/utils';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, CreditCard } from 'lucide-react';
 
 interface PaymentTransaction {
     id: string;
@@ -87,11 +87,14 @@ export function TransactionManagement() {
     return (
         <Card>
             <CardHeader>
-                <CardTitle>Transaction Management</CardTitle>
-                <CardDescription>View recent transactions and manually verify payments if the webhook fails.</CardDescription>
+                <div className="flex items-center gap-2">
+                    <CreditCard className="h-6 w-6 text-muted-foreground" />
+                    <CardTitle>Transaction Management</CardTitle>
+                </div>
+                <CardDescription>View recent transactions and manually verify payments if a webhook fails.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-                <div className="p-4 border rounded-lg space-y-4">
+                <div className="p-4 border rounded-lg space-y-4 bg-muted/20">
                     <h3 className="font-semibold">Manual Payment Verification</h3>
                      <div className="flex items-center gap-2">
                         <Input
@@ -104,6 +107,9 @@ export function TransactionManagement() {
                             {isVerifying ? 'Verifying...' : 'Verify Transaction'}
                         </Button>
                     </div>
+                    <p className="text-xs text-muted-foreground">
+                        Use this to manually approve a payment if the automated webhook confirmation fails. This will activate the user's license.
+                    </p>
                 </div>
 
                 <Table>
@@ -127,8 +133,8 @@ export function TransactionManagement() {
                                     <TableCell><Skeleton className="h-5 w-28" /></TableCell>
                                 </TableRow>
                             ))
-                        ) : (
-                            sortedTransactions?.map(tx => (
+                        ) : sortedTransactions && sortedTransactions.length > 0 ? (
+                            sortedTransactions.map(tx => (
                                 <TableRow key={tx.id}>
                                     <TableCell>
                                         <div className="font-medium font-code text-xs">{tx.userId}</div>
@@ -142,18 +148,17 @@ export function TransactionManagement() {
                                             tx.status === 'pending' ? 'secondary' : 'destructive'
                                         } className={
                                              tx.status === 'verified' ? 'bg-success' : 
-                                             tx.status === 'pending' ? 'bg-warning' : ''
+                                             tx.status === 'pending' ? 'border-amber-500/50 text-amber-500' : ''
                                         }>
                                             {tx.status}
                                         </Badge>
                                     </TableCell>
-                                    <TableCell>
+                                    <TableCell className="text-sm text-muted-foreground">
                                         {tx.createdAt ? new Date(tx.createdAt.seconds * 1000).toLocaleString() : 'N/A'}
                                     </TableCell>
                                 </TableRow>
                             ))
-                        )}
-                         {!isLoading && (!transactions || transactions.length === 0) && (
+                        ) : (
                             <TableRow>
                                 <TableCell colSpan={5} className="text-center h-24">
                                      <div className="flex items-center justify-center gap-2 text-muted-foreground">
