@@ -12,7 +12,7 @@ import {z} from 'genkit';
 import { getPrompt } from '@/lib/prompt-service';
 
 const AdaptPredictionsBasedOnFeedbackInputSchema = z.object({
-  gameType: z.enum(['aviator', 'crash', 'mines', 'gems']).describe('The type of game for which the prediction is made.'),
+  gameType: z.enum(['aviator', 'crash', 'gems-mines', 'vip-slip']).describe('The type of game for which the prediction is made.'),
   predictionData: z.string().describe('The prediction data that was provided to the user.'),
   feedback: z.enum(['won', 'lost']).describe('The feedback provided by the user on the prediction.'),
 });

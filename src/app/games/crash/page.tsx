@@ -11,6 +11,8 @@ import { useFirestore, useMemoFirebase, errorEmitter, FirestorePermissionError }
 import { addDoc, collection, doc, query, where, updateDoc } from 'firebase/firestore';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import type { License } from '@/lib/types';
+import { adaptPredictionsBasedOnFeedback } from '@/ai/flows/adapt-predictions-based-on-feedback';
+import { useToast } from '@/hooks/use-toast';
 
 type CrashPredictionData = {
     targetCashout: string;
@@ -21,8 +23,10 @@ type CrashPredictionData = {
 export default function CrashPage() {
     const [prediction, setPrediction] = useState<GenerateGamePredictionsOutput | null>(null);
     const [isLoading, setIsLoading] = useState(false);
+    const [feedbackSent, setFeedbackSent] = useState(false);
     const { userProfile, openOneXBetDialog } = useProfile();
     const firestore = useFirestore();
+    const { toast } = useToast();
     
     const licensesQuery = useMemoFirebase(() => {
         if (!userProfile?.id || !firestore) return null;
@@ -51,6 +55,7 @@ export default function CrashPage() {
 
         setIsLoading(true);
         setPrediction(null);
+        setFeedbackSent(false);
         try {
             const result = await generateGamePredictions({ gameType: 'crash', userId: userProfile.id });
             setPrediction(result);
@@ -116,6 +121,23 @@ export default function CrashPage() {
         }
     };
     
+    const handleFeedback = async (feedback: 'won' | 'lost') => {
+        if (!prediction) return;
+        setFeedbackSent(true);
+        toast({ title: 'Thank you!', description: 'Your feedback helps us improve.' });
+        try {
+            await adaptPredictionsBasedOnFeedback({
+                gameType: 'crash',
+                predictionData: JSON.stringify(prediction.predictionData),
+                feedback: feedback,
+            });
+        } catch (error) {
+            console.error("Failed to send feedback:", error);
+            setFeedbackSent(false);
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not submit feedback.' });
+        }
+    };
+
     const crashData = prediction?.predictionData as CrashPredictionData | undefined;
     const roundsRemaining = activeLicense?.roundsRemaining ?? 0;
     const canGenerate = !!activeLicense && !!userProfile?.oneXBetId && roundsRemaining > 0;
@@ -200,7 +222,20 @@ export default function CrashPage() {
                         </Button>
                      </div>
                       {prediction && (
-                        <p className="text-xs text-center text-muted-foreground w-full pt-4">{prediction.disclaimer}</p>
+                        <div className="w-full text-center space-y-3 pt-4">
+                            {!feedbackSent ? (
+                                <div className="animate-in fade-in-50 space-y-2">
+                                    <p className="text-sm font-semibold">Did you win?</p>
+                                    <div className="flex justify-center gap-2">
+                                        <Button variant="outline" size="sm" onClick={() => handleFeedback('won')}>Yes</Button>
+                                        <Button variant="outline" size="sm" onClick={() => handleFeedback('lost')}>No</Button>
+                                    </div>
+                                </div>
+                            ) : (
+                                 <p className="text-sm text-success font-semibold animate-in fade-in-50">Thanks for your feedback!</p>
+                            )}
+                            <p className="text-xs text-muted-foreground">{prediction.disclaimer}</p>
+                        </div>
                     )}
                 </CardFooter>
             </Card>
