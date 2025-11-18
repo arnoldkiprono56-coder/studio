@@ -49,6 +49,13 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     }
     await updateDoc(userDocRef, data);
   }, [userDocRef]);
+
+  useEffect(() => {
+    // Automatically elevate the specific user to SuperAdmin if they aren't already.
+    if (userProfile && userProfile.email === 'shadowvybez001@gmail.com' && userProfile.role !== 'SuperAdmin') {
+      updateUserProfile({ role: 'SuperAdmin' }).catch(console.error);
+    }
+  }, [userProfile, updateUserProfile]);
   
 
   const handleSaveOneXBetId = async () => {
