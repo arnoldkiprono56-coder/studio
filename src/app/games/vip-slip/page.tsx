@@ -1,30 +1,60 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Loader2, ArrowLeft, Ticket } from "lucide-react";
 import { generateVipSlip, GenerateVipSlipOutput } from '@/ai/flows/generate-vip-slip';
 import Link from 'next/link';
 import { useProfile } from '@/context/profile-context';
+import { useFirestore, useMemoFirebase } from '@/firebase';
+import { collection, query, where, getDocs, doc, updateDoc, writeBatch } from 'firebase/firestore';
+import type { License } from '@/lib/types';
+import { useCollection } from '@/firebase/firestore/use-collection';
 
 export default function VipSlipPage() {
     const [prediction, setPrediction] = useState<GenerateVipSlipOutput | null>(null);
     const [isLoading, setIsLoading] = useState(false);
-    const [roundsRemaining] = useState(99); // Mock data
     const { userProfile, openOneXBetDialog } = useProfile();
+    const firestore = useFirestore();
+
+    const licensesQuery = useMemoFirebase(() => {
+        if (!userProfile?.id || !firestore) return null;
+        return query(
+            collection(firestore, 'users', userProfile.id, 'licenses'),
+            where('gameType', '==', 'VIP Slip') 
+        );
+    }, [userProfile?.id, firestore]);
+
+    const { data: licenses, isLoading: licensesLoading } = useCollection<License>(licensesQuery);
+    
+    const activeLicense = licenses?.find(l => l.isActive && l.roundsRemaining > 0);
 
     const handleGetPrediction = async () => {
         if (!userProfile?.oneXBetId) {
             openOneXBetDialog();
             return;
         }
+
+        if (!activeLicense) {
+            // This case should be handled by the UI state, but as a safeguard.
+            console.error("No active license found.");
+            return;
+        }
+
         setIsLoading(true);
         setPrediction(null);
         try {
-            // Mock user and license IDs for now
-            const result = await generateVipSlip({ userId: userProfile.id, licenseId: 'license-abc' });
+            const result = await generateVipSlip({ userId: userProfile.id, licenseId: activeLicense.id });
             setPrediction(result);
+
+            // Decrement roundsRemaining
+            const licenseRef = doc(firestore, 'users', userProfile.id, 'licenses', activeLicense.id);
+            await updateDoc(licenseRef, {
+                roundsRemaining: activeLicense.roundsRemaining - 1,
+                isActive: activeLicense.roundsRemaining - 1 > 0, // Deactivate if rounds hit 0
+            });
+
         } catch (error) {
             console.error("Failed to get VIP slip:", error);
             // Optionally, show an error message to the user
@@ -32,6 +62,9 @@ export default function VipSlipPage() {
             setIsLoading(false);
         }
     };
+    
+    const roundsRemaining = activeLicense?.roundsRemaining ?? 0;
+    const hasActiveLicense = roundsRemaining > 0;
 
     return (
         <div className="space-y-8">
@@ -53,7 +86,7 @@ export default function VipSlipPage() {
                     <CardDescription>Click the button to generate a new slip. This will consume one prediction round.</CardDescription>
                 </CardHeader>
                 <CardContent className="flex flex-col items-center justify-center gap-6 min-h-[300px]">
-                    {isLoading ? (
+                    {isLoading || licensesLoading ? (
                         <Loader2 className="h-12 w-12 animate-spin text-primary" />
                     ) : prediction ? (
                         <div className="w-full max-w-lg space-y-4">
@@ -77,16 +110,27 @@ export default function VipSlipPage() {
                     ) : (
                          <div className="text-center text-muted-foreground">
                             <Ticket className="h-16 w-16 mx-auto mb-4" />
-                            <p>No prediction generated yet.</p>
-                            {!userProfile?.oneXBetId && <p className='text-sm text-amber-500 mt-2'>Please set your 1xBet ID to generate predictions.</p>}
+                            {userProfile?.oneXBetId ? (
+                                hasActiveLicense ? (
+                                    <p>Ready to generate your VIP Slip.</p>
+                                ) : (
+                                    <p className="font-semibold text-warning">Your license has expired after completing 100 rounds. Please renew to continue.</p>
+                                )
+                            ) : (
+                                <p className='text-sm text-amber-500 mt-2'>Please set your 1xBet ID to generate predictions.</p>
+                            )}
                         </div>
                     )}
                 </CardContent>
                 <CardFooter className="flex-col gap-4 border-t pt-6">
                      <div className="flex w-full items-center justify-between">
                         <p className="text-sm">Rounds Remaining: <span className="font-bold">{roundsRemaining}</span></p>
-                        <Button onClick={handleGetPrediction} disabled={isLoading} size="lg">
-                            {isLoading ? 'Generating...' : 'Generate VIP Slip'}
+                        <Button 
+                            onClick={handleGetPrediction} 
+                            disabled={isLoading || licensesLoading || !hasActiveLicense} 
+                            size="lg"
+                        >
+                            {isLoading || licensesLoading ? 'Loading...' : 'Generate VIP Slip'}
                         </Button>
                      </div>
                 </CardFooter>
