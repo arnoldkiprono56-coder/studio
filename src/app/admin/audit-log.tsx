@@ -32,6 +32,8 @@ export function AuditLogViewer() {
         switch (action) {
             case 'bypass_attempt':
             case 'security_alert':
+            case 'license_activated':
+            case 'rounds_reset':
                 return 'destructive';
             case 'prediction_request':
                 return 'secondary';
@@ -45,9 +47,9 @@ export function AuditLogViewer() {
             <CardHeader>
                 <div className="flex items-center gap-2">
                     <ShieldAlert className="h-6 w-6 text-warning" />
-                    <CardTitle>Prediction & Security Logs</CardTitle>
+                    <CardTitle>Audit Trail & Security Logs</CardTitle>
                 </div>
-                <CardDescription>Review all prediction requests, failed attempts, and potential bypass logs.</CardDescription>
+                <CardDescription>Review all prediction requests, admin actions, and potential security alerts.</CardDescription>
             </CardHeader>
             <CardContent>
                 <Table>
@@ -73,8 +75,8 @@ export function AuditLogViewer() {
                             ))
                         ) : (
                             auditLogs?.map(log => (
-                                <TableRow key={log.id} className={getActionVariant(log.action) === 'destructive' ? 'bg-destructive/10' : ''}>
-                                    <TableCell className="text-xs">{new Date(log.timestamp).toLocaleString()}</TableCell>
+                                <TableRow key={log.id} className={['license_activated', 'rounds_reset', 'bypass_attempt'].includes(log.action) ? 'bg-destructive/10' : ''}>
+                                    <TableCell className="text-xs">{log.timestamp ? new Date(log.timestamp).toLocaleString() : 'N/A'}</TableCell>
                                     <TableCell className="font-code text-xs">{log.userId}</TableCell>
                                     <TableCell>
                                         <Badge variant={getActionVariant(log.action)}>{log.action}</Badge>

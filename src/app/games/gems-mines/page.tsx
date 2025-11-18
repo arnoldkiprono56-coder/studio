@@ -42,7 +42,7 @@ export default function GemsAndMinesPage() {
             const auditLogData = {
                 userId: userProfile.id,
                 action: 'prediction_request',
-                details: JSON.stringify({ gameType: 'gems-mines', prediction: result.predictionData }),
+                details: `Game: Gems & Mines, Prediction: ${JSON.stringify(result.predictionData)}`,
                 timestamp: new Date().toISOString(),
                 ipAddress: 'not_collected',
             };

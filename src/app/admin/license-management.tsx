@@ -2,8 +2,8 @@
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { useCollection } from '@/firebase/firestore/use-collection';
-import { useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, doc, updateDoc, setDoc } from 'firebase/firestore';
+import { useFirestore, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
+import { collection, doc, updateDoc, setDoc, addDoc } from 'firebase/firestore';
 import type { License } from '@/lib/types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,8 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { AlertCircle } from 'lucide-react';
+import { useProfile } from '@/context/profile-context';
+
 
 interface LicenseManagementDialogProps {
     user: { id: string; email: string };
@@ -23,6 +25,7 @@ const ALL_GAME_TYPES = ["VIP Slip", "Aviator", "Crash", "Mines & Gems"];
 export function LicenseManagementDialog({ user, open, onOpenChange }: LicenseManagementDialogProps) {
     const firestore = useFirestore();
     const { toast } = useToast();
+    const { userProfile: adminProfile } = useProfile();
 
     const licensesCollection = useMemoFirebase(() => {
         if (!firestore) return null;
@@ -30,6 +33,24 @@ export function LicenseManagementDialog({ user, open, onOpenChange }: LicenseMan
     }, [firestore, user.id]);
 
     const { data: licenses, isLoading } = useCollection<License>(licensesCollection);
+    
+    const logAdminAction = (action: string, details: object) => {
+        if (!firestore || !adminProfile) return;
+        const auditLogData = {
+            userId: adminProfile.id,
+            action,
+            details: JSON.stringify(details),
+            timestamp: new Date().toISOString(),
+            ipAddress: 'not_collected',
+        };
+        addDoc(collection(firestore, 'auditlogs'), auditLogData).catch(error => {
+            errorEmitter.emit('permission-error', new FirestorePermissionError({
+                path: 'auditlogs',
+                operation: 'create',
+                requestResourceData: auditLogData
+            }));
+        });
+    };
 
     const handleActivateLicense = async (gameType: string) => {
         if (!firestore) return;
@@ -45,6 +66,7 @@ export function LicenseManagementDialog({ user, open, onOpenChange }: LicenseMan
                 isActive: true,
             }, { merge: true });
             toast({ title: 'Success', description: `${gameType} license activated for ${user.email}.` });
+            logAdminAction('license_activated', { targetUserId: user.id, targetUserEmail: user.email, gameType });
         } catch (error: any) {
             toast({ variant: 'destructive', title: 'Error', description: `Failed to activate license: ${error.message}` });
         }
@@ -56,6 +78,7 @@ export function LicenseManagementDialog({ user, open, onOpenChange }: LicenseMan
         try {
             await updateDoc(licenseRef, { roundsRemaining: 100, isActive: true });
             toast({ title: 'Success', description: `Rounds reset to 100 for ${license.gameType} license.` });
+            logAdminAction('rounds_reset', { targetUserId: user.id, targetUserEmail: user.email, gameType: license.gameType, rounds: 100 });
         } catch (error: any) {
              toast({ variant: 'destructive', title: 'Error', description: `Failed to reset rounds: ${error.message}` });
         }

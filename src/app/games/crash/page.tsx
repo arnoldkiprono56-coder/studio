@@ -38,7 +38,7 @@ export default function CrashPage() {
             const auditLogData = {
                 userId: userProfile.id,
                 action: 'prediction_request',
-                details: JSON.stringify({ gameType: 'crash', prediction: result.predictionData }),
+                details: `Game: Crash, Prediction: ${JSON.stringify(result.predictionData)}`,
                 timestamp: new Date().toISOString(),
                 ipAddress: 'not_collected',
             };

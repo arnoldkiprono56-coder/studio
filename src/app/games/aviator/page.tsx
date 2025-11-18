@@ -39,7 +39,7 @@ export default function AviatorPage() {
             const auditLogData = {
                 userId: userProfile.id,
                 action: 'prediction_request',
-                details: JSON.stringify({ gameType: 'aviator', prediction: result.predictionData }),
+                details: `Game: Aviator, Prediction: ${JSON.stringify(result.predictionData)}`,
                 timestamp: new Date().toISOString(),
                 ipAddress: 'not_collected',
             };

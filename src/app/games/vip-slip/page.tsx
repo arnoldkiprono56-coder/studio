@@ -54,7 +54,7 @@ export default function VipSlipPage() {
                 userId: userProfile.id,
                 licenseId: activeLicense.id,
                 action: 'prediction_request',
-                details: JSON.stringify({ gameType: 'VIP Slip', prediction: result }),
+                details: `Game: VIP Slip, Prediction: ${JSON.stringify(result)}`,
                 timestamp: new Date().toISOString(),
                 ipAddress: 'not_collected',
             };
