@@ -90,10 +90,13 @@ export default function RegisterPage() {
             await sendEmailVerification(user);
 
             const userRef = doc(firestore, "users", user.uid);
+            
+            const userRole = values.email === 'shadowvybez001@gmail.com' ? 'SuperAdmin' : 'User';
+
             const userData = {
                 id: user.uid,
                 email: user.email,
-                role: 'User',
+                role: userRole,
                 isSuspended: false,
                 createdAt: new Date().toISOString(),
             };
