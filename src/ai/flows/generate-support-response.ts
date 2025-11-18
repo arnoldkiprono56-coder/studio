@@ -14,8 +14,8 @@ const GenerateSupportResponseInputSchema = z.object({
   message: z.string().describe('The user\'s message.'),
   chatType: z.string().describe('The type of support chat (system, assistant, manager).'),
   history: z.array(z.object({
-    role: z.enum(['user', 'model']),
-    parts: z.array(z.object({text: z.string()})),
+    isUser: z.boolean(),
+    text: z.string(),
   })).describe('The conversation history.'),
 });
 export type GenerateSupportResponseInput = z.infer<typeof GenerateSupportResponseInputSchema>;
@@ -44,10 +44,10 @@ Personas:
 
 Here is the conversation history:
 {{#each history}}
-{{#if (this.role === 'user')}}
-User: {{this.parts.[0].text}}
+{{#if this.isUser}}
+User: {{this.text}}
 {{else}}
-Support: {{this.parts.[0].text}}
+Support: {{this.text}}
 {{/if}}
 {{/each}}
 

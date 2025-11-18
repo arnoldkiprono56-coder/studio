@@ -50,8 +50,8 @@ export default function ChatPage() {
             setInput('');
             
             const conversationHistory = [...messages, userMessage].map(m => ({
-                role: m.sender,
-                parts: [{ text: m.text }]
+                isUser: m.sender === 'user',
+                text: m.text
             }));
             
             setMessages(prev => [...prev, userMessage]);
