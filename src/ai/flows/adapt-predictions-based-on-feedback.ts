@@ -9,6 +9,7 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
+import { getPrompt } from '@/lib/prompt-service';
 
 const AdaptPredictionsBasedOnFeedbackInputSchema = z.object({
   gameType: z.enum(['aviator', 'crash', 'mines', 'gems']).describe('The type of game for which the prediction is made.'),
@@ -26,21 +27,6 @@ export async function adaptPredictionsBasedOnFeedback(input: AdaptPredictionsBas
   return adaptPredictionsBasedOnFeedbackFlow(input);
 }
 
-const prompt = ai.definePrompt({
-  name: 'adaptPredictionsBasedOnFeedbackPrompt',
-  input: {schema: AdaptPredictionsBasedOnFeedbackInputSchema},
-  output: {schema: AdaptPredictionsBasedOnFeedbackOutputSchema},
-  prompt: `You are an AI model adaptation expert for PredictPro, and you are HARD-LOCKED to the 1xBet platform. You MUST NOT process feedback for any other platform.
-
-You will receive game prediction data and user feedback (won or lost). Based on this feedback, you will adapt the prediction model to improve future predictions for the specified game type on 1xBet.
-
-Game Type: {{{gameType}}}
-Prediction Data: {{{predictionData}}}
-Feedback: {{{feedback}}}
-
-Provide a confirmation message that the model has been updated for 1xBet.`,
-});
-
 const adaptPredictionsBasedOnFeedbackFlow = ai.defineFlow(
   {
     name: 'adaptPredictionsBasedOnFeedbackFlow',
@@ -48,7 +34,18 @@ const adaptPredictionsBasedOnFeedbackFlow = ai.defineFlow(
     outputSchema: AdaptPredictionsBasedOnFeedbackOutputSchema,
   },
   async input => {
+    const promptText = await getPrompt('adaptPredictionsBasedOnFeedbackPrompt');
+    
+    const prompt = ai.definePrompt({
+      name: 'adaptPredictionsBasedOnFeedbackPrompt',
+      input: {schema: AdaptPredictionsBasedOnFeedbackInputSchema},
+      output: {schema: AdaptPredictionsBasedOnFeedbackOutputSchema},
+      prompt: promptText,
+    });
+
     const {output} = await prompt(input);
     return output!;
   }
 );
+
+    

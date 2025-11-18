@@ -60,7 +60,14 @@ service cloud.firestore {
       allow read: if true;
       allow write: if isAdmin();
     }
+    
+    // Prompts can only be read and written by an admin.
+    match /prompts/{promptId} {
+      allow read, write: if isAdmin();
+    }
   }
 }
+
+    
 
     

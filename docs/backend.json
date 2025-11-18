@@ -241,6 +241,40 @@
         "price",
         "rounds"
       ]
+    },
+    "Prompt": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Prompt",
+      "type": "object",
+      "description": "Represents an editable AI prompt template for Genkit flows.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the prompt (e.g., 'generateVipSlipPrompt')."
+        },
+        "name": {
+          "type": "string",
+          "description": "A user-friendly name for the prompt."
+        },
+        "content": {
+          "type": "string",
+          "description": "The full text content of the prompt template."
+        },
+        "lastModified": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The timestamp of when the prompt was last updated."
+        },
+        "version": {
+          "type": "number",
+          "description": "A version number for tracking changes."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "content"
+      ]
     }
   },
   "auth": {
@@ -353,9 +387,26 @@
             }
           ]
         }
+      },
+      {
+        "path": "/prompts/{promptId}",
+        "definition": {
+          "entityName": "Prompt",
+          "schema": {
+            "$ref": "#/backend/entities/Prompt"
+          },
+          "description": "Stores editable AI prompt templates for Genkit flows. Only admins can edit.",
+          "params": [
+            {
+              "name": "promptId",
+              "description": "Unique identifier for the prompt (e.g. 'generateVipSlipPrompt')."
+            }
+          ]
+        }
       }
     ],
-    "reasoning": "The Firestore structure is updated to align with the Master System Prompt. It defines user roles (User, Assistant, Admin, SuperAdmin) and sets the default to 'User' on registration. It maintains the core logic for Users, Licenses, Predictions, and Payments. User profiles are managed by Firebase Auth and user data is stored in Firestore. Licenses are tied to a user and expire based on 'roundsRemaining' and payment verification. Predictions are linked to both a user and a license. A top-level `transactions` collection tracks payments, with verification handled by a webhook. A global `auditlogs` collection is included for security monitoring. A new `plans` collection is added to store pricing information, editable by admins."
+    "reasoning": "The Firestore structure is updated to align with the Master System Prompt. It defines user roles (User, Assistant, Admin, SuperAdmin) and sets the default to 'User' on registration. It maintains the core logic for Users, Licenses, Predictions, and Payments. User profiles are managed by Firebase Auth and user data is stored in Firestore. Licenses are tied to a user and expire based on 'roundsRemaining' and payment verification. Predictions are linked to both a user and a license. A top-level `transactions` collection tracks payments, with verification handled by a webhook. A global `auditlogs` collection is included for security monitoring. A `plans` collection is added to store pricing information. A new `prompts` collection is added to store editable AI prompts, manageable by admins."
   }
 }
+
     

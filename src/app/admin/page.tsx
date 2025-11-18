@@ -10,6 +10,7 @@ import { PricingManagement } from "./pricing-management";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useProfile } from "@/context/profile-context";
 import { Skeleton } from "@/components/ui/skeleton";
+import { PromptManagement } from "./prompt-management";
 
 export default function AdminDashboardPage() {
     const { userProfile, isProfileLoading } = useProfile();
@@ -94,6 +95,7 @@ export default function AdminDashboardPage() {
             <TabsList>
                 <TabsTrigger value="users">User Management</TabsTrigger>
                 <TabsTrigger value="pricing">Pricing & Plans</TabsTrigger>
+                <TabsTrigger value="prompts">AI Prompts</TabsTrigger>
                 <TabsTrigger value="transactions">Transactions</TabsTrigger>
                 <TabsTrigger value="security">Security Logs</TabsTrigger>
             </TabsList>
@@ -102,6 +104,9 @@ export default function AdminDashboardPage() {
             </TabsContent>
             <TabsContent value="pricing">
                 <PricingManagement />
+            </TabsContent>
+            <TabsContent value="prompts">
+                <PromptManagement />
             </TabsContent>
             <TabsContent value="transactions">
                 <TransactionManagement />
@@ -113,5 +118,7 @@ export default function AdminDashboardPage() {
     </div>
   );
 }
+
+    
 
     
