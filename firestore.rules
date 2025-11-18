@@ -13,33 +13,48 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    function getRole(userId) {
+      return get(/databases/$(database)/documents/users/$(userId)).data.role;
+    }
+
+    function isAdmin() {
+      return isUser() && (getRole(request.auth.uid) == 'Admin' || getRole(request.auth.uid) == 'SuperAdmin');
+    }
+
     // User profiles can be read by anyone, but only written by the owner.
     match /users/{userId} {
       allow read: if isUser();
       allow write: if isOwner(userId);
+      // Admins can read/write any user's profile
+      allow read, write: if isAdmin();
 
-      // Licenses can be read and updated by the owner.
+
+      // Licenses can be read and updated by the owner or an admin.
       match /licenses/{licenseId} {
-        allow read, write: if isOwner(userId);
+        allow read, write: if isOwner(userId) || isAdmin();
       }
 
-      // Predictions can be read and updated by the owner.
+      // Predictions can be read and updated by the owner or an admin.
       match /predictions/{predictionId} {
-         allow read, write: if isOwner(userId);
+         allow read, write: if isOwner(userId) || isAdmin();
       }
     }
     
     // Transactions can be created by any user, read by owner, but not updated directly.
+    // Admins can list all transactions.
     match /transactions/{transactionId} {
       allow read: if isUser() && isOwner(request.resource.data.userId);
+      allow list: if isAdmin();
       allow create: if isUser();
       allow update, delete: if false; // Should be updated by backend webhook only
     }
 
     // Audit logs can be created by any authenticated user, but not read, updated or deleted.
+    // Admins can read the audit logs.
     match /auditlogs/{auditLogId} {
       allow create: if isUser();
-      allow read, update, delete: if false;
+      allow read: if isAdmin();
+      allow update, delete: if false;
     }
   }
 }
