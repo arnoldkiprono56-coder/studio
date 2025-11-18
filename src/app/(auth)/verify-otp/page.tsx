@@ -1,84 +1,90 @@
 "use client"
 
 import Link from "next/link"
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Loader2 } from "lucide-react"
+import { useAuth, useUser } from "@/firebase"
+import { sendEmailVerification } from "firebase/auth"
 
 import { Button } from "@/components/ui/button"
 import { CardTitle, CardDescription } from "@/components/ui/card"
-import { InputOTP, InputOTPGroup, InputOTPSlot, InputOTPSeparator } from "@/components/ui/input-otp"
 import { useToast } from "@/hooks/use-toast"
 
-export default function VerifyOtpPage() {
-  const [otp, setOtp] = useState("")
-  const [isLoading, setIsLoading] = useState(false)
-  const [resendCooldown, setResendCooldown] = useState(60)
-  const { toast } = useToast()
+function VerifyOtpContent() {
+  const { user, isUserLoading } = useUser();
+  const auth = useAuth();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const email = searchParams.get('email');
+  const { toast } = useToast();
+
+  const [resendCooldown, setResendCooldown] = useState(30);
 
   useEffect(() => {
-    let timer: NodeJS.Timeout;
-    if (resendCooldown > 0) {
-      timer = setInterval(() => {
-        setResendCooldown((prev) => prev - 1);
-      }, 1000);
+    const interval = setInterval(() => {
+      setResendCooldown(prev => (prev > 0 ? prev - 1 : 0));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    if (user && user.emailVerified) {
+      toast({ title: "Success", description: "Account verified successfully." });
+      router.push('/dashboard');
     }
-    return () => clearInterval(timer);
-  }, [resendCooldown]);
 
-
-  function handleVerify() {
-    setIsLoading(true);
-    console.log("Verifying OTP:", otp)
-    // Simulate API call
-    setTimeout(() => {
-        setIsLoading(false);
-        if (otp === '123456') {
-             toast({ title: "Success", description: "Account verified successfully." })
-            // On success, you would redirect, e.g., router.push('/dashboard')
-        } else {
-            toast({ variant: "destructive", title: "Error", description: "Invalid OTP. Please try again." })
+    const interval = setInterval(async () => {
+      if (user) {
+        await user.reload();
+        if (user.emailVerified) {
+          clearInterval(interval);
+          toast({ title: "Success", description: "Account verified successfully." });
+          router.push('/dashboard');
         }
-    }, 2000);
-  }
+      }
+    }, 3000);
 
-  function handleResend() {
-    console.log("Resending OTP")
-    setResendCooldown(60);
-    toast({ title: "OTP Resent", description: "A new OTP has been sent to your email." })
+    return () => clearInterval(interval);
+
+  }, [user, router, toast]);
+
+  const handleResend = async () => {
+    if (resendCooldown > 0) return;
+    if (!user) {
+      toast({ variant: "destructive", title: "Error", description: "You are not logged in." });
+      return;
+    }
+    try {
+      await sendEmailVerification(user);
+      setResendCooldown(60);
+      toast({ title: "Email Sent", description: "A new verification email has been sent." });
+    } catch (error: any) {
+      toast({ variant: "destructive", title: "Error", description: error.message });
+    }
+  };
+
+  if (isUserLoading) {
+    return <div className="flex justify-center items-center"><Loader2 className="h-8 w-8 animate-spin text-primary"/></div>;
   }
 
   return (
     <>
-      <div className="text-center space-y-1">
-        <CardTitle className="text-2xl">Verify Your Account</CardTitle>
-        <CardDescription>Enter the 6-digit code sent to your email.</CardDescription>
+      <div className="text-center space-y-2">
+        <CardTitle className="text-2xl">Verify Your Email</CardTitle>
+        <CardDescription>
+          A verification link has been sent to <span className="font-semibold text-primary">{email || (user ? user.email : 'your email')}</span>. Please check your inbox and click the link to continue.
+        </CardDescription>
       </div>
-      <div className="space-y-6 flex flex-col items-center">
-        <InputOTP maxLength={6} value={otp} onChange={setOtp}>
-            <InputOTPGroup>
-                <InputOTPSlot index={0} />
-                <InputOTPSlot index={1} />
-                <InputOTPSlot index={2} />
-            </InputOTPGroup>
-            <InputOTPSeparator />
-            <InputOTPGroup>
-                <InputOTPSlot index={3} />
-                <InputOTPSlot index={4} />
-                <InputOTPSlot index={5} />
-            </InputOTPGroup>
-        </InputOTP>
+      <div className="space-y-4 flex flex-col items-center">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+        <p className="text-muted-foreground text-sm">Waiting for verification...</p>
 
-        <Button type="button" className="w-full" disabled={isLoading || otp.length < 6} onClick={handleVerify}>
-            {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Verify
-        </Button>
-      </div>
-      <div className="text-center text-sm">
-        Didn&apos;t receive the code?{" "}
         <Button variant="link" className="p-0 h-auto font-semibold text-primary hover:underline" disabled={resendCooldown > 0} onClick={handleResend}>
-          Resend {resendCooldown > 0 ? `(${resendCooldown}s)` : ''}
+          Resend email {resendCooldown > 0 ? `(${resendCooldown}s)` : ''}
         </Button>
       </div>
+
       <div className="text-center text-sm">
         <Link href="/login" className="font-semibold text-primary hover:underline">
           Back to Login
@@ -86,4 +92,12 @@ export default function VerifyOtpPage() {
       </div>
     </>
   )
+}
+
+export default function VerifyOtpPage() {
+    return (
+        <Suspense fallback={<div className="flex justify-center items-center"><Loader2 className="h-8 w-8 animate-spin text-primary"/></div>}>
+            <VerifyOtpContent />
+        </Suspense>
+    )
 }

@@ -4,6 +4,7 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -19,6 +20,9 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { CardTitle, CardDescription } from "@/components/ui/card"
 import { useState } from "react"
 import { Loader2 } from "lucide-react"
+import { useAuth } from "@/firebase"
+import { signInWithEmailAndPassword } from "firebase/auth"
+import { useToast } from "@/hooks/use-toast"
 
 const formSchema = z.object({
   email: z.string().email({ message: "Invalid email address." }),
@@ -28,6 +32,10 @@ const formSchema = z.object({
 
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false)
+  const router = useRouter()
+  const auth = useAuth()
+  const { toast } = useToast();
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -37,14 +45,29 @@ export default function LoginPage() {
     },
   })
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
+  async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
-    console.log(values)
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
+      if (!userCredential.user.emailVerified) {
+        toast({
+          variant: "destructive",
+          title: "Verification Required",
+          description: "Please verify your email before logging in. Check your inbox for a verification link.",
+        });
         setIsLoading(false);
-        // On success, you would redirect, e.g., router.push('/dashboard')
-    }, 2000);
+        return;
+      }
+      router.push('/dashboard');
+    } catch (error: any) {
+      console.error("Login Error:", error);
+       toast({
+        variant: "destructive",
+        title: "Login Failed",
+        description: error.message || "An unexpected error occurred.",
+      });
+      setIsLoading(false);
+    }
   }
 
   return (
@@ -62,7 +85,7 @@ export default function LoginPage() {
               <FormItem>
                 <FormLabel>Email</FormLabel>
                 <FormControl>
-                  <Input placeholder="name@example.com" {...field} />
+                  <Input placeholder="name@example.com" {...field} autoComplete="email" />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -75,7 +98,7 @@ export default function LoginPage() {
               <FormItem>
                 <FormLabel>Password</FormLabel>
                 <FormControl>
-                  <Input type="password" placeholder="••••••••" {...field} />
+                  <Input type="password" placeholder="••••••••" {...field} autoComplete="current-password" />
                 </FormControl>
                 <FormMessage />
               </FormItem>

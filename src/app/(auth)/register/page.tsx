@@ -6,6 +6,7 @@ import * as z from "zod"
 import Link from "next/link"
 import { useState } from "react"
 import { Loader2 } from "lucide-react"
+import { useRouter } from "next/navigation"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -20,6 +21,11 @@ import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
 import { CardTitle, CardDescription } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
+import { useToast } from "@/hooks/use-toast"
+import { useAuth, useFirestore } from "@/firebase"
+import { createUserWithEmailAndPassword, sendEmailVerification } from "firebase/auth"
+import { doc } from "firebase/firestore"
+import { setDocumentNonBlocking } from "@/firebase/non-blocking-updates"
 
 const formSchema = z.object({
   email: z.string().email({ message: "Invalid email address." }),
@@ -34,8 +40,12 @@ const formSchema = z.object({
 });
 
 export default function RegisterPage() {
-    const [isLoading, setIsLoading] = useState(false)
+    const [isLoading, setIsLoading] = useState(false);
     const [passwordStrength, setPasswordStrength] = useState(0);
+    const { toast } = useToast();
+    const auth = useAuth();
+    const firestore = useFirestore();
+    const router = useRouter();
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
@@ -57,14 +67,40 @@ export default function RegisterPage() {
     };
 
 
-    function onSubmit(values: z.infer<typeof formSchema>) {
+    async function onSubmit(values: z.infer<typeof formSchema>) {
         setIsLoading(true);
-        console.log(values)
-        // Simulate API call
-        setTimeout(() => {
+        try {
+            const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
+            const user = userCredential.user;
+
+            await sendEmailVerification(user);
+
+            const userRef = doc(firestore, "users", user.uid);
+            const userData = {
+                id: user.uid,
+                email: user.email,
+                role: 'User',
+                planType: 'Basic',
+                createdAt: new Date().toISOString(),
+            };
+            setDocumentNonBlocking(userRef, userData, { merge: true });
+
+            toast({
+                title: "Registration Successful",
+                description: "A verification email has been sent. Please check your inbox.",
+            });
+            router.push(`/verify-otp?email=${values.email}`);
+
+        } catch (error: any) {
+            console.error("Registration Error:", error);
+            toast({
+                variant: "destructive",
+                title: "Registration Failed",
+                description: error.message || "An unexpected error occurred.",
+            });
+        } finally {
             setIsLoading(false);
-            // On success, you would redirect, e.g., router.push('/verify-otp')
-        }, 2000);
+        }
     }
 
   return (
@@ -82,7 +118,7 @@ export default function RegisterPage() {
               <FormItem>
                 <FormLabel>Email</FormLabel>
                 <FormControl>
-                  <Input placeholder="name@example.com" {...field} />
+                  <Input placeholder="name@example.com" {...field} autoComplete="email"/>
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -98,7 +134,9 @@ export default function RegisterPage() {
                   <Input type="password" placeholder="••••••••" {...field} onChange={(e) => {
                       field.onChange(e);
                       calculateStrength(e.target.value);
-                  }}/>
+                  }}
+                  autoComplete="new-password"
+                  />
                 </FormControl>
                 <div className="flex items-center gap-2 pt-1">
                     <Progress value={passwordStrength} className="h-2" />
@@ -115,7 +153,7 @@ export default function RegisterPage() {
               <FormItem>
                 <FormLabel>Confirm Password</FormLabel>
                 <FormControl>
-                  <Input type="password" placeholder="••••••••" {...field} />
+                  <Input type="password" placeholder="••••••••" {...field} autoComplete="new-password" />
                 </FormControl>
                 <FormMessage />
               </FormItem>
