@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils';
 import { FirebaseClientProvider } from '@/firebase';
 import { Header } from '@/components/header';
 import { MobileNav } from '@/components/mobile-nav';
+import { ProfileProvider } from '@/context/profile-context';
 
 const APP_NAME = "PredictPro";
 const APP_DESCRIPTION = "Advanced predictive analytics for popular games.";
@@ -42,12 +43,14 @@ export default function RootLayout({
       </head>
       <body className={cn("font-body antialiased", process.env.NODE_ENV === "development" ? "debug-screens" : "")}>
         <FirebaseClientProvider>
-          <div className="relative flex min-h-screen flex-col">
-            <Header />
-            <main className="flex-1 container py-8">{children}</main>
-            <MobileNav />
-            <div className="h-16 md:hidden" /> {/* Spacer for mobile nav */}
-          </div>
+          <ProfileProvider>
+            <div className="relative flex min-h-screen flex-col">
+              <Header />
+              <main className="flex-1 container py-8">{children}</main>
+              <MobileNav />
+              <div className="h-16 md:hidden" /> {/* Spacer for mobile nav */}
+            </div>
+          </ProfileProvider>
         </FirebaseClientProvider>
         <Toaster />
       </body>

@@ -7,6 +7,7 @@ import { Loader2, ArrowLeft, Gem, ShieldAlert } from "lucide-react";
 import { generateGamePredictions, GenerateGamePredictionsOutput } from '@/ai/flows/generate-game-predictions';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
+import { useProfile } from '@/context/profile-context';
 
 const GRID_SIZE = 25;
 
@@ -20,13 +21,17 @@ type GemsMinesPredictionData = {
 export default function GemsAndMinesPage() {
     const [prediction, setPrediction] = useState<GenerateGamePredictionsOutput | null>(null);
     const [isLoading, setIsLoading] = useState(false);
+    const { userProfile, openOneXBetDialog } = useProfile();
 
     const handleGetPrediction = async () => {
+        if (!userProfile?.oneXBetId) {
+            openOneXBetDialog();
+            return;
+        }
         setIsLoading(true);
         setPrediction(null);
         try {
-            // Assuming a mock user ID for now. This should be replaced with the actual logged-in user's ID.
-            const result = await generateGamePredictions({ gameType: 'gems-mines', userId: 'user-123' });
+            const result = await generateGamePredictions({ gameType: 'gems-mines', userId: userProfile.id });
             setPrediction(result);
         } catch (error) {
             console.error("Failed to get prediction:", error);
@@ -72,7 +77,10 @@ export default function GemsAndMinesPage() {
                                         <p>Risk: <span className='font-bold'>{gemsMinesData.risk}</span></p>
                                     </div>
                                 ) : (
-                                    <p className="text-muted-foreground">No prediction generated yet.</p>
+                                    <div className="text-center text-muted-foreground">
+                                        <p>No prediction generated yet.</p>
+                                        {!userProfile?.oneXBetId && <p className='text-sm text-amber-500 mt-2'>Please set your 1xBet ID to generate predictions.</p>}
+                                    </div>
                                 )}
                             </div>
                         )}

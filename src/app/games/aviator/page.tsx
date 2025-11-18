@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Loader2, ArrowLeft } from "lucide-react";
 import { generateGamePredictions, GenerateGamePredictionsOutput } from '@/ai/flows/generate-game-predictions';
 import Link from 'next/link';
+import { useProfile } from '@/context/profile-context';
 
 type AviatorPredictionData = {
     targetMultiplier: string;
@@ -16,13 +17,18 @@ type AviatorPredictionData = {
 export default function AviatorPage() {
     const [prediction, setPrediction] = useState<GenerateGamePredictionsOutput | null>(null);
     const [isLoading, setIsLoading] = useState(false);
+    const { userProfile, openOneXBetDialog } = useProfile();
+
 
     const handleGetPrediction = async () => {
+        if (!userProfile?.oneXBetId) {
+            openOneXBetDialog();
+            return;
+        }
         setIsLoading(true);
         setPrediction(null);
         try {
-            // Assuming a mock user ID for now. This should be replaced with the actual logged-in user's ID.
-            const result = await generateGamePredictions({ gameType: 'aviator', userId: 'user-123' });
+            const result = await generateGamePredictions({ gameType: 'aviator', userId: userProfile.id });
             setPrediction(result);
         } catch (error) {
             console.error("Failed to get prediction:", error);
@@ -65,7 +71,10 @@ export default function AviatorPage() {
                             <p className="text-sm text-muted-foreground">Round Confidence: {aviatorData.confidence}%</p>
                         </div>
                     ) : (
-                         <p className="text-muted-foreground">No prediction generated yet.</p>
+                         <div className="text-center text-muted-foreground">
+                            <p>No prediction generated yet.</p>
+                            {!userProfile?.oneXBetId && <p className='text-sm text-amber-500 mt-2'>Please set your 1xBet ID to generate predictions.</p>}
+                        </div>
                     )}
                     <Button onClick={handleGetPrediction} disabled={isLoading} size="lg">
                         {isLoading ? 'Generating...' : 'Get Prediction'}

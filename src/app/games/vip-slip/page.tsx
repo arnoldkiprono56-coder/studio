@@ -6,19 +6,24 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Loader2, ArrowLeft, Ticket } from "lucide-react";
 import { generateVipSlip, GenerateVipSlipOutput } from '@/ai/flows/generate-vip-slip';
 import Link from 'next/link';
-import { Separator } from '@/components/ui/separator';
+import { useProfile } from '@/context/profile-context';
 
 export default function VipSlipPage() {
     const [prediction, setPrediction] = useState<GenerateVipSlipOutput | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [roundsRemaining] = useState(99); // Mock data
+    const { userProfile, openOneXBetDialog } = useProfile();
 
     const handleGetPrediction = async () => {
+        if (!userProfile?.oneXBetId) {
+            openOneXBetDialog();
+            return;
+        }
         setIsLoading(true);
         setPrediction(null);
         try {
             // Mock user and license IDs for now
-            const result = await generateVipSlip({ userId: 'user-123', licenseId: 'license-abc' });
+            const result = await generateVipSlip({ userId: userProfile.id, licenseId: 'license-abc' });
             setPrediction(result);
         } catch (error) {
             console.error("Failed to get VIP slip:", error);
@@ -67,18 +72,17 @@ export default function VipSlipPage() {
                                     </li>
                                 ))}
                             </ul>
+                            <p className="text-xs text-center text-muted-foreground !mt-6">{prediction.disclaimer}</p>
                         </div>
                     ) : (
                          <div className="text-center text-muted-foreground">
                             <Ticket className="h-16 w-16 mx-auto mb-4" />
                             <p>No prediction generated yet.</p>
+                            {!userProfile?.oneXBetId && <p className='text-sm text-amber-500 mt-2'>Please set your 1xBet ID to generate predictions.</p>}
                         </div>
                     )}
                 </CardContent>
                 <CardFooter className="flex-col gap-4 border-t pt-6">
-                    {prediction && (
-                        <p className="text-xs text-center text-muted-foreground">{prediction.disclaimer}</p>
-                    )}
                      <div className="flex w-full items-center justify-between">
                         <p className="text-sm">Rounds Remaining: <span className="font-bold">{roundsRemaining}</span></p>
                         <Button onClick={handleGetPrediction} disabled={isLoading} size="lg">

@@ -1,21 +1,62 @@
+'use client';
+
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Star } from "lucide-react";
+import { Star, Copy } from "lucide-react";
+import { useProfile } from "@/context/profile-context";
+import { useState } from "react";
+import { useToast } from "@/hooks/use-toast";
 
 export default function ProfilePage() {
-    const user = {
-        name: "PlayerOne",
-        email: "playerone@example.com",
-        avatar: "https://i.pravatar.cc/150?u=a042581f4e29026704d",
-        plan: "Pro Plus",
-        mpesaNumber: "0712345678",
-        oneXBetId: "123456789",
-        referralCode: "PRO-1A2B3C"
+    const { userProfile, updateUserProfile } = useProfile();
+    const [oneXBetId, setOneXBetId] = useState(userProfile?.oneXBetId || '');
+    const [isSaving, setIsSaving] = useState(false);
+    const { toast } = useToast();
+
+    const handleSaveChanges = async () => {
+        setIsSaving(true);
+        try {
+            await updateUserProfile({ oneXBetId });
+            toast({
+                title: "Profile Updated",
+                description: "Your 1xBet ID has been saved.",
+            });
+        } catch (error) {
+            console.error("Failed to save profile:", error);
+            toast({
+                variant: "destructive",
+                title: "Save Failed",
+                description: "Could not update your profile. Please try again.",
+            });
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const handleCopyReferral = () => {
+        if(userProfile?.referralCode) {
+            navigator.clipboard.writeText(userProfile.referralCode);
+            toast({ title: "Copied!", description: "Referral code copied to clipboard." });
+        }
+    };
+
+    if (!userProfile) {
+        return <div>Loading profile...</div>;
     }
+
+    const { name, email, avatar, plan, mpesaNumber, referralCode } = {
+        name: userProfile.email?.split('@')[0] || "Player",
+        email: userProfile.email,
+        avatar: userProfile.avatar || `https://i.pravatar.cc/150?u=${userProfile.id}`,
+        plan: "Pro Plus", // This seems to be mock data
+        mpesaNumber: "0712345678", // This seems to be mock data
+        referralCode: `PRO-${userProfile.id.substring(0, 6).toUpperCase()}`
+    };
+
 
   return (
     <div className="space-y-8 max-w-3xl mx-auto">
@@ -32,28 +73,35 @@ export default function ProfilePage() {
         <CardContent className="space-y-6">
           <div className="flex items-center gap-4">
             <Avatar className="w-16 h-16">
-              <AvatarImage src={user.avatar} alt={user.name} />
-              <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+              <AvatarImage src={avatar} alt={name} />
+              <AvatarFallback>{name.charAt(0).toUpperCase()}</AvatarFallback>
             </Avatar>
             <div className="flex-grow">
-              <h3 className="font-semibold">{user.name}</h3>
-              <p className="text-sm text-muted-foreground">{user.email}</p>
+              <h3 className="font-semibold">{name}</h3>
+              <p className="text-sm text-muted-foreground">{email}</p>
             </div>
-            <Button variant="outline" size="sm">Change Picture</Button>
+            <Button variant="outline" size="sm" disabled>Change Picture</Button>
           </div>
 
           <div className="grid sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="mpesa">MPESA Number</Label>
-              <Input id="mpesa" defaultValue={user.mpesaNumber} />
+              <Input id="mpesa" defaultValue={mpesaNumber} disabled />
             </div>
             <div className="space-y-2">
               <Label htmlFor="1xbet-id">1xBet ID</Label>
-              <Input id="1xbet-id" defaultValue={user.oneXBetId} />
+              <Input 
+                id="1xbet-id" 
+                value={oneXBetId}
+                onChange={(e) => setOneXBetId(e.target.value)}
+                placeholder="Enter your 1xBet ID"
+               />
             </div>
           </div>
 
-          <Button>Save Changes</Button>
+          <Button onClick={handleSaveChanges} disabled={isSaving}>
+            {isSaving ? 'Saving...' : 'Save Changes'}
+          </Button>
         </CardContent>
       </Card>
       
@@ -68,7 +116,7 @@ export default function ProfilePage() {
                     <h3 className="font-semibold">Current Plan</h3>
                     <Badge variant="outline" className="text-base border-accent-pro text-accent-pro">
                         <Star className="w-4 h-4 mr-2 fill-accent-pro" />
-                        {user.plan}
+                        {plan}
                     </Badge>
                 </div>
                 <Button variant="secondary">Upgrade</Button>
@@ -76,8 +124,10 @@ export default function ProfilePage() {
            <div className="space-y-2">
             <Label htmlFor="referral">Your Referral Code</Label>
             <div className="flex items-center gap-2">
-              <Input id="referral" readOnly defaultValue={user.referralCode} className="font-code"/>
-              <Button variant="outline">Copy</Button>
+              <Input id="referral" readOnly value={referralCode} className="font-code"/>
+              <Button variant="outline" size="icon" onClick={handleCopyReferral}>
+                <Copy className="h-4 w-4" />
+              </Button>
             </div>
           </div>
         </CardContent>
