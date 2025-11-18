@@ -8,6 +8,8 @@ import { generateGamePredictions, GenerateGamePredictionsOutput } from '@/ai/flo
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { useProfile } from '@/context/profile-context';
+import { useFirestore } from '@/firebase';
+import { addDoc, collection } from 'firebase/firestore';
 
 const GRID_SIZE = 25;
 
@@ -22,6 +24,7 @@ export default function GemsAndMinesPage() {
     const [prediction, setPrediction] = useState<GenerateGamePredictionsOutput | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const { userProfile, openOneXBetDialog } = useProfile();
+    const firestore = useFirestore();
 
     const handleGetPrediction = async () => {
         if (!userProfile?.oneXBetId) {
@@ -33,6 +36,17 @@ export default function GemsAndMinesPage() {
         try {
             const result = await generateGamePredictions({ gameType: 'gems-mines', userId: userProfile.id });
             setPrediction(result);
+            
+            if (firestore) {
+                await addDoc(collection(firestore, 'auditlogs'), {
+                    userId: userProfile.id,
+                    action: 'prediction_request',
+                    details: JSON.stringify({ gameType: 'gems-mines', prediction: result.predictionData }),
+                    timestamp: new Date().toISOString(),
+                    ipAddress: 'not_collected',
+                });
+            }
+
         } catch (error) {
             console.error("Failed to get prediction:", error);
             // Optionally, show an error message to the user

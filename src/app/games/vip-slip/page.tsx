@@ -8,7 +8,7 @@ import { generateVipSlip, GenerateVipSlipOutput } from '@/ai/flows/generate-vip-
 import Link from 'next/link';
 import { useProfile } from '@/context/profile-context';
 import { useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, query, where, doc, updateDoc } from 'firebase/firestore';
+import { collection, query, where, doc, updateDoc, addDoc } from 'firebase/firestore';
 import type { License } from '@/lib/types';
 import { useCollection } from '@/firebase/firestore/use-collection';
 
@@ -39,8 +39,8 @@ export default function VipSlipPage() {
             return;
         }
 
-        if (!activeLicense) {
-            console.error("No active license found.");
+        if (!activeLicense || !firestore) {
+            console.error("No active license found or firestore not available.");
             return;
         }
 
@@ -50,6 +50,17 @@ export default function VipSlipPage() {
             const result = await generateVipSlip({ userId: userProfile.id, licenseId: activeLicense.id });
             setPrediction(result);
 
+            // Log the prediction event
+            await addDoc(collection(firestore, 'auditlogs'), {
+                userId: userProfile.id,
+                licenseId: activeLicense.id,
+                action: 'prediction_request',
+                details: JSON.stringify({ gameType: 'VIP Slip', prediction: result }),
+                timestamp: new Date().toISOString(),
+                ipAddress: 'not_collected', // IP collection would require server-side logic
+            });
+
+            // Decrement rounds remaining
             const licenseRef = doc(firestore, 'users', userProfile.id, 'licenses', activeLicense.id);
             const newRounds = activeLicense.roundsRemaining - 1;
             await updateDoc(licenseRef, {
