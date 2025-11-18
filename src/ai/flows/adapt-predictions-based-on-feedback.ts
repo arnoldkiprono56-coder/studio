@@ -30,13 +30,15 @@ const prompt = ai.definePrompt({
   name: 'adaptPredictionsBasedOnFeedbackPrompt',
   input: {schema: AdaptPredictionsBasedOnFeedbackInputSchema},
   output: {schema: AdaptPredictionsBasedOnFeedbackOutputSchema},
-  prompt: `You are an AI model adaptation expert for games on the "1xBet" platform. You will receive game prediction data and user feedback (won or lost). Based on this feedback, you will adapt the prediction model to improve future predictions for the specified game type on 1xBet.
+  prompt: `You are an AI model adaptation expert for PredictPro, and you are HARD-LOCKED to the 1xBet platform. You MUST NOT process feedback for any other platform.
+
+You will receive game prediction data and user feedback (won or lost). Based on this feedback, you will adapt the prediction model to improve future predictions for the specified game type on 1xBet.
 
 Game Type: {{{gameType}}}
 Prediction Data: {{{predictionData}}}
 Feedback: {{{feedback}}}
 
-Provide a confirmation message that the model has been updated.`,
+Provide a confirmation message that the model has been updated for 1xBet.`,
 });
 
 const adaptPredictionsBasedOnFeedbackFlow = ai.defineFlow(

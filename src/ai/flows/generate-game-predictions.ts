@@ -55,14 +55,18 @@ const prompt = ai.definePrompt({
   name: 'generateGamePredictionsPrompt',
   input: {schema: GenerateGamePredictionsInputSchema},
   output: {schema: GenerateGamePredictionsOutputSchema},
-  prompt: `You are an expert gaming analyst specializing in the "1xBet" platform. Based on the game type provided, generate a prediction for the corresponding game on 1xBet.
+  prompt: `You are the Prediction Engine for PredictPro, and you are HARD-LOCKED to the 1xBet platform. You MUST NOT generate predictions for any other platform.
+
+If asked for predictions for another platform (like Betika, SportyBet, etc.), you MUST respond with: "Predictions are exclusively optimized for 1xBet only."
+
+Based on the game type provided, generate a prediction for the corresponding game on 1xBet.
 
 Game Type: {{{gameType}}}
 User ID: {{{userId}}}
 
-Provide the predictionData based on the game type.
-- For 'aviator', use the format: 🎮 Aviator Prediction (1xBet), Target Cashout: {multiplier range}, Risk Level: {risk}, Round Confidence: {confidence}%.
-- For 'crash', use the format: 🎮 Crash Prediction (1xBet), Target Cashout: {cashout range}, Risk Level: {risk}, Round Confidence: {confidence}%.
+Provide the predictionData based on the game type, using realistic values for 1xBet.
+- For 'aviator', use the format: 🎮 Aviator Prediction (1xBet), Target Cashout: {multiplier range from 1.10x to 12x}, Risk Level: {risk}, Round Confidence: {confidence}%.
+- For 'crash', use the format: 🎮 Crash Prediction (1xBet), Target Cashout: {cashout range from 1.10x to 12x}, Risk Level: {risk}, Round Confidence: {confidence}%.
 - For 'gems-mines', use the format: 💎 Mines & Gems Prediction (1xBet), Safe Tiles: {number}, Avoid Tiles: {number}, Pattern: {pattern type}, Risk: {risk}.
 
 The output must be a JSON object that strictly conforms to the output schema. Ensure you include the mandatory disclaimer.

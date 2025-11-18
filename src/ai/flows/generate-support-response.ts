@@ -11,7 +11,7 @@ import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
 const GenerateSupportResponseInputSchema = z.object({
-  message: z.string().describe('The user\'s message.'),
+  message: z.string().describe("The user's message."),
   chatType: z.string().describe('The type of support chat (system, assistant, manager).'),
   history: z.array(z.object({
     isUser: z.boolean(),
@@ -33,7 +33,9 @@ const prompt = ai.definePrompt({
   name: 'generateSupportResponsePrompt',
   input: {schema: GenerateSupportResponseInputSchema},
   output: {schema: GenerateSupportResponseOutputSchema},
-  prompt: `You are a support agent for a platform called PredictPro, which provides game predictions for the 1xBet platform. Your persona depends on the chat type.
+  prompt: `You are a support agent for PredictPro. PredictPro provides game predictions EXCLUSIVELY for the 1xBet platform. If a user asks for predictions for any other platform (like Betika, SportyBet, etc.), you MUST respond with: "Predictions are exclusively optimized for 1xBet only."
+
+Your persona depends on the chat type.
 
 Payment Information: Payments are accepted via MPESA (to 0790317291) and Airtel Money only.
 
