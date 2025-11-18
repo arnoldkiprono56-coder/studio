@@ -6,10 +6,14 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { Loader2 } from "lucide-react"
 import { useAuth, useUser } from "@/firebase"
 import { sendEmailVerification } from "firebase/auth"
+import Image from "next/image"
 
 import { Button } from "@/components/ui/button"
 import { CardTitle, CardDescription } from "@/components/ui/card"
 import { useToast } from "@/hooks/use-toast"
+import { PlaceHolderImages } from "@/lib/placeholder-images"
+import { Logo } from "@/components/icons"
+
 
 function VerifyOtpContent() {
   const { user, isUserLoading } = useUser();
@@ -29,9 +33,15 @@ function VerifyOtpContent() {
   }, []);
 
   useEffect(() => {
-    if (user && user.emailVerified) {
+    if (!isUserLoading && user && user.emailVerified) {
       toast({ title: "Success", description: "Account verified successfully." });
       router.push('/dashboard');
+    }
+
+    if (!isUserLoading && !user) {
+        // Not logged in, maybe direct access to page
+        // Let's not redirect to login, as they might have just registered
+        // and are waiting for the user object to be available.
     }
 
     const interval = setInterval(async () => {
@@ -47,12 +57,12 @@ function VerifyOtpContent() {
 
     return () => clearInterval(interval);
 
-  }, [user, router, toast]);
+  }, [user, isUserLoading, router, toast]);
 
   const handleResend = async () => {
     if (resendCooldown > 0) return;
     if (!user) {
-      toast({ variant: "destructive", title: "Error", description: "You are not logged in." });
+      toast({ variant: "destructive", title: "Error", description: "You are not logged in. Cannot resend verification." });
       return;
     }
     try {
@@ -95,9 +105,33 @@ function VerifyOtpContent() {
 }
 
 export default function VerifyOtpPage() {
+    const bgImage = PlaceHolderImages.find(img => img.id === 'auth-background');
+
     return (
-        <Suspense fallback={<div className="flex justify-center items-center"><Loader2 className="h-8 w-8 animate-spin text-primary"/></div>}>
-            <VerifyOtpContent />
-        </Suspense>
+        <div className="min-h-screen w-full relative flex items-center justify-center p-4">
+        {bgImage && (
+            <Image
+            src={bgImage.imageUrl}
+            alt={bgImage.description}
+            fill
+            className="object-cover"
+            data-ai-hint={bgImage.imageHint}
+            />
+        )}
+        <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" />
+        <div className="relative z-10 w-full max-w-md">
+            <div className="absolute -top-16 left-1/2 -translate-x-1/2">
+            <Link href="/" className="flex items-center gap-2 text-foreground">
+                <Logo className="w-10 h-10 text-primary" />
+                <span className="text-2xl font-bold">PredictPro</span>
+            </Link>
+            </div>
+            <div className="p-8 space-y-6 bg-card/70 border border-border/50 rounded-2xl shadow-2xl backdrop-blur-lg">
+                <Suspense fallback={<div className="flex justify-center items-center"><Loader2 className="h-8 w-8 animate-spin text-primary"/></div>}>
+                    <VerifyOtpContent />
+                </Suspense>
+            </div>
+        </div>
+        </div>
     )
 }
