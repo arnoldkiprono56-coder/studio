@@ -21,7 +21,8 @@ service cloud.firestore {
       return isUser() && (getRole(request.auth.uid) == 'Admin' || getRole(request.auth.uid) == 'SuperAdmin');
     }
 
-    // User profiles can be read by any user, listed by admins, and written by owner or admin.
+    // User profiles can be read by any user, and listed by admins.
+    // They can only be written by their owner or an admin.
     match /users/{userId} {
       allow get: if isUser();
       allow list: if isAdmin();
@@ -37,11 +38,8 @@ service cloud.firestore {
       }
     }
 
-    // Allow admins to list documents across all users for reporting.
+    // Allow admins to list licenses across all users for reporting.
     match /{path=**}/licenses/{licenseId} {
-      allow list: if isAdmin();
-    }
-     match /{path=**}/auditlogs/{auditLogId} {
       allow list: if isAdmin();
     }
     
@@ -55,11 +53,11 @@ service cloud.firestore {
     }
 
     // Audit logs can be created by any authenticated user.
-    // Only admins can get audit logs.
+    // Only admins can get or list audit logs.
     // No one can update or delete logs from the client.
     match /auditlogs/{auditLogId} {
       allow create: if isUser();
-      allow get: if isAdmin();
+      allow get, list: if isAdmin();
       allow update, delete: if false;
     }
 
