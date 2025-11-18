@@ -10,6 +10,7 @@ import { ArrowRight, Star } from "lucide-react";
 import Link from "next/link";
 import { formatCurrency } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
+import OnboardingPage from "@/app/onboarding/page";
 
 const games = [
     { name: "Aviator", href: "/games/aviator", status: "active" },
@@ -89,6 +90,10 @@ export default function DashboardPage() {
   // Only render user dashboard if role is not Admin/SuperAdmin
   if (userProfile.role === 'SuperAdmin' || userProfile.role === 'Admin') {
     return null; // or a loading indicator while redirecting
+  }
+
+  if (!userProfile.oneXBetId) {
+    return <OnboardingPage />;
   }
 
   const userName = userProfile.email?.split('@')[0] || "Player";

@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
+import { Logo } from '@/components/icons';
 
 interface UserProfile {
   id: string;
@@ -102,29 +103,27 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     <ProfileContext.Provider value={value}>
       {children}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-[425px] bg-card border-border">
-          <DialogHeader>
+        <DialogContent className="sm:max-w-md bg-card border-border">
+          <DialogHeader className="items-center text-center">
+            <Logo className="w-12 h-12 text-primary" />
             <DialogTitle>Enter Your 1xBet ID</DialogTitle>
             <DialogDescription>
               PredictPro works exclusively with 1xBet. Please enter your 1xBet Account ID to continue.
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="1xbet-id" className="text-right">
-                Account ID
+          <div className="space-y-2">
+              <Label htmlFor="1xbet-id">
+                1xBet Account ID
               </Label>
               <Input
                 id="1xbet-id"
                 value={oneXBetId}
                 onChange={(e) => setOneXBetId(e.target.value)}
-                className="col-span-3"
                 placeholder="Your 1xBet numeric ID"
               />
-            </div>
           </div>
           <DialogFooter>
-            <Button onClick={handleSaveOneXBetId}>Save ID</Button>
+            <Button onClick={handleSaveOneXBetId} className="w-full">Save and Continue</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
