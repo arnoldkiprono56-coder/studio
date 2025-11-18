@@ -2,6 +2,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Users, AlertTriangle, ShieldCheck, Gem } from "lucide-react";
 import { UserManagementTable } from "./user-management";
 import { TransactionManagement } from "./transaction-management";
+import { AuditLogViewer } from "./audit-log";
 
 export default function AdminDashboardPage() {
   return (
@@ -55,6 +56,7 @@ export default function AdminDashboardPage() {
       
       <UserManagementTable />
       <TransactionManagement />
+      <AuditLogViewer />
     </div>
   );
 }
