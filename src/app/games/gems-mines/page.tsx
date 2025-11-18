@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Loader2, ArrowLeft, Gem, Bomb } from "lucide-react";
 import { generateGamePredictions, GenerateGamePredictionsOutput } from '@/ai/flows/generate-game-predictions';
 import Link from 'next/link';
@@ -71,6 +71,11 @@ export default function GemsAndMinesPage() {
                             {isLoading ? 'Generating...' : 'Get Prediction'}
                         </Button>
                     </CardContent>
+                    {prediction && (
+                        <CardFooter>
+                            <p className="text-xs text-center text-muted-foreground w-full">{prediction.disclaimer}</p>
+                        </CardFooter>
+                    )}
                 </Card>
 
                  <Card>

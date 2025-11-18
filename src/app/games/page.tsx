@@ -2,9 +2,17 @@ import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
-import { ArrowRight, Zap, Shield, Gem } from "lucide-react";
+import { ArrowRight, Zap, Shield, Gem, Ticket } from "lucide-react";
 
 const games = [
+    { 
+        name: "VIP Slip", 
+        href: "/games/vip-slip", 
+        status: "active", 
+        description: "Get a VIP slip with 3-5 high-confidence matches for 1xBet.",
+        icon: Ticket,
+        accent: "hsl(var(--primary))"
+    },
     { 
         name: "Aviator", 
         href: "/games/aviator", 

@@ -13,6 +13,7 @@ export default function ProfilePage() {
         avatar: "https://i.pravatar.cc/150?u=a042581f4e29026704d",
         plan: "Pro Plus",
         mpesaNumber: "0712345678",
+        oneXBetId: "123456789",
         referralCode: "PRO-1A2B3C"
     }
 
@@ -41,9 +42,15 @@ export default function ProfilePage() {
             <Button variant="outline" size="sm">Change Picture</Button>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="mpesa">MPESA Number</Label>
-            <Input id="mpesa" defaultValue={user.mpesaNumber} />
+          <div className="grid sm:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="mpesa">MPESA Number</Label>
+              <Input id="mpesa" defaultValue={user.mpesaNumber} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="1xbet-id">1xBet ID</Label>
+              <Input id="1xbet-id" defaultValue={user.oneXBetId} />
+            </div>
           </div>
 
           <Button>Save Changes</Button>

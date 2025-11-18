@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Loader2, ArrowLeft } from "lucide-react";
 import { generateGamePredictions, GenerateGamePredictionsOutput } from '@/ai/flows/generate-game-predictions';
 import Link from 'next/link';
@@ -36,7 +36,7 @@ export default function CrashPage() {
                 </Button>
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight">Crash Predictions</h1>
-                    <p className="text-muted-foreground">Generate AI-powered predictions for the Crash game.</p>
+                    <p className="text-muted-foreground">Generate AI-powered predictions for the Crash game on 1xBet.</p>
                 </div>
             </div>
 
@@ -50,7 +50,7 @@ export default function CrashPage() {
                         <Loader2 className="h-12 w-12 animate-spin text-primary" />
                     ) : prediction ? (
                         <div className="text-center">
-                            <p className="text-muted-foreground">Predicted Crash Point</p>
+                            <p className="text-muted-foreground">Target Crashout</p>
                             <p className="text-6xl font-bold text-primary">{prediction.predictionData.crashPoint}x</p>
                             <p className="text-sm text-muted-foreground mt-2">Confidence: {(prediction.confidenceScore * 100).toFixed(0)}%</p>
                             <p className="text-sm text-muted-foreground">Volatility: {prediction.volatilityAssessment}</p>
@@ -62,6 +62,11 @@ export default function CrashPage() {
                         {isLoading ? 'Generating...' : 'Get Prediction'}
                     </Button>
                 </CardContent>
+                 {prediction && (
+                    <CardFooter>
+                        <p className="text-xs text-center text-muted-foreground w-full">{prediction.disclaimer}</p>
+                    </CardFooter>
+                )}
             </Card>
         </div>
     );

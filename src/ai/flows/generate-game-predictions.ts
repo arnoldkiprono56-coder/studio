@@ -21,13 +21,14 @@ export type GenerateGamePredictionsInput = z.infer<typeof GenerateGamePrediction
 
 const GenerateGamePredictionsOutputSchema = z.object({
   predictionData: z.object({
-    multiplier: z.number().optional().describe('The predicted multiplier for Aviator game.'),
-    crashPoint: z.number().optional().describe('The predicted crash point for Crash game.'),
+    multiplier: z.number().optional().describe('The predicted multiplier for Aviator game, e.g., 2.3 - 4.8'),
+    crashPoint: z.number().optional().describe('The predicted crash point for Crash game, e.g. 2.3 - 4.8'),
     safeTiles: z.array(z.number()).optional().describe('An array of indices for safe tiles in Gems & Mines.'),
     gemLocations: z.array(z.number()).optional().describe('An array of indices for gem locations in Gems & Mines.'),
-  }).describe('The prediction data for the specified game. Contains game-specific fields.'),
+  }).describe('The prediction data for the specified game. Contains game-specific fields for 1xBet.'),
   confidenceScore: z.number().describe('The confidence score of the prediction.'),
   volatilityAssessment: z.string().describe('The volatility assessment for the game.'),
+  disclaimer: z.string().default('⚠ Predictions are approximations and not guaranteed.'),
 });
 export type GenerateGamePredictionsOutput = z.infer<typeof GenerateGamePredictionsOutputSchema>;
 
@@ -47,9 +48,10 @@ Game Type: {{{gameType}}}
 User ID: {{{userId}}}
 
 Provide predictionData, confidenceScore, and volatilityAssessment. The predictionData is game-specific and contains values important in that game on 1xBet.
-- For 'aviator', provide a 'multiplier'.
-- For 'crash', provide a 'crashPoint'.
+- For 'aviator', provide a 'multiplier' range (e.g., 1.10x to 12x).
+- For 'crash', provide a 'crashPoint' range (e.g., 1.10x to 12x).
 - For 'gems-mines', provide 'safeTiles' and 'gemLocations' as arrays of tile indices.
+- Include the mandatory disclaimer.
 Make sure the predictionData conforms to the output JSON schema.
 `,
 });
