@@ -37,8 +37,11 @@ service cloud.firestore {
       }
     }
 
-    // New Rule: Allow admins to list all licenses across all users for reporting.
+    // Allow admins to list all licenses and audit logs across all users for reporting.
     match /{path=**}/licenses/{licenseId} {
+      allow list: if isAdmin();
+    }
+    match /{path=**}/auditlogs/{auditLogId} {
       allow list: if isAdmin();
     }
     
@@ -56,7 +59,7 @@ service cloud.firestore {
     // No one can update or delete logs from the client.
     match /auditlogs/{auditLogId} {
       allow create: if isUser();
-      allow read, list: if isAdmin();
+      allow read: if isAdmin();
       allow update, delete: if false;
     }
 
@@ -72,7 +75,3 @@ service cloud.firestore {
     }
   }
 }
-
-    
-
-    
