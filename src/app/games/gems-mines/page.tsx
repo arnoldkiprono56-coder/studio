@@ -8,7 +8,7 @@ import { generateGamePredictions, GenerateGamePredictionsOutput } from '@/ai/flo
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { useProfile } from '@/context/profile-context';
-import { useFirestore } from '@/firebase';
+import { useFirestore, errorEmitter, FirestorePermissionError } from '@/firebase';
 import { addDoc, collection } from 'firebase/firestore';
 
 const GRID_SIZE = 25;
@@ -31,21 +31,30 @@ export default function GemsAndMinesPage() {
             openOneXBetDialog();
             return;
         }
+        if (!userProfile?.id || !firestore) return;
+
         setIsLoading(true);
         setPrediction(null);
         try {
             const result = await generateGamePredictions({ gameType: 'gems-mines', userId: userProfile.id });
             setPrediction(result);
             
-            if (firestore) {
-                await addDoc(collection(firestore, 'auditlogs'), {
-                    userId: userProfile.id,
-                    action: 'prediction_request',
-                    details: JSON.stringify({ gameType: 'gems-mines', prediction: result.predictionData }),
-                    timestamp: new Date().toISOString(),
-                    ipAddress: 'not_collected',
+            const auditLogData = {
+                userId: userProfile.id,
+                action: 'prediction_request',
+                details: JSON.stringify({ gameType: 'gems-mines', prediction: result.predictionData }),
+                timestamp: new Date().toISOString(),
+                ipAddress: 'not_collected',
+            };
+
+            addDoc(collection(firestore, 'auditlogs'), auditLogData)
+                .catch(error => {
+                    errorEmitter.emit('permission-error', new FirestorePermissionError({
+                        path: 'auditlogs',
+                        operation: 'create',
+                        requestResourceData: auditLogData
+                    }));
                 });
-            }
 
         } catch (error) {
             console.error("Failed to get prediction:", error);

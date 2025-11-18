@@ -1,13 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Loader2, ArrowLeft, Ticket, AlertCircle } from "lucide-react";
 import { generateVipSlip, GenerateVipSlipOutput } from '@/ai/flows/generate-vip-slip';
 import Link from 'next/link';
 import { useProfile } from '@/context/profile-context';
-import { useFirestore, useMemoFirebase } from '@/firebase';
+import { useFirestore, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
 import { collection, query, where, doc, updateDoc, addDoc } from 'firebase/firestore';
 import type { License } from '@/lib/types';
 import { useCollection } from '@/firebase/firestore/use-collection';
@@ -39,8 +39,8 @@ export default function VipSlipPage() {
             return;
         }
 
-        if (!activeLicense || !firestore) {
-            console.error("No active license found or firestore not available.");
+        if (!activeLicense || !firestore || !userProfile) {
+            console.error("No active license found, firestore not available, or user not loaded.");
             return;
         }
 
@@ -50,23 +50,37 @@ export default function VipSlipPage() {
             const result = await generateVipSlip({ userId: userProfile.id, licenseId: activeLicense.id });
             setPrediction(result);
 
-            // Log the prediction event
-            await addDoc(collection(firestore, 'auditlogs'), {
+            const auditLogData = {
                 userId: userProfile.id,
                 licenseId: activeLicense.id,
                 action: 'prediction_request',
                 details: JSON.stringify({ gameType: 'VIP Slip', prediction: result }),
                 timestamp: new Date().toISOString(),
-                ipAddress: 'not_collected', // IP collection would require server-side logic
-            });
+                ipAddress: 'not_collected',
+            };
+            addDoc(collection(firestore, 'auditlogs'), auditLogData)
+                .catch(error => {
+                     errorEmitter.emit('permission-error', new FirestorePermissionError({
+                        path: 'auditlogs',
+                        operation: 'create',
+                        requestResourceData: auditLogData
+                    }));
+                });
 
             // Decrement rounds remaining
             const licenseRef = doc(firestore, 'users', userProfile.id, 'licenses', activeLicense.id);
-            const newRounds = activeLicense.roundsRemaining - 1;
-            await updateDoc(licenseRef, {
-                roundsRemaining: newRounds,
-                isActive: newRounds > 0,
-            });
+            const licenseUpdateData = {
+                roundsRemaining: activeLicense.roundsRemaining - 1,
+                isActive: (activeLicense.roundsRemaining - 1) > 0,
+            };
+            updateDoc(licenseRef, licenseUpdateData)
+                .catch(error => {
+                    errorEmitter.emit('permission-error', new FirestorePermissionError({
+                        path: licenseRef.path,
+                        operation: 'update',
+                        requestResourceData: licenseUpdateData
+                    }));
+                });
 
         } catch (error) {
             console.error("Failed to get VIP slip:", error);
@@ -159,7 +173,7 @@ export default function VipSlipPage() {
                             disabled={isLoading || licensesLoading || !canGenerate} 
                             size="lg"
                         >
-                            {isLoading || licensesLoading ? 'Loading...' : 'Generate VIP Slip'}
+                            {isLoading || licensesLoading ? 'Loading...' : 'Get Prediction'}
                         </Button>
                      </div>
                       {prediction && (

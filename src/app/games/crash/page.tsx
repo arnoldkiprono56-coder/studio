@@ -7,7 +7,7 @@ import { Loader2, ArrowLeft } from "lucide-react";
 import { generateGamePredictions, GenerateGamePredictionsOutput } from '@/ai/flows/generate-game-predictions';
 import Link from 'next/link';
 import { useProfile } from '@/context/profile-context';
-import { useFirestore } from '@/firebase';
+import { useFirestore, errorEmitter, FirestorePermissionError } from '@/firebase';
 import { addDoc, collection } from 'firebase/firestore';
 
 type CrashPredictionData = {
@@ -27,21 +27,30 @@ export default function CrashPage() {
             openOneXBetDialog();
             return;
         }
+        if (!userProfile?.id || !firestore) return;
+
         setIsLoading(true);
         setPrediction(null);
         try {
             const result = await generateGamePredictions({ gameType: 'crash', userId: userProfile.id });
             setPrediction(result);
             
-            if (firestore) {
-                await addDoc(collection(firestore, 'auditlogs'), {
-                    userId: userProfile.id,
-                    action: 'prediction_request',
-                    details: JSON.stringify({ gameType: 'crash', prediction: result.predictionData }),
-                    timestamp: new Date().toISOString(),
-                    ipAddress: 'not_collected',
+            const auditLogData = {
+                userId: userProfile.id,
+                action: 'prediction_request',
+                details: JSON.stringify({ gameType: 'crash', prediction: result.predictionData }),
+                timestamp: new Date().toISOString(),
+                ipAddress: 'not_collected',
+            };
+
+            addDoc(collection(firestore, 'auditlogs'), auditLogData)
+                .catch(error => {
+                    errorEmitter.emit('permission-error', new FirestorePermissionError({
+                        path: 'auditlogs',
+                        operation: 'create',
+                        requestResourceData: auditLogData
+                    }));
                 });
-            }
 
         } catch (error) {
             console.error("Failed to get prediction:", error);
