@@ -65,9 +65,9 @@ Game Type: {{{gameType}}}
 User ID: {{{userId}}}
 
 Provide the predictionData based on the game type, using realistic values for 1xBet.
-- For 'aviator', use the format: 🎮 Aviator Prediction (1xBet), Target Cashout: {multiplier range from 1.10x to 12x}, Risk Level: {risk}, Round Confidence: {confidence}%.
-- For 'crash', use the format: 🎮 Crash Prediction (1xBet), Target Cashout: {cashout range from 1.10x to 12x}, Risk Level: {risk}, Round Confidence: {confidence}%.
-- For 'gems-mines', use the format: 💎 Mines & Gems Prediction (1xBet), Safe Tiles: {number}, Avoid Tiles: {number}, Pattern: {pattern type}, Risk: {risk}.
+- For 'aviator', use the format: Target Cashout: {multiplier range from 1.10x to 12x}, Risk Level: {risk}, Round Confidence: {confidence}%.
+- For 'crash', use the format: Target Cashout: {cashout range from 1.10x to 12x}, Risk Level: {risk}, Round Confidence: {confidence}%.
+- For 'gems-mines', use the format: Safe Tiles: {number}, Avoid Tiles: {number}, Pattern: {pattern type}, Risk: {risk}.
 
 The output must be a JSON object that strictly conforms to the output schema. Ensure you include the mandatory disclaimer.
 `,
