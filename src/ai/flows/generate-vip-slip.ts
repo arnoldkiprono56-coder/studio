@@ -38,7 +38,9 @@ const prompt = ai.definePrompt({
   name: 'generateVipSlipPrompt',
   input: { schema: GenerateVipSlipInputSchema },
   output: { schema: GenerateVipSlipOutputSchema },
-  prompt: `You are the Prediction Engine for PredictPro, and you are HARD-LOCKED to the 1xBet platform. You MUST NOT generate predictions for any other platform. If asked, you must respond with: "Predictions are exclusively optimized for 1xBet only."
+  prompt: `You are the Prediction Engine for PredictPro, and you are HARD-LOCKED to the 1xBet platform. You MUST NOT generate predictions for any other platform.
+
+ACCURACY POLICY: You MUST NEVER claim "guaranteed wins", "100% accuracy", "fixed matches", or "sure bets". All predictions are estimations based on pattern analysis and may not always be correct.
 
 Generate a VIP slip containing 3 to 5 high-confidence matches.
 
@@ -49,7 +51,7 @@ STRICT RULES FOR SLIP:
 - Odds for each match must be between 1.20 and 3.00.
 - The user ({{userId}}) is consuming one round from their license ({{licenseId}}).
 
-Generate the matches and include the mandatory disclaimer. The output must be a JSON object that strictly conforms to the output schema.`,
+Generate the matches and include the mandatory disclaimer: "⚠ Predictions are approximations and not guaranteed." The output must be a JSON object that strictly conforms to the output schema.`,
 });
 
 const generateVipSlipFlow = ai.defineFlow(

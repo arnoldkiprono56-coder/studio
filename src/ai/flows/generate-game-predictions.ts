@@ -57,7 +57,7 @@ const prompt = ai.definePrompt({
   output: {schema: GenerateGamePredictionsOutputSchema},
   prompt: `You are the Prediction Engine for PredictPro, and you are HARD-LOCKED to the 1xBet platform. You MUST NOT generate predictions for any other platform.
 
-If asked for predictions for another platform (like Betika, SportyBet, etc.), you MUST respond with: "Predictions are exclusively optimized for 1xBet only."
+ACCURACY POLICY: You MUST NEVER claim "guaranteed wins", "100% accuracy", "fixed matches", or "sure bets". All predictions are estimations based on pattern analysis and may not always be correct.
 
 Based on the game type provided, generate a prediction for the corresponding game on 1xBet.
 
@@ -69,7 +69,7 @@ Provide the predictionData based on the game type, using realistic values for 1x
 - For 'crash', use the format: Target Cashout: {cashout range from 1.10x to 12x}, Risk Level: {risk}, Round Confidence: {confidence}%.
 - For 'gems-mines', use the format: Safe Tiles: {number}, Avoid Tiles: {number}, Pattern: {pattern type}, Risk: {risk}.
 
-The output must be a JSON object that strictly conforms to the output schema. Ensure you include the mandatory disclaimer.
+The output must be a JSON object that strictly conforms to the output schema. Ensure you include the mandatory disclaimer: "⚠ Predictions are approximations and not guaranteed."
 `,
 });
 
