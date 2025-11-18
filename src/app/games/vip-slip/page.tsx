@@ -50,12 +50,33 @@ export default function VipSlipPage() {
             const result = await generateVipSlip({ userId: userProfile.id, licenseId: activeLicense.id });
             setPrediction(result);
 
+            const timestamp = new Date().toISOString();
+
+            const predictionData = {
+                userId: userProfile.id,
+                licenseId: activeLicense.id,
+                gameType: 'VIP Slip',
+                predictionData: JSON.stringify(result.matches.map(m => `${m.teams}: ${m.prediction} @${m.odd}`)),
+                disclaimer: result.disclaimer,
+                timestamp: timestamp,
+            };
+
+            addDoc(collection(firestore, 'users', userProfile.id, 'predictions'), predictionData)
+                .catch(error => {
+                    errorEmitter.emit('permission-error', new FirestorePermissionError({
+                        path: `users/${userProfile.id}/predictions`,
+                        operation: 'create',
+                        requestResourceData: predictionData
+                    }));
+                });
+
+
             const auditLogData = {
                 userId: userProfile.id,
                 licenseId: activeLicense.id,
                 action: 'prediction_request',
                 details: `Game: VIP Slip, Prediction: ${JSON.stringify(result)}`,
-                timestamp: new Date().toISOString(),
+                timestamp: timestamp,
                 ipAddress: 'not_collected',
             };
             addDoc(collection(firestore, 'auditlogs'), auditLogData)

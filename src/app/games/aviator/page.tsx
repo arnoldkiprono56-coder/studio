@@ -55,13 +55,33 @@ export default function AviatorPage() {
         try {
             const result = await generateGamePredictions({ gameType: 'aviator', userId: userProfile.id });
             setPrediction(result);
+            
+            const timestamp = new Date().toISOString();
+            
+            const predictionData = {
+                userId: userProfile.id,
+                licenseId: activeLicense.id,
+                gameType: 'Aviator',
+                predictionData: JSON.stringify(result.predictionData),
+                disclaimer: result.disclaimer,
+                timestamp: timestamp,
+            };
+
+            addDoc(collection(firestore, 'users', userProfile.id, 'predictions'), predictionData)
+                .catch(error => {
+                    errorEmitter.emit('permission-error', new FirestorePermissionError({
+                        path: `users/${userProfile.id}/predictions`,
+                        operation: 'create',
+                        requestResourceData: predictionData
+                    }));
+                });
 
             const auditLogData = {
                 userId: userProfile.id,
                 licenseId: activeLicense.id,
                 action: 'prediction_request',
                 details: `Game: Aviator, Prediction: ${JSON.stringify(result.predictionData)}`,
-                timestamp: new Date().toISOString(),
+                timestamp: timestamp,
                 ipAddress: 'not_collected',
             };
 

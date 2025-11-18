@@ -11,22 +11,44 @@ import Link from "next/link";
 import { formatCurrency } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import OnboardingPage from "@/app/onboarding/page";
+import { useCollection } from "@/firebase/firestore/use-collection";
+import { useFirestore, useMemoFirebase } from "@/firebase";
+import { collection, query, where, limit, orderBy } from "firebase/firestore";
+import type { License, Prediction } from "@/lib/types";
+
 
 const games = [
+    { name: "VIP Slip", href: "/games/vip-slip", status: "active" },
     { name: "Aviator", href: "/games/aviator", status: "active" },
     { name: "Crash", href: "/games/crash", status: "active" },
     { name: "Gems & Mines", href: "/games/gems-mines", status: "locked" },
 ]
 
-const recentPredictions = [
-    { game: "Aviator", prediction: "1.8x - 2.0x", result: "Won" },
-    { game: "Crash", prediction: "3.5x - 4.2x", result: "Lost" },
-    { game: "Aviator", prediction: "1.5x - 1.7x", result: "Won" },
-]
-
 export default function DashboardPage() {
   const { userProfile, isProfileLoading } = useProfile();
   const router = useRouter();
+  const firestore = useFirestore();
+
+  const licensesQuery = useMemoFirebase(() => {
+    if (!userProfile?.id || !firestore) return null;
+    return query(
+        collection(firestore, 'users', userProfile.id, 'licenses'),
+        where('isActive', '==', true)
+    );
+  }, [userProfile?.id, firestore]);
+
+  const predictionsQuery = useMemoFirebase(() => {
+    if (!userProfile?.id || !firestore) return null;
+    return query(
+        collection(firestore, 'users', userProfile.id, 'predictions'),
+        orderBy('timestamp', 'desc'),
+        limit(5)
+    );
+  }, [userProfile?.id, firestore]);
+
+  const { data: activeLicenses, isLoading: licensesLoading } = useCollection<License>(licensesQuery);
+  const { data: recentPredictions, isLoading: predictionsLoading } = useCollection<Prediction>(predictionsQuery);
+
 
   useEffect(() => {
     if (!isProfileLoading && userProfile) {
@@ -36,7 +58,7 @@ export default function DashboardPage() {
     }
   }, [userProfile, isProfileLoading, router]);
 
-  if (isProfileLoading || !userProfile) {
+  if (isProfileLoading || !userProfile || licensesLoading || predictionsLoading) {
     return (
         <div className="space-y-8">
             <div className="flex justify-between items-center">
@@ -100,7 +122,6 @@ export default function DashboardPage() {
   const userPlan = "Pro Plus"; // Mock data
   const planExpires = "in 25 days"; // Mock data
   const walletBalance = 1250.50; // Mock data
-  const activeLicenses = 2; // Mock data
 
   return (
     <div className="space-y-8">
@@ -142,7 +163,7 @@ export default function DashboardPage() {
             <CardDescription>Licenses currently in use.</CardDescription>
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-bold">{activeLicenses}</p>
+            <p className="text-3xl font-bold">{activeLicenses?.length ?? 0}</p>
           </CardContent>
         </Card>
       </div>
@@ -173,19 +194,25 @@ export default function DashboardPage() {
         <h2 className="text-2xl font-semibold tracking-tight mb-4">Recent Predictions</h2>
         <Card>
             <CardContent className="pt-6">
-                <ul className="space-y-4">
-                {recentPredictions.map((p, i) => (
-                    <li key={i} className="flex justify-between items-center">
-                        <div className="flex items-center gap-3">
-                             <Badge variant="secondary">{p.game}</Badge>
-                            <span className="font-mono text-sm">{p.prediction}</span>
-                        </div>
-                        <Badge variant={p.result === 'Won' ? 'default' : 'destructive'} className={p.result === 'Won' ? 'bg-success' : ''}>
-                            {p.result}
-                        </Badge>
-                    </li>
-                ))}
-                </ul>
+                {recentPredictions && recentPredictions.length > 0 ? (
+                    <ul className="space-y-4">
+                        {recentPredictions.map((p) => (
+                            <li key={p.id} className="flex justify-between items-center">
+                                <div className="flex items-center gap-3">
+                                    <Badge variant="secondary">{p.gameType}</Badge>
+                                    <span className="font-mono text-sm truncate max-w-xs" title={p.predictionData}>
+                                        {p.predictionData}
+                                    </span>
+                                </div>
+                                <span className="text-xs text-muted-foreground">
+                                    {new Date(p.timestamp).toLocaleDateString()}
+                                </span>
+                            </li>
+                        ))}
+                    </ul>
+                ) : (
+                    <p className="text-center text-muted-foreground py-8">No predictions made yet.</p>
+                )}
             </CardContent>
         </Card>
       </div>

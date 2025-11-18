@@ -6,3 +6,13 @@ export interface License {
     paymentVerified: boolean;
     isActive: boolean;
 }
+
+export interface Prediction {
+    id: string;
+    userId: string;
+    licenseId: string;
+    gameType: string;
+    predictionData: string;
+    disclaimer: string;
+    timestamp: string;
+}
