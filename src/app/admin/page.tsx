@@ -9,7 +9,7 @@ export default function AdminDashboardPage() {
     <div className="space-y-8">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
-        <p className="text-muted-foreground">Welcome, SuperAdmin. Here&apos;s the platform overview.</p>
+        <p className="text-muted-foreground">Welcome, SuperAdmin. Here's the platform overview.</p>
       </div>
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         <Card>
