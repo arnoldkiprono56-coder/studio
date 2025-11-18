@@ -37,7 +37,7 @@ const games = [
         description: "Uncover valuable gems while avoiding hidden mines.",
         icon: Gem,
         accent: "hsl(var(--accent-pro))"
-    },
+    }
 ]
 
 export default function GamesPage() {
