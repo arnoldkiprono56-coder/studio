@@ -1,16 +1,51 @@
+
+'use client';
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, AlertTriangle, ShieldCheck, Gem } from "lucide-react";
 import { UserManagementTable } from "./user-management";
 import { TransactionManagement } from "./transaction-management";
 import { AuditLogViewer } from "./audit-log";
 import { PricingManagement } from "./pricing-management";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useProfile } from "@/context/profile-context";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function AdminDashboardPage() {
+    const { userProfile, isProfileLoading } = useProfile();
+
+    if (isProfileLoading || !userProfile) {
+        return (
+            <div className="space-y-8">
+                <div>
+                    <Skeleton className="h-9 w-64 mb-2" />
+                    <Skeleton className="h-5 w-80" />
+                </div>
+                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+                    {Array.from({ length: 4 }).map((_, i) => (
+                         <Card key={i}>
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <Skeleton className="h-5 w-24" />
+                                <Skeleton className="h-4 w-4" />
+                            </CardHeader>
+                            <CardContent>
+                                <Skeleton className="h-8 w-16 mb-2" />
+                                <Skeleton className="h-4 w-32" />
+                            </CardContent>
+                        </Card>
+                    ))}
+                </div>
+                 <Skeleton className="h-10 w-full" />
+                 <Skeleton className="h-[400px] w-full" />
+            </div>
+        )
+    }
+
   return (
     <div className="space-y-8">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
-        <p className="text-muted-foreground">Welcome, SuperAdmin. Here's the platform overview.</p>
+        <p className="text-muted-foreground">Welcome, {userProfile.role}. Here's the platform overview.</p>
       </div>
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         <Card>
@@ -55,10 +90,26 @@ export default function AdminDashboardPage() {
         </Card>
       </div>
       
-      <UserManagementTable />
-      <PricingManagement />
-      <TransactionManagement />
-      <AuditLogViewer />
+        <Tabs defaultValue="users" className="space-y-4">
+            <TabsList>
+                <TabsTrigger value="users">User Management</TabsTrigger>
+                <TabsTrigger value="pricing">Pricing & Plans</TabsTrigger>
+                <TabsTrigger value="transactions">Transactions</TabsTrigger>
+                <TabsTrigger value="security">Security Logs</TabsTrigger>
+            </TabsList>
+            <TabsContent value="users">
+                <UserManagementTable />
+            </TabsContent>
+            <TabsContent value="pricing">
+                <PricingManagement />
+            </TabsContent>
+            <TabsContent value="transactions">
+                <TransactionManagement />
+            </TabsContent>
+            <TabsContent value="security">
+                <AuditLogViewer />
+            </TabsContent>
+        </Tabs>
     </div>
   );
 }

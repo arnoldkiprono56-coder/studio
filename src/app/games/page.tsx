@@ -1,8 +1,15 @@
+
+'use client';
+
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useProfile } from '@/context/profile-context';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import { ArrowRight, Zap, Shield, Gem, Ticket } from "lucide-react";
+import { Skeleton } from '@/components/ui/skeleton';
 
 const games = [
     { 
@@ -41,6 +48,38 @@ const games = [
 ]
 
 export default function GamesPage() {
+    const { userProfile, isProfileLoading } = useProfile();
+    const router = useRouter();
+
+    useEffect(() => {
+        if (!isProfileLoading && userProfile) {
+            const isAdmin = userProfile.role === 'SuperAdmin' || userProfile.role === 'Admin' || userProfile.role === 'Assistant';
+            if (isAdmin) {
+                router.replace('/admin');
+            }
+        }
+    }, [userProfile, isProfileLoading, router]);
+
+    if (isProfileLoading || !userProfile || ['SuperAdmin', 'Admin', 'Assistant'].includes(userProfile.role)) {
+        return (
+            <div className="space-y-8">
+                <Skeleton className="h-9 w-64 mb-2" />
+                <Skeleton className="h-5 w-80" />
+                <div className="grid gap-6 md:grid-cols-2">
+                    {Array.from({ length: 4 }).map((_, i) => (
+                        <Card key={i}>
+                            <CardHeader><Skeleton className="h-8 w-48" /></CardHeader>
+                            <CardContent className="space-y-4">
+                                <Skeleton className="h-4 w-full" />
+                                <Skeleton className="h-10 w-full" />
+                            </CardContent>
+                        </Card>
+                    ))}
+                </div>
+            </div>
+        );
+    }
+
   return (
     <div className="space-y-8">
       <div>
