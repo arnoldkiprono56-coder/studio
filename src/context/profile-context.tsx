@@ -16,6 +16,9 @@ interface UserProfile {
   email: string | null;
   role: string;
   oneXBetId?: string;
+  balance?: number;
+  referredBy?: string;
+  hasPurchased?: boolean;
   [key: string]: any;
 }
 

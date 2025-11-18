@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useFirestore, useMemoFirebase, useProfile } from '@/firebase';
 import { useDoc } from '@/firebase/firestore/use-doc';
-import { doc, collection, writeBatch } from 'firebase/firestore';
+import { doc, collection, writeBatch, getDoc, runTransaction, DocumentReference } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -22,6 +22,8 @@ interface Plan {
     currency: string;
     rounds: number;
 }
+
+const COMMISSION_AMOUNT = 150; // KES 150 commission
 
 export default function PurchasePage() {
     const params = useParams();
@@ -50,37 +52,68 @@ export default function PurchasePage() {
         setIsProcessing(true);
 
         try {
-            const batch = writeBatch(firestore);
+            await runTransaction(firestore, async (transaction) => {
+                const userRef = doc(firestore, 'users', userProfile.id);
+                const userSnap = await transaction.get(userRef);
+                const currentUserData = userSnap.data();
 
-            // 1. Create a new license document
-            const licenseId = `${plan.id}-${userProfile.id}`;
-            const licenseRef = doc(firestore, 'users', userProfile.id, 'licenses', licenseId);
-            batch.set(licenseRef, {
-                id: licenseId,
-                userId: userProfile.id,
-                gameType: plan.name, // e.g., "VIP Slip"
-                roundsRemaining: plan.rounds,
-                paymentVerified: false, // This will be true after admin verifies
-                isActive: false, // This will be true after admin verifies
-                createdAt: new Date().toISOString(),
+                // 1. Create a new license document
+                const licenseId = `${plan.id}-${userProfile.id}`;
+                const licenseRef = doc(firestore, 'users', userProfile.id, 'licenses', licenseId);
+                transaction.set(licenseRef, {
+                    id: licenseId,
+                    userId: userProfile.id,
+                    gameType: plan.name,
+                    roundsRemaining: plan.rounds,
+                    paymentVerified: false,
+                    isActive: false,
+                    createdAt: new Date().toISOString(),
+                });
+
+                // 2. Create a new payment transaction document
+                const transactionId = `txn_purchase_${Date.now()}`;
+                const transactionRef = doc(firestore, 'transactions', transactionId);
+                transaction.set(transactionRef, {
+                    id: transactionId,
+                    userId: userProfile.id,
+                    licenseId: licenseId,
+                    amount: plan.price,
+                    currency: plan.currency,
+                    paymentMethod: paymentMethod,
+                    status: 'pending',
+                    type: 'purchase',
+                    description: `Purchase of ${plan.name} license`,
+                    createdAt: new Date().toISOString(),
+                });
+
+                // 3. Handle referral commission if applicable
+                const isFirstPurchase = !(currentUserData?.hasPurchased);
+                if (isFirstPurchase && currentUserData?.referredBy) {
+                    const referrerRef = doc(firestore, 'users', currentUserData.referredBy);
+                    
+                    // Create commission transaction for the referrer
+                    const commissionTxnId = `txn_commission_${Date.now()}`;
+                    const commissionTxnRef = doc(firestore, 'transactions', commissionTxnId);
+                    transaction.set(commissionTxnRef, {
+                        id: commissionTxnId,
+                        userId: currentUserData.referredBy,
+                        type: 'commission',
+                        description: `Referral commission from ${userProfile.email}`,
+                        amount: COMMISSION_AMOUNT,
+                        currency: 'KES',
+                        status: 'completed',
+                        createdAt: new Date().toISOString(),
+                    });
+
+                    // Update referrer's balance
+                    transaction.update(referrerRef, {
+                        balance: (await transaction.get(referrerRef)).data()?.balance + COMMISSION_AMOUNT
+                    });
+                    
+                    // Mark current user as having made a purchase
+                    transaction.update(userRef, { hasPurchased: true });
+                }
             });
-
-            // 2. Create a new payment transaction document
-            const transactionId = `txn_${Date.now()}`;
-            const transactionRef = doc(firestore, 'transactions', transactionId);
-            batch.set(transactionRef, {
-                id: transactionId,
-                userId: userProfile.id,
-                licenseId: licenseId,
-                amount: plan.price,
-                currency: plan.currency,
-                paymentMethod: paymentMethod,
-                status: 'pending',
-                webhookVerified: false,
-                createdAt: new Date().toISOString(),
-            });
-
-            await batch.commit();
 
             toast({ title: 'Processing', description: 'Your order has been placed and is pending verification.' });
             router.push('/purchase/success');

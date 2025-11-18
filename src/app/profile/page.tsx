@@ -6,13 +6,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Star, Copy, Shield } from "lucide-react";
+import { Star, Copy, Shield, Loader2 } from "lucide-react";
 import { useProfile } from "@/context/profile-context";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function ProfilePage() {
-    const { userProfile, updateUserProfile } = useProfile();
+    const { userProfile, isProfileLoading, updateUserProfile } = useProfile();
     const [oneXBetId, setOneXBetId] = useState(userProfile?.oneXBetId || '');
     const [isSaving, setIsSaving] = useState(false);
     const { toast } = useToast();
@@ -45,8 +46,34 @@ export default function ProfilePage() {
         }
     };
 
-    if (!userProfile) {
-        return <div>Loading profile...</div>;
+    if (isProfileLoading || !userProfile) {
+        return (
+            <div className="space-y-8 max-w-3xl mx-auto">
+                <Skeleton className="h-9 w-64 mb-2" />
+                <Skeleton className="h-5 w-80" />
+                <Card>
+                    <CardHeader><Skeleton className="h-6 w-48" /></CardHeader>
+                    <CardContent className="space-y-6">
+                        <div className="flex items-center gap-4">
+                            <Skeleton className="w-16 h-16 rounded-full" />
+                            <div className="flex-grow space-y-2">
+                                <Skeleton className="h-5 w-32" />
+                                <Skeleton className="h-4 w-48" />
+                            </div>
+                        </div>
+                         <Skeleton className="h-10 w-full" />
+                         <Skeleton className="h-10 w-32" />
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader><Skeleton className="h-6 w-48" /></CardHeader>
+                    <CardContent className="space-y-4">
+                        <Skeleton className="h-16 w-full" />
+                        <Skeleton className="h-10 w-full" />
+                    </CardContent>
+                </Card>
+            </div>
+        )
     }
 
     const { name, email, avatar, plan, mpesaNumber, role } = {
@@ -107,6 +134,7 @@ export default function ProfilePage() {
           </div>
 
           <Button onClick={handleSaveChanges} disabled={isSaving}>
+            {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {isSaving ? 'Saving...' : 'Save Changes'}
           </Button>
         </CardContent>

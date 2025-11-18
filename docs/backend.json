@@ -32,6 +32,15 @@
         "isSuspended": {
           "type": "boolean",
           "description": "Indicates if the user account is suspended."
+        },
+        "referredBy": {
+            "type": "string",
+            "description": "The ID of the user who referred this user."
+        },
+        "balance": {
+            "type": "number",
+            "description": "The user's wallet balance from commissions.",
+            "default": 0
         }
       },
       "required": [
@@ -161,7 +170,7 @@
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "PaymentTransaction",
       "type": "object",
-      "description": "Represents a payment transaction for a license.",
+      "description": "Represents a payment transaction for a license or a commission.",
       "properties": {
         "id": {
           "type": "string",
@@ -173,11 +182,20 @@
         },
         "licenseId": {
           "type": "string",
-          "description": "The license being purchased."
+          "description": "The license being purchased (if applicable)."
+        },
+        "type": {
+          "type": "string",
+          "description": "The type of transaction (purchase, commission, withdrawal, reward).",
+          "enum": ["purchase", "commission", "withdrawal", "reward"]
+        },
+        "description": {
+          "type": "string",
+          "description": "A brief description of the transaction (e.g., 'Commission from user@test.com')."
         },
         "amount": {
           "type": "number",
-          "description": "Amount of the transaction (e.g., 1500)."
+          "description": "Amount of the transaction (e.g., 1500 for purchase, -300 for withdrawal)."
         },
         "currency": {
           "type": "string",
@@ -189,7 +207,7 @@
         },
         "status": {
           "type": "string",
-          "description": "Status of the transaction (pending, verified, failed)."
+          "description": "Status of the transaction (pending, verified, failed, completed)."
         },
         "webhookVerified": {
           "type": "boolean",
@@ -199,11 +217,11 @@
       "required": [
         "id",
         "userId",
-        "licenseId",
         "amount",
         "currency",
-        "paymentMethod",
-        "status"
+        "status",
+        "type",
+        "description"
       ]
     },
     "Plan": {
@@ -408,5 +426,3 @@
     "reasoning": "The Firestore structure is updated to align with the Master System Prompt. It defines user roles (User, Assistant, Admin, SuperAdmin) and sets the default to 'User' on registration. It maintains the core logic for Users, Licenses, Predictions, and Payments. User profiles are managed by Firebase Auth and user data is stored in Firestore. Licenses are tied to a user and expire based on 'roundsRemaining' and payment verification. Predictions are linked to both a user and a license. A top-level `transactions` collection tracks payments, with verification handled by a webhook. A global `auditlogs` collection is included for security monitoring. A `plans` collection is added to store pricing information. A new `prompts` collection is added to store editable AI prompts, manageable by admins."
   }
 }
-
-    
