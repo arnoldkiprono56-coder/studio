@@ -1,6 +1,6 @@
 'use server';
 /**
- * @fileOverview A flow to adapt game prediction models based on user feedback.
+ * @fileOverview A flow to adapt game prediction models based on user feedback for games on the 1xBet platform.
  *
  * - adaptPredictionsBasedOnFeedback - A function that handles the adaptation of prediction models based on feedback.
  * - AdaptPredictionsBasedOnFeedbackInput - The input type for the adaptPredictionsBasedOnFeedback function.
@@ -30,7 +30,7 @@ const prompt = ai.definePrompt({
   name: 'adaptPredictionsBasedOnFeedbackPrompt',
   input: {schema: AdaptPredictionsBasedOnFeedbackInputSchema},
   output: {schema: AdaptPredictionsBasedOnFeedbackOutputSchema},
-  prompt: `You are an AI model adaptation expert. You will receive game prediction data and user feedback (won or lost). Based on this feedback, you will adapt the prediction model to improve future predictions for the specified game type.
+  prompt: `You are an AI model adaptation expert for games on the "1xBet" platform. You will receive game prediction data and user feedback (won or lost). Based on this feedback, you will adapt the prediction model to improve future predictions for the specified game type on 1xBet.
 
 Game Type: {{{gameType}}}
 Prediction Data: {{{predictionData}}}

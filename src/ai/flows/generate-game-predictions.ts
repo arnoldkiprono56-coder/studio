@@ -1,9 +1,9 @@
 'use server';
 
 /**
- * @fileOverview This file defines a Genkit flow for generating game predictions.
+ * @fileOverview This file defines a Genkit flow for generating game predictions for the 1xBet platform.
  *
- * - generateGamePredictions - A function that generates predictions for a specified game.
+ * - generateGamePredictions - A function that generates predictions for a specified game on 1xBet.
  * - GenerateGamePredictionsInput - The input type for the generateGamepredictions function.
  * - GenerateGamePredictionsOutput - The return type for the generateGamepredictions function.
  */
@@ -41,12 +41,12 @@ const prompt = ai.definePrompt({
   name: 'generateGamePredictionsPrompt',
   input: {schema: GenerateGamePredictionsInputSchema},
   output: {schema: GenerateGamePredictionsOutputSchema},
-  prompt: `You are an expert gaming analyst. Based on the game type provided, generate a prediction.
+  prompt: `You are an expert gaming analyst specializing in the "1xBet" platform. Based on the game type provided, generate a prediction for the corresponding game on 1xBet.
 
 Game Type: {{{gameType}}}
 User ID: {{{userId}}}
 
-Provide predictionData, confidenceScore, and volatilityAssessment. The predictionData is game-specific and contains values important in that game.
+Provide predictionData, confidenceScore, and volatilityAssessment. The predictionData is game-specific and contains values important in that game on 1xBet.
 - For 'aviator', provide a 'multiplier'.
 - For 'crash', provide a 'crashPoint'.
 - For 'gems-mines', provide 'safeTiles' and 'gemLocations' as arrays of tile indices.
