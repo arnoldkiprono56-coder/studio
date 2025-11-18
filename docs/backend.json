@@ -1,0 +1,975 @@
+{
+  "entities": {
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
+      "type": "object",
+      "description": "Represents a user of the PredictPro platform.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the User entity."
+        },
+        "email": {
+          "type": "string",
+          "description": "User's email address.",
+          "format": "email"
+        },
+        "phone": {
+          "type": "string",
+          "description": "User's phone number."
+        },
+        "mpesaNumber": {
+          "type": "string",
+          "description": "User's MPESA number for payment."
+        },
+        "role": {
+          "type": "string",
+          "description": "User's role (User, Admin, Assistant, SuperAdmin)."
+        },
+        "planType": {
+          "type": "string",
+          "description": "User's subscription plan type (Basic, Standard, Pro Plus)."
+        },
+        "planExpiresAt": {
+          "type": "string",
+          "description": "Date and time when the user's subscription plan expires.",
+          "format": "date-time"
+        },
+        "walletBalance": {
+          "type": "number",
+          "description": "User's wallet balance."
+        },
+        "referralCode": {
+          "type": "string",
+          "description": "User's unique referral code."
+        },
+        "referredBy": {
+          "type": "string",
+          "description": "Reference to User who referred this user. (Relationship: User 1:N User)"
+        },
+        "isSuspended": {
+          "type": "boolean",
+          "description": "Indicates if the user account is suspended."
+        },
+        "deviceFingerprint": {
+          "type": "string",
+          "description": "Device fingerprint for security."
+        }
+      },
+      "required": [
+        "id",
+        "email"
+      ]
+    },
+    "Otp": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Otp",
+      "type": "object",
+      "description": "Represents the One-Time Password (OTP) for user verification.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the OTP entry."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:N Otp)"
+        },
+        "otpCode": {
+          "type": "string",
+          "description": "The one-time password code."
+        },
+        "expirationTime": {
+          "type": "string",
+          "description": "The date and time when the OTP expires.",
+          "format": "date-time"
+        },
+        "isVerified": {
+          "type": "boolean",
+          "description": "Indicates whether the OTP has been verified."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "otpCode",
+        "expirationTime"
+      ]
+    },
+    "License": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "License",
+      "type": "object",
+      "description": "Represents a game license for a user.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the License entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:N License)"
+        },
+        "gameType": {
+          "type": "string",
+          "description": "Type of game the license is for (Aviator, Crash, Mines, Gems)."
+        },
+        "licenseKey": {
+          "type": "string",
+          "description": "Unique license key."
+        },
+        "expiresAt": {
+          "type": "string",
+          "description": "Date and time when the license expires.",
+          "format": "date-time"
+        },
+        "ticketsRemaining": {
+          "type": "number",
+          "description": "Number of tickets remaining for the license."
+        },
+        "isActive": {
+          "type": "boolean",
+          "description": "Indicates if the license is active."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "gameType",
+        "licenseKey",
+        "expiresAt"
+      ]
+    },
+    "Transaction": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Transaction",
+      "type": "object",
+      "description": "Represents a payment transaction.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Transaction entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:N Transaction)"
+        },
+        "transactionId": {
+          "type": "string",
+          "description": "Unique transaction identifier from the payment gateway."
+        },
+        "paymentMethod": {
+          "type": "string",
+          "description": "Payment method used (MPESA, Airtel Money)."
+        },
+        "amount": {
+          "type": "number",
+          "description": "Amount of the transaction."
+        },
+        "currency": {
+          "type": "string",
+          "description": "Currency of the transaction."
+        },
+        "transactionMessage": {
+          "type": "string",
+          "description": "Full transaction message from the payment gateway."
+        },
+        "status": {
+          "type": "string",
+          "description": "Status of the transaction (pending, verified, rejected)."
+        },
+        "verifiedBy": {
+          "type": "string",
+          "description": "Reference to User who verified the transaction. (Relationship: User 1:N Transaction)"
+        },
+        "verifiedAt": {
+          "type": "string",
+          "description": "Date and time when the transaction was verified.",
+          "format": "date-time"
+        },
+        "purpose": {
+          "type": "string",
+          "description": "Purpose of the transaction."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "amount",
+        "purpose"
+      ]
+    },
+    "Prediction": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Prediction",
+      "type": "object",
+      "description": "Represents a game prediction.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Prediction entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:N Prediction)"
+        },
+        "gameType": {
+          "type": "string",
+          "description": "Type of game the prediction is for."
+        },
+        "predictionData": {
+          "type": "string",
+          "description": "JSON data containing the prediction details."
+        },
+        "confidenceScore": {
+          "type": "number",
+          "description": "Confidence score of the prediction."
+        },
+        "feedback": {
+          "type": "string",
+          "description": "User feedback on the prediction (won, lost)."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "gameType",
+        "predictionData"
+      ]
+    },
+    "AuditLog": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "AuditLog",
+      "type": "object",
+      "description": "Represents an audit log entry.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the AuditLog entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:N AuditLog)"
+        },
+        "action": {
+          "type": "string",
+          "description": "Action performed."
+        },
+        "resourceType": {
+          "type": "string",
+          "description": "Type of resource affected by the action."
+        },
+        "resourceId": {
+          "type": "string",
+          "description": "Identifier of the resource affected by the action."
+        },
+        "details": {
+          "type": "string",
+          "description": "JSON data containing the details of the action."
+        },
+        "ipAddress": {
+          "type": "string",
+          "description": "IP address of the user who performed the action."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "action"
+      ]
+    },
+    "SupportTicket": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "SupportTicket",
+      "type": "object",
+      "description": "Represents a support ticket.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the SupportTicket entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User who created the ticket. (Relationship: User 1:N SupportTicket)"
+        },
+        "ticketNumber": {
+          "type": "string",
+          "description": "Unique ticket number."
+        },
+        "subject": {
+          "type": "string",
+          "description": "Subject of the support ticket."
+        },
+        "priority": {
+          "type": "string",
+          "description": "Priority of the support ticket (low, medium, high, urgent)."
+        },
+        "status": {
+          "type": "string",
+          "description": "Status of the support ticket (open, in_progress, resolved, closed)."
+        },
+        "assignedTo": {
+          "type": "string",
+          "description": "Reference to User who is assigned to the ticket. (Relationship: User 1:N SupportTicket)"
+        },
+        "supportType": {
+          "type": "string",
+          "description": "Type of support (system_help, manager, customer_care)."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "ticketNumber",
+        "subject"
+      ]
+    },
+    "SupportMessage": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "SupportMessage",
+      "type": "object",
+      "description": "Represents a message in a support ticket.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the SupportMessage entity."
+        },
+        "ticketId": {
+          "type": "string",
+          "description": "Reference to SupportTicket. (Relationship: SupportTicket 1:N SupportMessage)"
+        },
+        "senderId": {
+          "type": "string",
+          "description": "Reference to User who sent the message. (Relationship: User 1:N SupportMessage)"
+        },
+        "message": {
+          "type": "string",
+          "description": "Message content."
+        },
+        "isSystemMessage": {
+          "type": "boolean",
+          "description": "Indicates if the message is a system message."
+        },
+        "attachments": {
+          "type": "string",
+          "description": "JSON data containing attachments."
+        }
+      },
+      "required": [
+        "id",
+        "ticketId",
+        "senderId",
+        "message"
+      ]
+    },
+    "AssistantContract": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "AssistantContract",
+      "type": "object",
+      "description": "Represents a contract for an assistant.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the AssistantContract entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User who is the assistant. (Relationship: User 1:N AssistantContract)"
+        },
+        "contractDetails": {
+          "type": "string",
+          "description": "JSON data containing the contract details."
+        },
+        "signedAt": {
+          "type": "string",
+          "description": "Date and time when the contract was signed.",
+          "format": "date-time"
+        },
+        "isActive": {
+          "type": "boolean",
+          "description": "Indicates if the contract is active."
+        },
+        "inviteToken": {
+          "type": "string",
+          "description": "Unique invite token for the assistant."
+        },
+        "invitedBy": {
+          "type": "string",
+          "description": "Reference to User who invited the assistant. (Relationship: User 1:N AssistantContract)"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "contractDetails"
+      ]
+    },
+    "Referral": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Referral",
+      "type": "object",
+      "description": "Represents a referral relationship between users.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Referral entity."
+        },
+        "referrerId": {
+          "type": "string",
+          "description": "Reference to User who is the referrer. (Relationship: User 1:N Referral)"
+        },
+        "referredId": {
+          "type": "string",
+          "description": "Reference to User who was referred. (Relationship: User 1:N Referral)"
+        },
+        "commissionRate": {
+          "type": "number",
+          "description": "Commission rate for the referral."
+        },
+        "totalEarned": {
+          "type": "number",
+          "description": "Total commission earned by the referrer."
+        },
+        "firstPurchaseAt": {
+          "type": "string",
+          "description": "Date and time when the referred user made their first purchase.",
+          "format": "date-time"
+        },
+        "isActive": {
+          "type": "boolean",
+          "description": "Indicates if the referral is active."
+        }
+      },
+      "required": [
+        "id",
+        "referrerId",
+        "referredId"
+      ]
+    },
+    "Commission": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Commission",
+      "type": "object",
+      "description": "Represents a commission earned through a referral.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Commission entity."
+        },
+        "referralId": {
+          "type": "string",
+          "description": "Reference to Referral. (Relationship: Referral 1:N Commission)"
+        },
+        "transactionId": {
+          "type": "string",
+          "description": "Reference to Transaction. (Relationship: Transaction 1:N Commission)"
+        },
+        "commissionAmount": {
+          "type": "number",
+          "description": "Amount of the commission."
+        },
+        "status": {
+          "type": "string",
+          "description": "Status of the commission (pending, paid)."
+        },
+        "paidAt": {
+          "type": "string",
+          "description": "Date and time when the commission was paid.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "referralId",
+        "commissionAmount"
+      ]
+    },
+    "WithdrawalRequest": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "WithdrawalRequest",
+      "type": "object",
+      "description": "Represents a withdrawal request from a user.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the WithdrawalRequest entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User who is requesting the withdrawal. (Relationship: User 1:N WithdrawalRequest)"
+        },
+        "amount": {
+          "type": "number",
+          "description": "Amount to be withdrawn."
+        },
+        "mpesaNumber": {
+          "type": "string",
+          "description": "MPESA number to which the withdrawal should be sent."
+        },
+        "status": {
+          "type": "string",
+          "description": "Status of the withdrawal request (pending, approved, rejected, paid)."
+        },
+        "processedBy": {
+          "type": "string",
+          "description": "Reference to User who processed the withdrawal. (Relationship: User 1:N WithdrawalRequest)"
+        },
+        "processedAt": {
+          "type": "string",
+          "description": "Date and time when the withdrawal was processed.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "amount",
+        "mpesaNumber"
+      ]
+    },
+    "AnalyticsEvent": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "AnalyticsEvent",
+      "type": "object",
+      "description": "Represents an analytics event.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the AnalyticsEvent entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User who triggered the event. (Relationship: User 1:N AnalyticsEvent)"
+        },
+        "eventType": {
+          "type": "string",
+          "description": "Type of the event."
+        },
+        "eventData": {
+          "type": "string",
+          "description": "JSON data containing the details of the event."
+        },
+        "sessionId": {
+          "type": "string",
+          "description": "Session identifier for the event."
+        },
+        "ipAddress": {
+          "type": "string",
+          "description": "IP address of the user who triggered the event."
+        },
+        "userAgent": {
+          "type": "string",
+          "description": "User agent of the user who triggered the event."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "eventType"
+      ]
+    },
+    "AnalyticsAggregation": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "AnalyticsAggregation",
+      "type": "object",
+      "description": "Represents an aggregated analytics metric.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the AnalyticsAggregation entity."
+        },
+        "date": {
+          "type": "string",
+          "description": "Date for the aggregated metric.",
+          "format": "date"
+        },
+        "metricType": {
+          "type": "string",
+          "description": "Type of the metric."
+        },
+        "metricValue": {
+          "type": "number",
+          "description": "Value of the metric."
+        },
+        "metadata": {
+          "type": "string",
+          "description": "JSON data containing metadata for the metric."
+        }
+      },
+      "required": [
+        "id",
+        "date",
+        "metricType",
+        "metricValue"
+      ]
+    },
+    "UserTask": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "UserTask",
+      "type": "object",
+      "description": "Represents a task assigned to a user.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the UserTask entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User who is assigned the task. (Relationship: User 1:N UserTask)"
+        },
+        "taskType": {
+          "type": "string",
+          "description": "Type of the task."
+        },
+        "taskData": {
+          "type": "string",
+          "description": "JSON data containing the details of the task."
+        },
+        "rewardAmount": {
+          "type": "number",
+          "description": "Amount of the reward for completing the task."
+        },
+        "status": {
+          "type": "string",
+          "description": "Status of the task (pending, completed, verified, rewarded)."
+        },
+        "completedAt": {
+          "type": "string",
+          "description": "Date and time when the task was completed.",
+          "format": "date-time"
+        },
+        "verifiedAt": {
+          "type": "string",
+          "description": "Date and time when the task was verified.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "taskType"
+      ]
+    },
+    "UserSession": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "UserSession",
+      "type": "object",
+      "description": "Represents a user session.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the UserSession entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:N UserSession)"
+        },
+        "deviceFingerprint": {
+          "type": "string",
+          "description": "Device fingerprint of the session."
+        },
+        "ipAddress": {
+          "type": "string",
+          "description": "IP address of the session."
+        },
+        "userAgent": {
+          "type": "string",
+          "description": "User agent of the session."
+        },
+        "lastActivity": {
+          "type": "string",
+          "description": "Last activity timestamp.",
+          "format": "date-time"
+        },
+        "isActive": {
+          "type": "boolean",
+          "description": "Indicates if the session is active."
+        }
+      },
+      "required": [
+        "id",
+        "userId"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Stores user profiles. Includes 'id', 'email', 'phone', 'mpesaNumber', 'role', 'planType', 'planExpiresAt', 'walletBalance', 'referralCode', 'referredBy', 'isSuspended', and 'deviceFingerprint'.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "Unique identifier for the user."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/otps/{otpId}",
+        "definition": {
+          "entityName": "Otp",
+          "schema": {
+            "$ref": "#/backend/entities/Otp"
+          },
+          "description": "Stores OTPs for a specific user. Includes 'userId', 'otpCode', 'expirationTime', and 'isVerified'.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "Unique identifier for the user."
+            },
+            {
+              "name": "otpId",
+              "description": "Unique identifier for the OTP."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/licenses/{licenseId}",
+        "definition": {
+          "entityName": "License",
+          "schema": {
+            "$ref": "#/backend/entities/License"
+          },
+          "description": "Stores game licenses for a specific user. Includes 'userId', 'gameType', 'licenseKey', 'expiresAt', 'ticketsRemaining', and 'isActive'.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "Unique identifier for the user."
+            },
+            {
+              "name": "licenseId",
+              "description": "Unique identifier for the license."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/transactions/{transactionId}",
+        "definition": {
+          "entityName": "Transaction",
+          "schema": {
+            "$ref": "#/backend/entities/Transaction"
+          },
+          "description": "Stores payment transactions for a specific user. Includes 'userId', 'transactionId', 'paymentMethod', 'amount', 'currency', 'transactionMessage', 'status', 'verifiedBy', 'verifiedAt', and 'purpose'.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "Unique identifier for the user."
+            },
+            {
+              "name": "transactionId",
+              "description": "Unique identifier for the transaction."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/predictions/{predictionId}",
+        "definition": {
+          "entityName": "Prediction",
+          "schema": {
+            "$ref": "#/backend/entities/Prediction"
+          },
+          "description": "Stores game predictions for a specific user. Includes 'userId', 'gameType', 'predictionData', 'confidenceScore', and 'feedback'.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "Unique identifier for the user."
+            },
+            {
+              "name": "predictionId",
+              "description": "Unique identifier for the prediction."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/auditlogs/{auditLogId}",
+        "definition": {
+          "entityName": "AuditLog",
+          "schema": {
+            "$ref": "#/backend/entities/AuditLog"
+          },
+          "description": "Stores audit logs for a specific user. Includes 'userId', 'action', 'resourceType', 'resourceId', 'details', and 'ipAddress'.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "Unique identifier for the user."
+            },
+            {
+              "name": "auditLogId",
+              "description": "Unique identifier for the audit log."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/supporttickets/{supportTicketId}",
+        "definition": {
+          "entityName": "SupportTicket",
+          "schema": {
+            "$ref": "#/backend/entities/SupportTicket"
+          },
+          "description": "Stores support tickets. Includes 'userId', 'ticketNumber', 'subject', 'priority', 'status', 'assignedTo', and 'supportType'.",
+          "params": [
+            {
+              "name": "supportTicketId",
+              "description": "Unique identifier for the support ticket."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/supporttickets/{supportTicketId}/supportmessages/{supportMessageId}",
+        "definition": {
+          "entityName": "SupportMessage",
+          "schema": {
+            "$ref": "#/backend/entities/SupportMessage"
+          },
+          "description": "Stores support messages for a specific support ticket. Includes 'ticketId', 'senderId', 'message', 'isSystemMessage', and 'attachments'.",
+          "params": [
+            {
+              "name": "supportTicketId",
+              "description": "Unique identifier for the support ticket."
+            },
+            {
+              "name": "supportMessageId",
+              "description": "Unique identifier for the support message."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/assistantcontracts/{assistantContractId}",
+        "definition": {
+          "entityName": "AssistantContract",
+          "schema": {
+            "$ref": "#/backend/entities/AssistantContract"
+          },
+          "description": "Stores assistant contracts for a specific user. Includes 'userId', 'contractDetails', 'signedAt', 'isActive', 'inviteToken', and 'invitedBy'.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "Unique identifier for the user."
+            },
+            {
+              "name": "assistantContractId",
+              "description": "Unique identifier for the assistant contract."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/referrals/{referralId}",
+        "definition": {
+          "entityName": "Referral",
+          "schema": {
+            "$ref": "#/backend/entities/Referral"
+          },
+          "description": "Stores referral information. Includes 'referrerId', 'referredId', 'commissionRate', 'totalEarned', 'firstPurchaseAt', and 'isActive'.",
+          "params": [
+            {
+              "name": "referralId",
+              "description": "Unique identifier for the referral."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/commissions/{commissionId}",
+        "definition": {
+          "entityName": "Commission",
+          "schema": {
+            "$ref": "#/backend/entities/Commission"
+          },
+          "description": "Stores commission information. Includes 'referralId', 'transactionId', 'commissionAmount', 'status', and 'paidAt'.",
+          "params": [
+            {
+              "name": "commissionId",
+              "description": "Unique identifier for the commission."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/withdrawalrequests/{withdrawalRequestId}",
+        "definition": {
+          "entityName": "WithdrawalRequest",
+          "schema": {
+            "$ref": "#/backend/entities/WithdrawalRequest"
+          },
+          "description": "Stores withdrawal requests. Includes 'userId', 'amount', 'mpesaNumber', 'status', 'processedBy', and 'processedAt'.",
+          "params": [
+            {
+              "name": "withdrawalRequestId",
+              "description": "Unique identifier for the withdrawal request."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/analyticsevents/{analyticsEventId}",
+        "definition": {
+          "entityName": "AnalyticsEvent",
+          "schema": {
+            "$ref": "#/backend/entities/AnalyticsEvent"
+          },
+          "description": "Stores analytics events. Includes 'userId', 'eventType', 'eventData', 'sessionId', 'ipAddress', and 'userAgent'.",
+          "params": [
+            {
+              "name": "analyticsEventId",
+              "description": "Unique identifier for the analytics event."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/analyticsaggregations/{analyticsAggregationId}",
+        "definition": {
+          "entityName": "AnalyticsAggregation",
+          "schema": {
+            "$ref": "#/backend/entities/AnalyticsAggregation"
+          },
+          "description": "Stores aggregated analytics metrics. Includes 'date', 'metricType', 'metricValue', and 'metadata'.",
+          "params": [
+            {
+              "name": "analyticsAggregationId",
+              "description": "Unique identifier for the analytics aggregation."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/usersessions/{userSessionId}",
+        "definition": {
+          "entityName": "UserSession",
+          "schema": {
+            "$ref": "#/backend/entities/UserSession"
+          },
+          "description": "Stores user sessions. Includes 'userId', 'deviceFingerprint', 'ipAddress', 'userAgent', 'lastActivity', and 'isActive'.",
+          "params": [
+            {
+              "name": "userSessionId",
+              "description": "Unique identifier for the user session."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore data structure is designed to ensure authorization independence, clarity, and scalability, aligning with the core principles and strategy mandates outlined. To achieve authorization independence (Strategy A), key authorization attributes are denormalized across related collections, eliminating the need for `get()` calls in security rules. Structural segregation (Strategy B) is applied by grouping documents with similar access requirements into dedicated collections. Access modeling (Strategy C) is standardized using path-based ownership and membership maps for collaborative data. Explicit state modeling and predictable schema patterns (Strategy D) further enhance clarity and debuggability.\n\nHere's a breakdown:\n\n*   **Users Collection:** Stores user profiles. It uses standard fields like `email`, `phone`, and `role`. Importantly, `role` is stored directly in the document, enabling straightforward role-based access control without custom claims (DBAC). The `deviceFingerprint` enhances security by tracking user devices.\n*   **Users/{userId}/Otps Collection:** Subcollection for OTPs related to a specific user. This hierarchical path-based ownership (`/users/{userId}/otps/{otpId}`) ensures only the user can manage their OTPs. This design addresses the login and sign-in issues by adding an OTP verification system.\n*   **Users/{userId}/Licenses Collection:** Each license is tied to a specific user, represented as a subcollection. This maintains clear ownership and simplifies license management.\n*   **Users/{userId}/Transactions Collection:** Transactions are stored as a subcollection of users, ensuring that only the user and admins can view their transaction history. Fields like `status` and `verifiedBy` model the transaction verification process.\n*   **Users/{userId}/Predictions Collection:** Predictions are also user-specific and stored in a subcollection. This allows users to easily access their prediction history.\n*   **Users/{userId}/AuditLogs Collection:** Audit logs are stored as a subcollection for each user, facilitating easy auditing of user actions. The `ipAddress` field enhances security tracking.\n*   **SupportTickets Collection:** Support tickets are stored in a top-level collection but include a `userId` field to link them to the user who created the ticket.  The `assignedTo` field models ticket assignment. The support flow is designed for different roles (customer care, managers). The `supportType` differentiates support channels.\n*   **SupportTickets/{ticketId}/SupportMessages Collection:** Messages within a support ticket are stored in a subcollection to maintain a clear relationship. The `senderId` field allows tracking of who sent each message.\n*   **Users/{userId}/AssistantContracts Collection:** Contracts for assistants are stored under each user, linking the assistant to the user. The `inviteToken` field is used for secure invitation of assistants.\n*   **Referrals Collection:** Stores referral information. Contains `referrerId` and `referredId`, making it easy to query referrals and commissions. Denormalization ensures authorization independence.\n*   **Commissions Collection:** Tracks commissions earned. The `referralId` links it to the referral, and `transactionId` links it to the transaction that triggered the commission. Denormalization ensures authorization independence.\n*   **WithdrawalRequests Collection:** Withdrawal requests are stored in a collection, linked to a specific user with the `userId`. The `processedBy` field tracks who processed the withdrawal.\n*   **AnalyticsEvents Collection:** Tracks analytics events. Contains `userId` to link the event to a specific user and other details like `eventType`, `eventData`, `ipAddress`, and `userAgent`.\n*   **AnalyticsAggregations Collection:** Stores aggregated analytics metrics. The `date` field allows querying metrics for specific dates. These collections enables secure `list` operations (QAPs) by segregating data based on ownership or roles. Path-based ownership ensures only the user can access their data, while role-based access control restricts access to sensitive admin data. The membership map model for collaborative data ensures only members can access shared resources."
+  }
+}
