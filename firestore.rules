@@ -54,5 +54,13 @@ service cloud.firestore {
       allow read, list: if isAdmin();
       allow update, delete: if false;
     }
+
+    // Plans can be read by anyone, but only written by an admin.
+    match /plans/{planId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
   }
 }
+
+    

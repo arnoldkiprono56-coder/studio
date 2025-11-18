@@ -3,6 +3,7 @@ import { Users, AlertTriangle, ShieldCheck, Gem } from "lucide-react";
 import { UserManagementTable } from "./user-management";
 import { TransactionManagement } from "./transaction-management";
 import { AuditLogViewer } from "./audit-log";
+import { PricingManagement } from "./pricing-management";
 
 export default function AdminDashboardPage() {
   return (
@@ -55,8 +56,11 @@ export default function AdminDashboardPage() {
       </div>
       
       <UserManagementTable />
+      <PricingManagement />
       <TransactionManagement />
       <AuditLogViewer />
     </div>
   );
 }
+
+    
