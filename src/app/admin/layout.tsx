@@ -1,6 +1,47 @@
-import { ReactNode } from "react";
+'use client';
+
+import { ReactNode, useEffect } from 'react';
+import { useProfile } from '@/context/profile-context';
+import { useRouter } from 'next/navigation';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
+  const { userProfile, isProfileLoading } = useProfile();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!isProfileLoading && userProfile) {
+      const isAdminOrSuperAdmin =
+        userProfile.role === 'SuperAdmin' ||
+        userProfile.role === 'Admin' ||
+        userProfile.role === 'Assistant';
+      if (!isAdminOrSuperAdmin) {
+        router.replace('/dashboard');
+      }
+    }
+  }, [userProfile, isProfileLoading, router]);
+
+  const isAdminOrSuperAdmin =
+    userProfile?.role === 'SuperAdmin' ||
+    userProfile?.role === 'Admin' ||
+    userProfile?.role === 'Assistant';
+  
+  if (isProfileLoading || !userProfile || !isAdminOrSuperAdmin) {
+    return (
+      <div className="space-y-8">
+        <div className="space-y-2">
+            <Skeleton className="h-9 w-64" />
+            <Skeleton className="h-5 w-80" />
+        </div>
+        <div className="space-y-4">
+            <Skeleton className="h-10 w-full max-w-sm" />
+            <Skeleton className="h-96 w-full" />
+        </div>
+      </div>
+    );
+  }
+
+
   return (
     <div className="space-y-8">
       {children}

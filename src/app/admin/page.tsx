@@ -19,7 +19,7 @@ function DashboardHeader() {
 
 export default function AdminDashboardPage() {
     return (
-        <div className="space-y-8">
+        <>
             <DashboardHeader />
             <Tabs defaultValue="dashboard" className="space-y-4">
                 <TabsList className="grid w-full grid-cols-1 h-auto sm:w-auto sm:inline-flex sm:grid-cols-none">
@@ -49,6 +49,6 @@ export default function AdminDashboardPage() {
                     <GamesControl />
                 </TabsContent>
             </Tabs>
-        </div>
+        </>
     );
 }
