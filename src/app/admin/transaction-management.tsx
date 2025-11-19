@@ -67,7 +67,7 @@ export function TransactionManagement() {
             batch.update(transactionRef, { status: 'verified', webhookVerified: true });
 
             // 2. Update the corresponding license
-            const licenseRef = doc(firestore, 'users', transactionData.userId, 'licenses', transactionData.licenseId);
+            const licenseRef = doc(firestore, 'users', transactionData.userId, 'user_licenses', transactionData.licenseId);
             batch.update(licenseRef, { paymentVerified: true, isActive: true });
 
             await batch.commit();
@@ -174,3 +174,5 @@ export function TransactionManagement() {
         </Card>
     );
 }
+
+    

@@ -26,7 +26,7 @@ export default function AdminDashboardPage() {
 
     const licensesQuery = useMemoFirebase(() => {
         if (!firestore) return null;
-        return query(collectionGroup(firestore, 'licenses'), where('isActive', '==', true));
+        return query(collectionGroup(firestore, 'user_licenses'), where('isActive', '==', true));
     }, [firestore]);
 
     const alertsQuery = useMemoFirebase(() => {
@@ -143,3 +143,5 @@ export default function AdminDashboardPage() {
     </div>
   );
 }
+
+    

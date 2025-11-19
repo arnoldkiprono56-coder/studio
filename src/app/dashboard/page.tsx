@@ -32,7 +32,7 @@ export default function DashboardPage() {
   const licensesQuery = useMemoFirebase(() => {
     if (!userProfile?.id || !firestore) return null;
     return query(
-        collection(firestore, 'users', userProfile.id, 'licenses'),
+        collection(firestore, 'users', userProfile.id, 'user_licenses'),
         where('isActive', '==', true)
     );
   }, [userProfile?.id, firestore]);
@@ -220,3 +220,5 @@ export default function DashboardPage() {
     </div>
   );
 }
+
+    

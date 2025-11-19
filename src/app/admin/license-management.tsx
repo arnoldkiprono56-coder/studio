@@ -29,7 +29,7 @@ export function LicenseManagementDialog({ user, open, onOpenChange }: LicenseMan
 
     const licensesCollection = useMemoFirebase(() => {
         if (!firestore) return null;
-        return collection(firestore, 'users', user.id, 'licenses');
+        return collection(firestore, 'users', user.id, 'user_licenses');
     }, [firestore, user.id]);
 
     const { data: licenses, isLoading } = useCollection<License>(licensesCollection);
@@ -55,7 +55,7 @@ export function LicenseManagementDialog({ user, open, onOpenChange }: LicenseMan
     const handleActivateLicense = async (gameType: string) => {
         if (!firestore) return;
         const licenseId = `${gameType.toLowerCase().replace(/ & /g, '-').replace(/\s/g, '-')}-${user.id}`;
-        const licenseRef = doc(firestore, 'users', user.id, 'licenses', licenseId);
+        const licenseRef = doc(firestore, 'users', user.id, 'user_licenses', licenseId);
         try {
             await setDoc(licenseRef, {
                 id: licenseId,
@@ -74,7 +74,7 @@ export function LicenseManagementDialog({ user, open, onOpenChange }: LicenseMan
     
     const handleResetRounds = async (license: License) => {
         if (!firestore) return;
-        const licenseRef = doc(firestore, 'users', user.id, 'licenses', license.id);
+        const licenseRef = doc(firestore, 'users', user.id, 'user_licenses', license.id);
         try {
             await updateDoc(licenseRef, { roundsRemaining: 100, isActive: true });
             toast({ title: 'Success', description: `Rounds reset to 100 for ${license.gameType} license.` });
@@ -86,7 +86,7 @@ export function LicenseManagementDialog({ user, open, onOpenChange }: LicenseMan
 
     const handleDeactivateLicense = async (license: License) => {
         if (!firestore) return;
-        const licenseRef = doc(firestore, 'users', user.id, 'licenses', license.id);
+        const licenseRef = doc(firestore, 'users', user.id, 'user_licenses', license.id);
         try {
             await updateDoc(licenseRef, { roundsRemaining: 0, isActive: false });
             toast({ title: 'Success', description: `${license.gameType} license has been deactivated.` });
@@ -178,3 +178,5 @@ export function LicenseManagementDialog({ user, open, onOpenChange }: LicenseMan
         </Dialog>
     );
 }
+
+    

@@ -28,7 +28,7 @@ service cloud.firestore {
       allow list: if isAdmin();
 
       // Subcollections for a specific user
-      match /licenses/{licenseId} {
+      match /user_licenses/{licenseId} {
         allow read, write: if isOwner(userId) || isAdmin();
       }
 
@@ -66,8 +66,10 @@ service cloud.firestore {
     }
 
     // Admins can list licenses across all users for the dashboard.
-    match /{path=**}/licenses/{licenseId} {
+    match /{path=**}/user_licenses/{licenseId} {
       allow list: if isAdmin();
     }
   }
 }
+
+    

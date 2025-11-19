@@ -25,7 +25,7 @@ export default function VipSlipPage() {
     const licensesQuery = useMemoFirebase(() => {
         if (!userProfile?.id || !firestore) return null;
         return query(
-            collection(firestore, 'users', userProfile.id, 'licenses'),
+            collection(firestore, 'users', userProfile.id, 'user_licenses'),
             where('gameType', '==', 'VIP Slip') 
         );
     }, [userProfile?.id, firestore]);
@@ -94,7 +94,7 @@ export default function VipSlipPage() {
                 });
 
             // Decrement rounds remaining
-            const licenseRef = doc(firestore, 'users', userProfile.id, 'licenses', activeLicense.id);
+            const licenseRef = doc(firestore, 'users', userProfile.id, 'user_licenses', activeLicense.id);
             const licenseUpdateData = {
                 roundsRemaining: activeLicense.roundsRemaining - 1,
                 isActive: (activeLicense.roundsRemaining - 1) > 0,
@@ -254,3 +254,5 @@ export default function VipSlipPage() {
         </div>
     );
 }
+
+    

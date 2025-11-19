@@ -59,7 +59,7 @@ export default function PurchasePage() {
 
                 // 1. Create a new license document
                 const licenseId = `${plan.id}-${userProfile.id}`;
-                const licenseRef = doc(firestore, 'users', userProfile.id, 'licenses', licenseId);
+                const licenseRef = doc(firestore, 'users', userProfile.id, 'user_licenses', licenseId);
                 transaction.set(licenseRef, {
                     id: licenseId,
                     userId: userProfile.id,
@@ -206,3 +206,5 @@ export default function PurchasePage() {
         </div>
     )
 }
+
+    
