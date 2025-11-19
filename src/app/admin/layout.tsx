@@ -17,6 +17,7 @@ const adminTabs = [
   { value: 'payments', label: 'Payments', href: '/admin/payments' },
   { value: 'pricing', label: 'Pricing', href: '/admin/pricing' },
   { value: 'games', label: 'Games', href: '/admin/games' },
+  { value: 'broadcast', label: 'Broadcast', href: '/admin/broadcast' },
   { value: 'settings', label: 'Settings', href: '/admin/settings' },
 ];
 

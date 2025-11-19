@@ -28,6 +28,7 @@ import {
   Wallet,
   Gift,
   User,
+  Megaphone,
 } from 'lucide-react';
 import { Skeleton } from './ui/skeleton';
 
@@ -39,6 +40,7 @@ const superAdminNav = [
   { href: '/admin/predictions', label: 'Prediction Logs', icon: History },
   { href: '/admin/pricing', label: 'Plans & Pricing', icon: Tag },
   { href: '/admin/games', label: 'Games Control', icon: Gamepad2 },
+  { href: '/admin/broadcast', label: 'Broadcast', icon: Megaphone },
   { href: '/admin/support', label: 'Support Center', icon: LifeBuoy },
   { href: '/admin/settings', label: 'System Settings', icon: Settings },
   { href: '/admin/staff', label: 'Staff Management', icon: Users2 },
@@ -51,6 +53,7 @@ const adminNav = [
   { href: '/admin/payments', label: 'Payments', icon: CreditCard },
   { href: '/admin/predictions', label: 'Prediction Logs', icon: History },
   { href: '/admin/games', label: 'Games Control', icon: Gamepad2 },
+  { href: '/admin/broadcast', label: 'Broadcast', icon: Megaphone },
   { href: '/admin/support', label: 'Support Center', icon: LifeBuoy },
 ];
 
@@ -118,10 +121,7 @@ export function AppSidebar() {
             {navItems.map((item) => {
                 const Icon = item.icon;
                 
-                const isActive = item.href === '/' 
-                    ? pathname === item.href 
-                    : pathname.startsWith(item.href) && (item.href !== '/dashboard' || pathname === '/dashboard');
-
+                const isActive = pathname === item.href || (pathname.startsWith(item.href) && item.href !== '/admin' && item.href !== '/dashboard');
 
                 return (
                 <SidebarMenuItem key={item.label}>

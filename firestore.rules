@@ -94,5 +94,12 @@ service cloud.firestore {
       allow read: if true;
       allow write: if isActualAdmin();
     }
+    
+    // Notifications can be created by Admins and read by any authenticated user.
+    match /notifications/{notificationId} {
+        allow read: if isUser();
+        allow create: if isActualAdmin();
+        allow update, delete: if isActualAdmin();
+    }
   }
 }
