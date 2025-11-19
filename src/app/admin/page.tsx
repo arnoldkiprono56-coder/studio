@@ -3,7 +3,6 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PricingManagement } from "./pricing-management";
-import { PromptManagement } from "./prompt-management";
 import { GamesControl } from "./games-control";
 import Link from "next/link";
 
@@ -27,7 +26,6 @@ export default function AdminDashboardPage() {
                     <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
                     <TabsTrigger value="users"><Link href="/admin/users">Users</Link></TabsTrigger>
                     <TabsTrigger value="pricing">Pricing</TabsTrigger>
-                    <TabsTrigger value="prompts">Prompts</TabsTrigger>
                     <TabsTrigger value="games">Games</TabsTrigger>
                 </TabsList>
                  <TabsContent value="dashboard" className="space-y-4">
@@ -43,9 +41,6 @@ export default function AdminDashboardPage() {
                 </TabsContent>
                  <TabsContent value="pricing" className="space-y-4">
                     <PricingManagement />
-                </TabsContent>
-                 <TabsContent value="prompts" className="space-y-4">
-                    <PromptManagement />
                 </TabsContent>
                 <TabsContent value="games" className="space-y-4">
                     <GamesControl />
