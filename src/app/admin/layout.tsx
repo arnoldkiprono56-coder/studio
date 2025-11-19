@@ -4,9 +4,11 @@ import { ReactNode, useEffect } from 'react';
 import { useProfile } from '@/context/profile-context';
 import { useRouter } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { cn } from '@/lib/utils';
+
 
 const adminTabs = [
   { value: 'dashboard', label: 'Dashboard', href: '/admin' },
@@ -20,20 +22,25 @@ const adminTabs = [
 
 function AdminNav() {
     const pathname = usePathname();
-    
-    // Find the most specific match first
-    const activeTab = [...adminTabs].reverse().find(tab => pathname.startsWith(tab.href))?.value || 'dashboard';
 
     return (
-        <Tabs value={activeTab} className="space-y-4">
-            <TabsList className="grid w-full grid-cols-2 h-auto sm:w-auto sm:inline-flex sm:grid-cols-none">
-                {adminTabs.map(tab => (
-                     <TabsTrigger value={tab.value} key={tab.value} asChild>
-                        <Link href={tab.href}>{tab.label}</Link>
-                    </TabsTrigger>
-                ))}
-            </TabsList>
-        </Tabs>
+        <div className="relative overflow-x-auto">
+            <div className="flex gap-4 border-b">
+                {adminTabs.map(tab => {
+                    const isActive = pathname === tab.href || (pathname.startsWith(tab.href) && tab.href !== '/admin');
+                    return (
+                        <Link href={tab.href} key={tab.value} className={cn(
+                            "pb-3 px-1 border-b-2 text-sm font-medium whitespace-nowrap",
+                            isActive 
+                                ? "border-primary text-primary" 
+                                : "border-transparent text-muted-foreground hover:text-foreground"
+                        )}>
+                            {tab.label}
+                        </Link>
+                    )
+                })}
+            </div>
+        </div>
     )
 }
 
@@ -44,7 +51,11 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
 
   useEffect(() => {
-    if (!isProfileLoading && userProfile) {
+    if (!isProfileLoading) {
+      if (!userProfile) {
+        router.replace('/login');
+        return;
+      }
       const isAdminOrSuperAdmin =
         userProfile.role === 'SuperAdmin' ||
         userProfile.role === 'Admin' ||
@@ -52,9 +63,6 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
       if (!isAdminOrSuperAdmin) {
         router.replace('/dashboard');
       }
-    }
-     if (!isProfileLoading && !userProfile) {
-        router.replace('/login');
     }
   }, [userProfile, isProfileLoading, router]);
 
@@ -78,7 +86,6 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
     );
   }
 
-  // Hide tabs on settings page or its children
   const showTabs = !pathname.startsWith('/admin/settings');
 
 
@@ -89,7 +96,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
             <p className="text-muted-foreground">Platform overview and management tools.</p>
         </div>
         {showTabs && <AdminNav />}
-        {children}
+        <div className="mt-6">{children}</div>
     </div>
   );
 }
