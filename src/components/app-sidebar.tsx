@@ -66,7 +66,6 @@ const assistantNav = [
 const userNav = [
     { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/games', label: 'Games', icon: Gamepad2 },
-    { href: '/wallet', label: 'Wallet', icon: CreditCard },
     { href: '/support', label: 'Support', icon: LifeBuoy },
 ];
 
