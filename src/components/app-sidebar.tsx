@@ -42,7 +42,6 @@ const superAdminNav = [
   { href: '/admin/support', label: 'Support Center', icon: LifeBuoy },
   { href: '/admin/settings', label: 'System Settings', icon: Settings },
   { href: '/admin/staff', label: 'Staff Management', icon: Users2 },
-  { href: '/admin/audit', label: 'Audit Logs', icon: FileText },
 ];
 
 const adminNav = [

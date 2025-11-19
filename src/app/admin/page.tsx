@@ -6,7 +6,6 @@ import { TransactionManagement } from "./transaction-management";
 import { PricingManagement } from "./pricing-management";
 import { PromptManagement } from "./prompt-management";
 import { GamesControl } from "./games-control";
-import { AuditLogViewer } from "./audit-log";
 
 
 function DashboardHeader() {
@@ -29,7 +28,6 @@ export default function AdminDashboardPage() {
                     <TabsTrigger value="pricing">Pricing</TabsTrigger>
                     <TabsTrigger value="prompts">Prompts</TabsTrigger>
                     <TabsTrigger value="games">Games</TabsTrigger>
-                    <TabsTrigger value="audit">Audit Log</TabsTrigger>
                 </TabsList>
                  <TabsContent value="transactions" className="space-y-4">
                     <TransactionManagement />
@@ -42,9 +40,6 @@ export default function AdminDashboardPage() {
                 </TabsContent>
                 <TabsContent value="games" className="space-y-4">
                     <GamesControl />
-                </TabsContent>
-                <TabsContent value="audit" className="space-y-4">
-                    <AuditLogViewer />
                 </TabsContent>
             </Tabs>
         </div>
