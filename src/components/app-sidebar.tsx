@@ -56,7 +56,7 @@ const adminNav = [
 
 const assistantNav = [
   { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/admin/users', label: 'Users (Read)', icon: Users },
+  { href: '/admin/users', label: 'Users', icon: Users },
   { href: '/admin/licenses', label: 'Licenses (Read)', icon: Ticket },
   { href: '/admin/payments', label: 'Payments (Read)', icon: CreditCard },
   { href: '/admin/support', label: 'Support Center', icon: LifeBuoy },
@@ -112,11 +112,12 @@ export function AppSidebar() {
             <SidebarMenu>
             {navItems.map((item) => {
                 const Icon = item.icon;
+                const isActive = item.href === '/admin' ? pathname === item.href : pathname.startsWith(item.href);
                 return (
                 <SidebarMenuItem key={item.href}>
                     <Link href={item.href} legacyBehavior passHref>
                     <SidebarMenuButton
-                        isActive={pathname.startsWith(item.href)}
+                        isActive={isActive}
                         tooltip={item.label}
                     >
                         <Icon />
