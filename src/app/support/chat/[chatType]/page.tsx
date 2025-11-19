@@ -49,7 +49,6 @@ export default function ChatPage() {
             const currentInput = input;
             setInput('');
             
-            // Pass the full message objects to the conversation history
             const conversationHistory = [...messages, userMessage].map(m => ({
                 isUser: m.sender === 'user',
                 text: m.text
@@ -85,7 +84,7 @@ export default function ChatPage() {
 
 
     return (
-        <div className="flex flex-col h-full flex-grow">
+        <div className="flex flex-col flex-1 h-full mb-16 md:mb-0">
             <div className="flex items-center mb-4">
                 <Button variant="ghost" size="icon" asChild>
                     <Link href="/support">
@@ -94,8 +93,8 @@ export default function ChatPage() {
                 </Button>
                 <h1 className="text-2xl font-bold tracking-tight ml-2">{getChatTitle()}</h1>
             </div>
-            <Card className="flex-grow flex flex-col">
-                <CardContent className="flex-grow p-0">
+            <Card className="flex-1 flex flex-col">
+                <CardContent className="flex-1 p-0">
                     <ScrollArea className="h-full p-6" ref={scrollAreaRef}>
                         <div className="space-y-6">
                             {messages.map((message) => (
