@@ -201,7 +201,10 @@ export default function GemsAndMinesPage() {
                     </CardHeader>
                     <CardContent className="flex flex-col items-center justify-center gap-6 min-h-[300px]">
                         {isLoading || licensesLoading ? (
-                             <Loader2 className="h-12 w-12 animate-spin text-primary" />
+                             <div className='text-center space-y-2'>
+                                <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto" />
+                                <p className='font-semibold text-muted-foreground'>Connecting to 1xBet servers...</p>
+                            </div>
                         ): (
                             <div className="text-center">
                                 {gemsMinesData ? (
