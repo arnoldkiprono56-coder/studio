@@ -19,6 +19,7 @@ import type { License } from '@/lib/types';
 const games = [
     { 
         name: "VIP Slip", 
+        planId: "vip-slip",
         href: "/games/vip-slip", 
         description: "Get a VIP slip with 3-5 high-confidence matches for 1xBet.",
         icon: Ticket,
@@ -26,6 +27,7 @@ const games = [
     },
     { 
         name: "Aviator", 
+        planId: "aviator",
         href: "/games/aviator", 
         description: "Predict the best time to cash out before the plane flies away.",
         icon: Zap,
@@ -33,6 +35,7 @@ const games = [
     },
     { 
         name: "Crash", 
+        planId: "crash",
         href: "/games/crash", 
         description: "Anticipate the crash point of the rising multiplier.",
         icon: Shield,
@@ -41,6 +44,7 @@ const games = [
     },
     { 
         name: "Mines & Gems", 
+        planId: "mines-gems",
         href: "/games/gems-mines", 
         description: "Uncover valuable gems while avoiding hidden mines.",
         icon: Gem,
@@ -133,7 +137,7 @@ export default function GamesPage() {
                                 </Button>
                             ) : (
                                 <Button asChild variant="secondary" className="w-full">
-                                    <Link href={`/purchase/${game.name.toLowerCase().replace(/ & /g, '-').replace(/\s/g, '-')}`}>
+                                    <Link href={`/purchase/${game.planId}`}>
                                         Buy License <ArrowRight className="w-4 h-4 ml-2" />
                                     </Link>
                                 </Button>
