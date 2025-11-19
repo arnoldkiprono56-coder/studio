@@ -1,7 +1,7 @@
 'use client';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, AlertTriangle, ShieldCheck, Gem } from "lucide-react";
+import { Users, AlertTriangle, ShieldCheck, Gem, DollarSign, Clock, BrainCircuit, ShieldAlert } from "lucide-react";
 import { UserManagementTable } from "./user-management";
 import { TransactionManagement } from "./transaction-management";
 import { AuditLogViewer } from "./audit-log";
@@ -10,11 +10,37 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useProfile } from "@/context/profile-context";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PromptManagement } from "./prompt-management";
+import { useFirestore, useMemoFirebase } from "@/firebase";
+import { useCollection } from "@/firebase/firestore/use-collection";
+import { collection, collectionGroup, query, where } from "firebase/firestore";
+import { formatCurrency } from "@/lib/utils";
 
 export default function AdminDashboardPage() {
     const { userProfile, isProfileLoading } = useProfile();
+    const firestore = useFirestore();
 
-    if (isProfileLoading || !userProfile) {
+    const usersQuery = useMemoFirebase(() => firestore ? collection(firestore, 'users') : null, [firestore]);
+    const { data: users, isLoading: usersLoading } = useCollection(usersQuery);
+
+    const licensesQuery = useMemoFirebase(() => firestore ? query(collectionGroup(firestore, 'user_licenses'), where('isActive', '==', true)) : null, [firestore]);
+    const { data: activeLicenses, isLoading: licensesLoading } = useCollection(licensesQuery);
+    
+    const transactionsQuery = useMemoFirebase(() => firestore ? collection(firestore, 'transactions') : null, [firestore]);
+    const { data: transactions, isLoading: transactionsLoading } = useCollection(transactionsQuery);
+
+    const predictionsQuery = useMemoFirebase(() => firestore ? collectionGroup(firestore, 'predictions') : null, [firestore]);
+    const { data: predictions, isLoading: predictionsLoading } = useCollection(predictionsQuery);
+    
+    const alertsQuery = useMemoFirebase(() => firestore ? query(collection(firestore, 'auditlogs'), where('action', 'in', ['bypass_attempt', 'security_alert'])) : null, [firestore]);
+    const { data: securityAlerts, isLoading: alertsLoading } = useCollection(alertsQuery);
+
+    const isLoading = isProfileLoading || usersLoading || licensesLoading || transactionsLoading || predictionsLoading || alertsLoading;
+    
+    const totalRevenue = transactions?.filter(t => t.status === 'verified').reduce((sum, t) => sum + t.amount, 0) || 0;
+    const pendingVerifications = transactions?.filter(t => t.status === 'pending').length || 0;
+
+
+    if (isLoading || !userProfile) {
         return (
             <div className="space-y-8">
                 <div>
@@ -22,7 +48,7 @@ export default function AdminDashboardPage() {
                     <Skeleton className="h-5 w-80" />
                 </div>
                 <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-                    {Array.from({ length: 4 }).map((_, i) => (
+                    {Array.from({ length: 8 }).map((_, i) => (
                          <Card key={i}>
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                                 <Skeleton className="h-5 w-24" />
@@ -54,7 +80,7 @@ export default function AdminDashboardPage() {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">0</div>
+            <div className="text-2xl font-bold">{users?.length || 0}</div>
             <p className="text-xs text-muted-foreground">Registered users on the platform</p>
           </CardContent>
         </Card>
@@ -64,21 +90,51 @@ export default function AdminDashboardPage() {
             <Gem className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">0</div>
+            <div className="text-2xl font-bold">{activeLicenses?.length || 0}</div>
             <p className="text-xs text-muted-foreground">Currently active user licenses</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Security Alerts</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
+            <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">0</div>
-            <p className="text-xs text-muted-foreground">Critical alerts require attention</p>
+            <div className="text-2xl font-bold">{formatCurrency(totalRevenue, 'KES')}</div>
+            <p className="text-xs text-muted-foreground">Verified transactions</p>
           </CardContent>
         </Card>
         <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Pending Verifications</CardTitle>
+            <Clock className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{pendingVerifications}</div>
+            <p className="text-xs text-muted-foreground">Payments awaiting approval</p>
+          </CardContent>
+        </Card>
+         <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">AI Prediction Usage</CardTitle>
+            <BrainCircuit className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{predictions?.length || 0}</div>
+            <p className="text-xs text-muted-foreground">Total predictions generated</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Security Alerts</CardTitle>
+            <ShieldAlert className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-warning">{securityAlerts?.length || 0}</div>
+            <p className="text-xs text-muted-foreground">Critical alerts to review</p>
+          </CardContent>
+        </Card>
+         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">System Status</CardTitle>
             <ShieldCheck className="h-4 w-4 text-muted-foreground" />

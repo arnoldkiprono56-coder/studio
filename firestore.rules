@@ -43,7 +43,7 @@ service cloud.firestore {
     match /transactions/{transactionId} {
       allow get: if isUser();
       allow create: if isUser();
-      allow list: if (isUser() && request.query.where.userId == request.auth.uid) || isAdmin();
+      allow list: if (isUser() && request.query.where[0][2] == request.auth.uid) || isAdmin();
       allow update, delete: if false; // Should be updated by backend webhook only
     }
 
@@ -67,8 +67,11 @@ service cloud.firestore {
       allow read, write: if isAdmin();
     }
 
-    // Admins can list licenses across all users for the dashboard.
+    // Admins can list licenses and predictions across all users for the dashboard.
     match /{path=**}/user_licenses/{licenseId} {
+      allow list: if isAdmin();
+    }
+     match /{path=**}/predictions/{predictionId} {
       allow list: if isAdmin();
     }
   }
