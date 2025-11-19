@@ -2,7 +2,6 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { TransactionManagement } from "./transaction-management";
 import { PricingManagement } from "./pricing-management";
 import { PromptManagement } from "./prompt-management";
 import { GamesControl } from "./games-control";
@@ -22,16 +21,12 @@ export default function AdminDashboardPage() {
     return (
         <div className="space-y-8">
             <DashboardHeader />
-            <Tabs defaultValue="transactions" className="space-y-4">
+            <Tabs defaultValue="pricing" className="space-y-4">
                 <TabsList className="grid w-full grid-cols-1 h-auto sm:w-auto sm:inline-flex sm:grid-cols-none">
-                    <TabsTrigger value="transactions">Transactions</TabsTrigger>
                     <TabsTrigger value="pricing">Pricing</TabsTrigger>
                     <TabsTrigger value="prompts">Prompts</TabsTrigger>
                     <TabsTrigger value="games">Games</TabsTrigger>
                 </TabsList>
-                 <TabsContent value="transactions" className="space-y-4">
-                    <TransactionManagement />
-                </TabsContent>
                  <TabsContent value="pricing" className="space-y-4">
                     <PricingManagement />
                 </TabsContent>
