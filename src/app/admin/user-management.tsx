@@ -2,7 +2,7 @@
 
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { useFirestore, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
-import { collection, doc, writeBatch } from 'firebase/firestore';
+import { collection, doc, writeBatch, deleteDoc, getDoc, setDoc } from 'firebase/firestore';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
@@ -94,10 +94,13 @@ export function UserManagementTable() {
 
         batch.update(userRef, { role: newRole });
 
-        if ((newRole === 'Admin' || newRole === 'SuperAdmin') && oldRole !== 'Admin' && oldRole !== 'SuperAdmin') {
+        const newIsAdmin = newRole === 'Admin' || newRole === 'SuperAdmin';
+        const oldIsAdmin = oldRole === 'Admin' || oldRole === 'SuperAdmin';
+
+        if (newIsAdmin && !oldIsAdmin) {
             batch.set(adminRef, { userId: userId, isAdmin: true });
         } 
-        else if (newRole !== 'Admin' && newRole !== 'SuperAdmin' && (oldRole === 'Admin' || oldRole === 'SuperAdmin')) {
+        else if (!newIsAdmin && oldIsAdmin) {
              batch.delete(adminRef);
         }
 
