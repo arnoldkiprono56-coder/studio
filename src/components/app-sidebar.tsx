@@ -25,6 +25,9 @@ import {
   Users2,
   LayoutDashboard,
   Users,
+  Wallet,
+  Gift,
+  User,
 } from 'lucide-react';
 import { Skeleton } from './ui/skeleton';
 
@@ -62,6 +65,10 @@ const assistantNav = [
 const userNav = [
     { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/games', label: 'Games', icon: Gamepad2 },
+    { href: '/wallet', label: 'Wallet', icon: Wallet },
+    { href: '/licenses', label: 'My Licenses', icon: Ticket },
+    { href: '/referrals', label: 'Referrals', icon: Gift },
+    { href: '/profile', label: 'Profile', icon: User },
     { href: '/support', label: 'Support', icon: LifeBuoy },
 ];
 
@@ -71,7 +78,8 @@ export function AppSidebar() {
   const pathname = usePathname();
 
   const getNavItems = () => {
-    switch (userProfile?.role) {
+    if (!userProfile) return [];
+    switch (userProfile.role) {
       case 'SuperAdmin':
         return superAdminNav;
       case 'Admin':
@@ -105,16 +113,15 @@ export function AppSidebar() {
         </div>
       </SidebarHeader>
       <SidebarContent>
-        {isProfileLoading ? renderSkeleton() : (
+        {isProfileLoading || !userProfile ? renderSkeleton() : (
             <SidebarMenu>
             {navItems.map((item) => {
                 const Icon = item.icon;
                 
-                // This logic correctly handles nested routes highlighting their parent.
-                // e.g., /admin/users/edit/123 will highlight the /admin/users link.
-                const isActive = item.href === '/admin' 
+                const isActive = item.href === '/' 
                     ? pathname === item.href 
-                    : pathname.startsWith(item.href);
+                    : pathname.startsWith(item.href) && (item.href !== '/dashboard' || pathname === '/dashboard');
+
 
                 return (
                 <SidebarMenuItem key={item.label}>
