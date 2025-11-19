@@ -162,9 +162,6 @@ export default function RegisterPage() {
             batch.set(userRef, userData);
 
             if (isSuperAdmin) {
-                const adminRef = doc(firestore, "admins", user.uid);
-                batch.set(adminRef, { userId: user.uid, isAdmin: true });
-
                 // Seed initial data
                 defaultPlans.forEach(plan => {
                     const planRef = doc(firestore, 'plans', plan.id);
@@ -185,12 +182,20 @@ export default function RegisterPage() {
             router.push(`/verify-otp?email=${values.email}`);
 
         } catch (error: any) {
-            console.error("Registration Error:", error);
-            toast({
-                variant: "destructive",
-                title: "Registration Failed",
-                description: error.message || "An unexpected error occurred.",
-            });
+            if (error.code === 'auth/email-already-in-use') {
+                toast({
+                    variant: "destructive",
+                    title: "Registration Failed",
+                    description: "This email is already registered. Please try logging in.",
+                });
+            } else {
+                console.error("Registration Error:", error);
+                toast({
+                    variant: "destructive",
+                    title: "Registration Failed",
+                    description: error.message || "An unexpected error occurred.",
+                });
+            }
         } finally {
             setIsLoading(false);
         }
