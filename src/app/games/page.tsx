@@ -107,7 +107,7 @@ export default function GamesPage() {
       <div className="grid gap-6 md:grid-cols-2">
         {games.map(game => {
             const Icon = game.icon;
-            const hasActiveLicense = allLicenses?.some(l => l.gameType === game.name && l.isActive);
+            const hasActiveLicense = allLicenses?.some(l => l.gameType === game.name && l.isActive && l.paymentVerified);
             const status = hasActiveLicense ? 'active' : 'locked';
             
             return (
