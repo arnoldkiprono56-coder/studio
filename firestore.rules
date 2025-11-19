@@ -82,5 +82,13 @@ service cloud.firestore {
     match /prompts/{promptId} {
       allow read, write: if isActualAdmin();
     }
+
+    // Game status can be read by anyone, but only written by an admin.
+    match /game_status/{gameId} {
+      allow read: if true;
+      allow write: if isActualAdmin();
+    }
   }
 }
+
+    

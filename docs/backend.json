@@ -311,6 +311,32 @@
         "name",
         "content"
       ]
+    },
+    "GameStatus": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "GameStatus",
+      "type": "object",
+      "description": "Stores the operational status of a game.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique ID for the game (e.g., 'aviator')."
+        },
+        "name": {
+          "type": "string",
+          "description": "Display name of the game (e.g., 'Aviator')."
+        },
+        "isEnabled": {
+          "type": "boolean",
+          "description": "Whether the game is currently enabled for users.",
+          "default": true
+        },
+        "disabledReason": {
+          "type": "string",
+          "description": "The reason displayed to users if the game is disabled."
+        }
+      },
+      "required": ["id", "name", "isEnabled"]
     }
   },
   "auth": {
@@ -455,8 +481,26 @@
             }
           ]
         }
+      },
+      {
+        "path": "/game_status/{gameId}",
+        "definition": {
+          "entityName": "GameStatus",
+          "schema": {
+            "$ref": "#/backend/entities/GameStatus"
+          },
+          "description": "Stores the operational status of each game (e.g., enabled, disabled).",
+          "params": [
+            {
+              "name": "gameId",
+              "description": "The unique identifier for the game (e.g., 'aviator')."
+            }
+          ]
+        }
       }
     ],
     "reasoning": "The Firestore structure is updated to align with the Master System Prompt. It defines user roles (User, Assistant, Admin, SuperAdmin) and sets the default to 'User' on registration. It maintains the core logic for Users, Licenses, Predictions, and Payments. User profiles are managed by Firebase Auth and user data is stored in Firestore. Licenses are tied to a user and expire based on 'roundsRemaining' and payment verification. Predictions are linked to both a user and a license. A top-level `transactions` collection tracks payments, with verification handled by a webhook. A global `auditlogs` collection is included for security monitoring. A `plans` collection is added to store pricing information. A new `prompts` collection is added to store editable AI prompts, manageable by admins."
   }
 }
+
+    

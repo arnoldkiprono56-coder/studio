@@ -39,6 +39,33 @@ const defaultPlans = [
     }
 ];
 
+const defaultGameStatuses = [
+    {
+        id: 'vip-slip',
+        name: 'VIP Slip',
+        isEnabled: true,
+        disabledReason: ''
+    },
+    {
+        id: 'aviator',
+        name: 'Aviator',
+        isEnabled: true,
+        disabledReason: ''
+    },
+    {
+        id: 'crash',
+        name: 'Crash',
+        isEnabled: true,
+        disabledReason: ''
+    },
+    {
+        id: 'mines-gems',
+        name: 'Mines & Gems',
+        isEnabled: true,
+        disabledReason: ''
+    }
+]
+
 async function seedPlans(db: Firestore) {
   const plansCollection = collection(db, 'plans');
 
@@ -56,15 +83,33 @@ async function seedPlans(db: Firestore) {
   }
 }
 
+async function seedGameStatuses(db: Firestore) {
+    const gameStatusCollection = collection(db, 'game_status');
+  
+    for (const status of defaultGameStatuses) {
+      const statusRef = doc(gameStatusCollection, status.id);
+      const docSnap = await getDoc(statusRef);
+  
+      if (!docSnap.exists()) {
+        console.log(`Creating game status: ${status.name}...`);
+        await setDoc(statusRef, status);
+        console.log(`✅ Game status "${status.name}" created.`);
+      } else {
+        console.log(`ℹ️ Game status "${status.name}" already exists. Skipping.`);
+      }
+    }
+}
+
 async function main() {
     console.log('Initializing Firebase...');
     const { firestore } = initializeFirebase();
-    console.log('Firebase initialized. Starting to seed plans...');
+    console.log('Firebase initialized. Starting to seed data...');
     try {
         await seedPlans(firestore);
-        console.log('\n🎉 All default plans have been seeded successfully.');
+        await seedGameStatuses(firestore);
+        console.log('\n🎉 All default data has been seeded successfully.');
     } catch (error) {
-        console.error('\n❌ An error occurred while seeding plans:', error);
+        console.error('\n❌ An error occurred while seeding:', error);
         process.exit(1);
     }
     process.exit(0);
@@ -78,3 +123,5 @@ if (!process.env.GOOGLE_API_KEY && !process.env.GCLOUD_PROJECT) {
 }
 
 main();
+
+    
