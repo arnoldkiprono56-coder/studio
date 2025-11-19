@@ -15,13 +15,11 @@ service cloud.firestore {
 
     // Checks if the user has an Admin or SuperAdmin role in their user document.
     function isActualAdmin() {
-      let userRole = get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
-      return isUser() && (userRole == 'Admin' || userRole == 'SuperAdmin');
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['Admin', 'SuperAdmin'];
     }
     
     function isSuperAdmin() {
-      let userRole = get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
-      return isUser() && userRole == 'SuperAdmin';
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'SuperAdmin';
     }
 
     // Admins can list some subcollections for the dashboard.
