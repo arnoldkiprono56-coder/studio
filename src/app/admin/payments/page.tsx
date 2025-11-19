@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { useFirestore, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
-import { collection, doc, runTransaction, serverTimestamp } from 'firebase/firestore';
+import { collection, doc, runTransaction, serverTimestamp, query } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from '@/components/ui/button';
@@ -48,56 +48,59 @@ function VerificationCard({ transaction, onUpdate }: { transaction: Transaction,
         
         setIsProcessing(true);
 
-        try {
-            await runTransaction(firestore, async (t) => {
-                const transactionRef = doc(firestore, 'transactions', transaction.id);
-                const licenseRef = doc(firestore, 'users', transaction.userId, 'user_licenses', transaction.licenseId);
-                const auditLogRef = doc(collection(firestore, 'auditlogs'));
+        const transactionLogic = async (t: any) => {
+            const transactionRef = doc(firestore, 'transactions', transaction.id);
+            const licenseRef = doc(firestore, 'users', transaction.userId, 'user_licenses', transaction.licenseId);
+            const auditLogRef = doc(collection(firestore, 'auditlogs'));
 
-                if (action === 'approve') {
-                    // Update transaction
-                    t.update(transactionRef, {
-                        status: 'verified',
-                        finalAmount: parsedAmount,
-                        finalTxId: finalTxId,
-                    });
+            if (action === 'approve') {
+                // Update transaction
+                t.update(transactionRef, {
+                    status: 'verified',
+                    finalAmount: parsedAmount,
+                    finalTxId: finalTxId,
+                });
 
-                    // Activate license
-                    t.update(licenseRef, {
-                        paymentVerified: true,
-                        isActive: true,
-                    });
-                     // Create audit log
-                    t.set(auditLogRef, {
-                        action: 'payment_verified',
-                        userId: transaction.userId,
-                        details: `Admin approved payment for transaction ${transaction.id}.`,
-                        timestamp: serverTimestamp(),
-                        ipAddress: 'not_collected', // On server, this would be admin's IP
-                    });
-                } else { // Reject
-                     t.update(transactionRef, { status: 'failed' });
-                     t.set(auditLogRef, {
-                        action: 'payment_rejected',
-                        userId: transaction.userId,
-                        details: `Admin rejected payment for transaction ${transaction.id}.`,
-                        timestamp: serverTimestamp(),
-                        ipAddress: 'not_collected',
-                    });
-                }
+                // Activate license
+                t.update(licenseRef, {
+                    paymentVerified: true,
+                    isActive: true,
+                });
+                 // Create audit log
+                t.set(auditLogRef, {
+                    action: 'payment_verified',
+                    userId: transaction.userId,
+                    details: `Admin approved payment for transaction ${transaction.id}.`,
+                    timestamp: serverTimestamp(),
+                    ipAddress: 'not_collected', // On server, this would be admin's IP
+                });
+            } else { // Reject
+                 t.update(transactionRef, { status: 'failed' });
+                 t.set(auditLogRef, {
+                    action: 'payment_rejected',
+                    userId: transaction.userId,
+                    details: `Admin rejected payment for transaction ${transaction.id}.`,
+                    timestamp: serverTimestamp(),
+                    ipAddress: 'not_collected',
+                });
+            }
+        };
+
+        runTransaction(firestore, transactionLogic)
+            .then(() => {
+                toast({ title: 'Success', description: `Transaction has been ${action === 'approve' ? 'approved' : 'rejected'}.` });
+                if (onUpdate) onUpdate(); // Trigger refetch
+            })
+            .catch((error: any) => {
+                errorEmitter.emit('permission-error', new FirestorePermissionError({
+                    path: `transactions/${transaction.id} and subcollection documents`,
+                    operation: 'write',
+                    requestResourceData: { transactionId: transaction.id, action }
+                }));
+            })
+            .finally(() => {
+                setIsProcessing(false);
             });
-            
-            toast({ title: 'Success', description: `Transaction has been ${action === 'approve' ? 'approved' : 'rejected'}.` });
-            onUpdate(); // Trigger refetch
-
-        } catch (error: any) {
-             errorEmitter.emit('permission-error', new FirestorePermissionError({
-                path: 'transactions', // This is a transaction, path is complex
-                operation: 'write'
-            }));
-        } finally {
-            setIsProcessing(false);
-        }
     };
 
 
@@ -148,7 +151,7 @@ export default function PaymentsAdminPage() {
     
     const pendingTransactionsQuery = useMemoFirebase(() => {
         if (!firestore) return null;
-        return collection(firestore, 'transactions'); // We will filter locally for this MVP
+        return query(collection(firestore, 'transactions')); // We will filter locally for this MVP
     }, [firestore]);
 
     const { data: allTransactions, isLoading, forceRefetch } = useCollection<Transaction>(pendingTransactionsQuery);
