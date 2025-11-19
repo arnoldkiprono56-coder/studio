@@ -42,6 +42,20 @@ const formSchema = z.object({
   path: ["confirmPassword"],
 });
 
+const defaultPlans = [
+    { id: 'vip-slip', name: 'VIP Slip', price: 1500, currency: 'KES', rounds: 100 },
+    { id: 'aviator', name: 'Aviator', price: 799, currency: 'KES', rounds: 100 },
+    { id: 'crash', name: 'Crash', price: 799, currency: 'KES', rounds: 100 },
+    { id: 'mines-gems', name: 'Mines & Gems', price: 999, currency: 'KES', rounds: 100 }
+];
+
+const defaultGameStatuses = [
+    { id: 'vip-slip', name: 'VIP Slip', isEnabled: true, disabledReason: '' },
+    { id: 'aviator', name: 'Aviator', isEnabled: true, disabledReason: '' },
+    { id: 'crash', name: 'Crash', isEnabled: true, disabledReason: '' },
+    { id: 'mines-gems', name: 'Mines & Gems', isEnabled: true, disabledReason: '' }
+];
+
 export default function RegisterPage() {
     const [isLoading, setIsLoading] = useState(false);
     const [passwordStrength, setPasswordStrength] = useState(0);
@@ -78,15 +92,13 @@ export default function RegisterPage() {
         const userIdPrefix = referralCode.replace('PRO-', '').toLowerCase();
         
         const usersRef = collection(firestore, 'users');
-        // This is not a perfect query but it's the best we can do without more complex indexing/search
         const q = query(usersRef, where('id', '>=', userIdPrefix), where('id', '<=', userIdPrefix + '\uf8ff'));
 
         const querySnapshot = await getDocs(q);
         
-        for (const doc of querySnapshot.docs) {
-             // We have to double-check in the client because the query is case-sensitive
-             if (doc.id.substring(0, 6).toUpperCase() === userIdPrefix.toUpperCase()) {
-                return doc.id;
+        for (const docSnap of querySnapshot.docs) {
+             if (docSnap.id.substring(0, 6).toUpperCase() === userIdPrefix.toUpperCase()) {
+                return docSnap.id;
             }
         }
 
@@ -149,10 +161,19 @@ export default function RegisterPage() {
             
             batch.set(userRef, userData);
 
-            // Correctly add SuperAdmin or Admin to the /admins collection
-            if (isSuperAdmin || userRole === 'Admin') {
+            if (isSuperAdmin) {
                 const adminRef = doc(firestore, "admins", user.uid);
                 batch.set(adminRef, { userId: user.uid, isAdmin: true });
+
+                // Seed initial data
+                defaultPlans.forEach(plan => {
+                    const planRef = doc(firestore, 'plans', plan.id);
+                    batch.set(planRef, plan);
+                });
+                defaultGameStatuses.forEach(status => {
+                    const statusRef = doc(firestore, 'game_status', status.id);
+                    batch.set(statusRef, status);
+                });
             }
 
             await batch.commit();

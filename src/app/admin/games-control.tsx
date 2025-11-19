@@ -139,8 +139,8 @@ export function GamesControl() {
                 ) : (
                     <div className="text-center h-24 flex flex-col items-center justify-center gap-2 text-muted-foreground">
                         <AlertCircle className="h-5 w-5" />
-                        No game statuses found in the database.
-                        <p className="text-xs">Run the seed script (`npx tsx src/lib/seed-plans.ts`) to populate default data.</p>
+                        No game statuses found.
+                        <p className="text-xs">Initial game data may not have been seeded. Please contact support.</p>
                     </div>
                 )}
             </CardContent>
