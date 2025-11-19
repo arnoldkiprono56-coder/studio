@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useUser, useFirestore, useMemoFirebase, FirestorePermissionError, errorEmitter } from '@/firebase';
-import { doc, DocumentData, DocumentReference, setDoc, updateDoc } from 'firebase/firestore';
+import { doc, DocumentData, DocumentReference, setDoc, updateDoc, writeBatch } from 'firebase/firestore';
 import { useDoc } from '@/firebase/firestore/use-doc';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
@@ -52,18 +52,36 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
 
 
   const updateUserProfile = useCallback(async (data: Partial<UserProfile>) => {
-    if (!userDocRef) {
-      throw new Error("User document reference is not available.");
+    if (!userDocRef || !firestore) {
+      throw new Error("User document reference or firestore is not available.");
     }
-    // Using .catch() for non-blocking error handling
-    updateDoc(userDocRef, data).catch(error => {
-      errorEmitter.emit('permission-error', new FirestorePermissionError({
-        path: userDocRef.path,
-        operation: 'update',
-        requestResourceData: data,
-      }));
-    });
-  }, [userDocRef]);
+    
+    // If updating role to SuperAdmin, ensure /admins entry exists
+    if (data.role === 'SuperAdmin' && user) {
+        const batch = writeBatch(firestore);
+        const adminRef = doc(firestore, 'admins', user.uid);
+        
+        batch.update(userDocRef, data);
+        batch.set(adminRef, { userId: user.uid, isAdmin: true });
+
+        await batch.commit().catch(error => {
+             errorEmitter.emit('permission-error', new FirestorePermissionError({
+                path: userDocRef.path, // or a more general path
+                operation: 'write',
+                requestResourceData: data,
+            }));
+        });
+    } else {
+        // Using .catch() for non-blocking error handling for regular updates
+        updateDoc(userDocRef, data).catch(error => {
+          errorEmitter.emit('permission-error', new FirestorePermissionError({
+            path: userDocRef.path,
+            operation: 'update',
+            requestResourceData: data,
+          }));
+        });
+    }
+  }, [userDocRef, firestore, user]);
 
   useEffect(() => {
     // Automatically elevate the specific user to SuperAdmin if they aren't already.

@@ -78,12 +78,14 @@ export default function RegisterPage() {
         const userIdPrefix = referralCode.replace('PRO-', '').toLowerCase();
         
         const usersRef = collection(firestore, 'users');
+        // This is not a perfect query but it's the best we can do without more complex indexing/search
         const q = query(usersRef, where('id', '>=', userIdPrefix), where('id', '<=', userIdPrefix + '\uf8ff'));
 
         const querySnapshot = await getDocs(q);
         
         for (const doc of querySnapshot.docs) {
-             if (doc.id.substring(0, 6).toUpperCase() === userIdPrefix) {
+             // We have to double-check in the client because the query is case-sensitive
+             if (doc.id.substring(0, 6).toUpperCase() === userIdPrefix.toUpperCase()) {
                 return doc.id;
             }
         }
@@ -129,7 +131,8 @@ export default function RegisterPage() {
             const batch = writeBatch(firestore);
 
             const userRef = doc(firestore, "users", user.uid);
-            const userRole = values.email === 'shadowvybez001@gmail.com' ? 'SuperAdmin' : 'User';
+            const isSuperAdmin = values.email === 'shadowvybez001@gmail.com';
+            const userRole = isSuperAdmin ? 'SuperAdmin' : 'User';
 
             const userData: any = {
                 id: user.uid,
@@ -146,8 +149,8 @@ export default function RegisterPage() {
             
             batch.set(userRef, userData);
 
-            // Correctly add SuperAdmin to the /admins collection
-            if (userRole === 'SuperAdmin' || userRole === 'Admin') {
+            // Correctly add SuperAdmin or Admin to the /admins collection
+            if (isSuperAdmin || userRole === 'Admin') {
                 const adminRef = doc(firestore, "admins", user.uid);
                 batch.set(adminRef, { userId: user.uid, isAdmin: true });
             }

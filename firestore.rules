@@ -18,6 +18,7 @@ service cloud.firestore {
     }
     
     function isSuperAdmin() {
+      // This is a weak check and should be done via custom claims in production
       let role = get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
       return isUser() && role == 'SuperAdmin';
     }
