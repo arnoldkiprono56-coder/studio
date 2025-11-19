@@ -23,11 +23,11 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'SuperAdmin';
     }
 
-    // Admins can list some subcollections for the dashboard.
-    match /{path=**}/user_licenses/{document=**} {
+    // This rule allows Admins to perform collection group queries on these subcollections.
+    match /{path=**}/user_licenses/{licenseId} {
       allow list: if isActualAdmin();
     }
-     match /{path=**}/predictions/{document=**} {
+    match /{path=**}/predictions/{predictionId} {
       allow list: if isActualAdmin();
     }
 
@@ -42,15 +42,15 @@ service cloud.firestore {
       allow create: if isOwner(userId);
       // Role updates are restricted to SuperAdmins. Other fields can be updated by the owner.
       allow update: if (isOwner(userId) && !("role" in request.resource.data)) || isSuperAdmin();
-    }
 
-    // Subcollections for a specific user
-    match /users/{userId}/user_licenses/{licenseId} {
-      allow read, write: if isOwner(userId) || isActualAdmin();
-    }
-
-    match /users/{userId}/predictions/{predictionId} {
+      // Subcollections for a specific user
+      match /user_licenses/{licenseId} {
         allow read, write: if isOwner(userId) || isActualAdmin();
+      }
+
+      match /predictions/{predictionId} {
+          allow read, write: if isOwner(userId) || isActualAdmin();
+      }
     }
     
     // The /admins collection is no longer used for checking admin status.
