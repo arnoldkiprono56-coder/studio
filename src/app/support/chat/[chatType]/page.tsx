@@ -45,16 +45,17 @@ export default function ChatPage() {
 
     const handleSendMessage = async () => {
         if (input.trim() && !isLoading) {
-            const userMessage: Message = { id: messages.length + 1, text: input, sender: 'user' };
             const currentInput = input;
-            setInput('');
+            const userMessage: Message = { id: Date.now(), text: currentInput, sender: 'user' };
             
-            const conversationHistory = [...messages, userMessage].map(m => ({
+            // The history should only contain messages *before* the new one.
+            const conversationHistory = messages.map(m => ({
                 isUser: m.sender === 'user',
                 text: m.text
             }));
             
             setMessages(prev => [...prev, userMessage]);
+            setInput('');
             setIsLoading(true);
             scrollToBottom();
 
@@ -65,11 +66,11 @@ export default function ChatPage() {
                     history: conversationHistory,
                 });
                 
-                const aiMessage: Message = { id: messages.length + 2, text: result.response, sender: 'model' };
+                const aiMessage: Message = { id: Date.now() + 1, text: result.response, sender: 'model' };
                 setMessages(prev => [...prev, aiMessage]);
             } catch (error) {
                 console.error("Failed to get AI response:", error);
-                const errorMessage: Message = { id: messages.length + 2, text: "Sorry, I'm having trouble connecting. Please try again later.", sender: 'model' };
+                const errorMessage: Message = { id: Date.now() + 1, text: "Sorry, I'm having trouble connecting. Please try again later.", sender: 'model' };
                 setMessages(prev => [...prev, errorMessage]);
             } finally {
                 setIsLoading(false);
