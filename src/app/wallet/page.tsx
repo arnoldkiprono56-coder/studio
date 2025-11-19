@@ -4,7 +4,7 @@
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { useProfile } from '@/context/profile-context';
 import { useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy } from 'firebase/firestore';
+import { collection, query, orderBy, where } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/button';
 
 interface Transaction {
     id: string;
+    userId: string;
     type: 'purchase' | 'commission' | 'withdrawal' | 'reward';
     description: string;
     amount: number;
@@ -38,13 +39,12 @@ export default function WalletPage() {
         if (!userProfile?.id || !firestore) return null;
         return query(
             collection(firestore, 'transactions'),
+            where('userId', '==', userProfile.id),
             orderBy('createdAt', 'desc')
         );
     }, [userProfile?.id, firestore]);
 
-    const { data: transactions, isLoading: isTransactionsLoading } = useCollection<Transaction>(transactionsQuery);
-
-    const userTransactions = transactions?.filter(t => t.userId === userProfile?.id) || [];
+    const { data: userTransactions, isLoading: isTransactionsLoading } = useCollection<Transaction>(transactionsQuery);
 
     const isLoading = isProfileLoading || isTransactionsLoading;
 
@@ -99,7 +99,7 @@ export default function WalletPage() {
                                         <TableCell className="text-right"><Skeleton className="h-5 w-16 ml-auto" /></TableCell>
                                     </TableRow>
                                 ))
-                            ) : userTransactions.length > 0 ? (
+                            ) : userTransactions && userTransactions.length > 0 ? (
                                 userTransactions.map(tx => (
                                     <TableRow key={tx.id}>
                                         <TableCell>
