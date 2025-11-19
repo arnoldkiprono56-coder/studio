@@ -13,14 +13,17 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    // An admin has a custom claim { admin: true } on their auth token.
+    // This is set server-side and is more secure than checking a collection.
     function isActualAdmin() {
-      return isUser() && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+      return isUser() && request.auth.token.admin == true;
     }
     
+    // A SuperAdmin has a specific role in their user profile document.
+    // This check is used for actions only a SuperAdmin can perform.
     function isSuperAdmin() {
-      // This is a weak check and should be done via custom claims in production
       let role = get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
-      return isUser() && role == 'SuperAdmin';
+      return isActualAdmin() && role == 'SuperAdmin';
     }
 
     // Admins can list some subcollections for the dashboard.
@@ -33,25 +36,29 @@ service cloud.firestore {
 
     // User profiles can be read by their owner or an admin.
     // They can be listed only by admins.
-    // They can only be written by their owner or an admin.
+    // Their role can only be changed by a SuperAdmin.
+    // Other fields can be written by their owner or an admin.
     match /users/{userId} {
-      allow get, write: if isOwner(userId) || isActualAdmin();
+      allow get: if isOwner(userId) || isActualAdmin();
       allow list: if isActualAdmin();
-
-      // Subcollections for a specific user
-      match /user_licenses/{licenseId} {
-        allow read, write: if isOwner(userId) || isActualAdmin();
-      }
-
-      match /predictions/{predictionId} {
-         allow read, write: if isOwner(userId) || isActualAdmin();
-      }
+      allow create: if isUser();
+      allow update: if (isOwner(userId) && !("role" in request.resource.data)) || isActualAdmin();
     }
 
-    // Admins collection can be read by admins, but only written by SuperAdmins
+    // Subcollections for a specific user
+    match /users/{userId}/user_licenses/{licenseId} {
+      allow read, write: if isOwner(userId) || isActualAdmin();
+    }
+
+    match /users/{userId}/predictions/{predictionId} {
+        allow read, write: if isOwner(userId) || isActualAdmin();
+    }
+    
+    // The /admins collection is no longer used for checking admin status.
+    // Writes should be disabled from the client to prevent misuse.
+    // This collection can be removed if fully migrated to custom claims.
     match /admins/{userId} {
-      allow read, list: if isActualAdmin();
-      allow write: if isSuperAdmin();
+      allow read, write: if false; 
     }
     
     // Transactions can be created by any authenticated user.

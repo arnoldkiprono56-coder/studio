@@ -2,11 +2,10 @@
 
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { useFirestore, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
-import { collection, doc, writeBatch } from 'firebase/firestore';
+import { collection, doc, updateDoc } from 'firebase/firestore';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
@@ -37,6 +36,10 @@ export function UserManagement() {
         console.error("Firestore error in UserManagement:", error);
     }
 
+    // IMPORTANT: In a real app, this should call a Firebase Function
+    // to set a custom claim on the user. The client should not be able
+    // to change its own role or other users' roles directly in Firestore
+    // without server-side validation.
     const handleRoleChange = async (userId: string, newRole: UserProfile['role']) => {
         if (!firestore || !adminProfile) return;
         if (adminProfile.role !== 'SuperAdmin' && (newRole === 'SuperAdmin' || newRole === 'Admin')) {
@@ -45,27 +48,17 @@ export function UserManagement() {
         }
 
         const userRef = doc(firestore, 'users', userId);
-        const adminRef = doc(firestore, 'admins', userId);
-        const batch = writeBatch(firestore);
-
-        batch.update(userRef, { role: newRole });
-
-        if (newRole === 'Admin' || newRole === 'SuperAdmin') {
-            // Ensure the user is in the /admins collection
-            batch.set(adminRef, { userId: userId, isAdmin: true });
-        } else {
-            // If demoted from an admin role, remove from /admins
-            batch.delete(adminRef);
-        }
-
+        const updateData = { role: newRole };
+        
         try {
-            await batch.commit();
-            toast({ title: 'Success', description: `User role updated to ${newRole}.` });
+            await updateDoc(userRef, updateData);
+            toast({ title: 'Success', description: `User role updated to ${newRole}. This will take effect on their next login.` });
+            // In a full implementation, you would trigger a Firebase Function here.
         } catch (e: any) {
             errorEmitter.emit('permission-error', new FirestorePermissionError({
-                path: `/users/${userId} and /admins/${userId}`,
-                operation: 'write',
-                requestResourceData: { role: newRole }
+                path: userRef.path,
+                operation: 'update',
+                requestResourceData: updateData
             }));
         }
     };
@@ -74,16 +67,15 @@ export function UserManagement() {
         if (!firestore) return;
         
         const userRef = doc(firestore, 'users', userId);
+        const updateData = { isSuspended };
         try {
-            const batch = writeBatch(firestore);
-            batch.update(userRef, { isSuspended });
-            await batch.commit();
+            await updateDoc(userRef, updateData);
             toast({ title: 'Success', description: `User has been ${isSuspended ? 'suspended' : 'unsuspended'}.` });
         } catch (e: any) {
             errorEmitter.emit('permission-error', new FirestorePermissionError({
                 path: userRef.path,
                 operation: 'update',
-                requestResourceData: { isSuspended }
+                requestResourceData: updateData
             }));
         }
     };

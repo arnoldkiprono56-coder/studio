@@ -56,21 +56,15 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       throw new Error("User document reference or firestore is not available.");
     }
     
+    // In a production app, role changes should trigger a Firebase Function
+    // to set custom claims, not just update Firestore.
+    // For this prototype, we'll just update the document.
     try {
-        const batch = writeBatch(firestore);
-        batch.update(userDocRef, data);
-
-        if (data.role === 'Admin' || data.role === 'SuperAdmin') {
-            const adminRef = doc(firestore, 'admins', user.uid);
-            batch.set(adminRef, { userId: user.uid, isAdmin: true });
-        }
-        
-        await batch.commit();
-
+        await updateDoc(userDocRef, data);
     } catch (error) {
         errorEmitter.emit('permission-error', new FirestorePermissionError({
             path: userDocRef.path,
-            operation: 'write',
+            operation: 'update',
             requestResourceData: data,
         }));
         // Re-throw or handle as needed, for now we let the emitter handle it
@@ -78,33 +72,6 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     }
 
   }, [userDocRef, firestore, user]);
-
-  useEffect(() => {
-    // Automatically elevate the specific user to SuperAdmin if they aren't already.
-    const ensureSuperAdmin = async () => {
-        if (userProfile && userProfile.email === 'shadowvybez001@gmail.com' && userProfile.role !== 'SuperAdmin' && firestore && user) {
-            const adminRef = doc(firestore, 'admins', user.uid);
-            const adminDoc = await getDoc(adminRef);
-
-            if (userProfile.role !== 'SuperAdmin' || !adminDoc.exists()) {
-                console.log("Attempting to elevate user to SuperAdmin...");
-                try {
-                    const batch = writeBatch(firestore);
-                    const userRef = doc(firestore, 'users', user.uid);
-                    
-                    batch.update(userRef, { role: 'SuperAdmin' });
-                    batch.set(adminRef, { userId: user.uid, isAdmin: true });
-                    
-                    await batch.commit();
-                    console.log("Successfully elevated to SuperAdmin and created admin entry.");
-                } catch (error) {
-                    console.error("Failed to elevate user to SuperAdmin:", error);
-                }
-            }
-        }
-    };
-    ensureSuperAdmin();
-  }, [userProfile, firestore, user]);
 
   useEffect(() => {
     if (userProfile?.isSuspended && pathname !== '/suspended' && !pathname.startsWith('/support')) {
