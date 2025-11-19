@@ -1,11 +1,5 @@
-// This is a standalone script to seed your Firestore database with the default prompts.
-// You can run this script from your terminal using `npx tsx src/lib/seed-prompts.ts`.
-// Make sure you have `tsx` installed (`npm install -g tsx`) and are authenticated with Firebase.
-
-import { initializeFirebase } from '../firebase/index';
-import { collection, doc, setDoc, getDoc, Firestore } from 'firebase/firestore';
-import { config } from 'dotenv';
-config(); // Load environment variables
+// This file exports the default prompts for seeding purposes.
+// It is imported by the DataSeeder component.
 
 const defaultPrompts = [
     {
@@ -101,47 +95,4 @@ Provide a confirmation message that the model has been updated for 1xBet.`
     }
 ];
 
-async function seedPrompts(db: Firestore) {
-  const promptsCollection = collection(db, 'prompts');
-
-  for (const prompt of defaultPrompts) {
-    const promptRef = doc(promptsCollection, prompt.id);
-    const docSnap = await getDoc(promptRef);
-
-    if (!docSnap.exists()) {
-      console.log(`Creating prompt: ${prompt.name}...`);
-      await setDoc(promptRef, {
-        name: prompt.name,
-        content: prompt.content.trim(),
-        version: 1,
-        lastModified: new Date().toISOString(),
-      });
-      console.log(`✅ Prompt "${prompt.name}" created.`);
-    } else {
-      console.log(`ℹ️ Prompt "${prompt.name}" already exists. Skipping.`);
-    }
-  }
-}
-
-async function main() {
-    console.log('Initializing Firebase...');
-    const { firestore } = initializeFirebase();
-    console.log('Firebase initialized. Starting to seed prompts...');
-    try {
-        await seedPrompts(firestore);
-        console.log('\n🎉 All default prompts have been seeded successfully.');
-    } catch (error) {
-        console.error('\n❌ An error occurred while seeding prompts:', error);
-        process.exit(1);
-    }
-    process.exit(0);
-}
-
-// This script needs a GOOGLE_API_KEY to run from the command line
-// It uses a separate initialization path than the web app.
-if (!process.env.GOOGLE_API_KEY && !process.env.GCLOUD_PROJECT) {
-  console.error("Error: GOOGLE_API_KEY or GCLOUD_PROJECT environment variable is not set. Please set it in your .env file to run seeding scripts.");
-  process.exit(1);
-}
-
-main();
+export default defaultPrompts;
