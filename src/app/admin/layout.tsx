@@ -7,7 +7,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { cn } from '@/lib/utils';
 
 const adminTabs = [
   { value: 'dashboard', label: 'Dashboard', href: '/admin' },
@@ -21,10 +20,12 @@ const adminTabs = [
 
 function AdminNav() {
     const pathname = usePathname();
-    const activeTab = adminTabs.find(tab => pathname.startsWith(tab.href))?.value || 'dashboard';
+    
+    // Find the most specific match first
+    const activeTab = [...adminTabs].reverse().find(tab => pathname.startsWith(tab.href))?.value || 'dashboard';
 
     return (
-        <Tabs defaultValue={activeTab} className="space-y-4">
+        <Tabs value={activeTab} className="space-y-4">
             <TabsList className="grid w-full grid-cols-2 h-auto sm:w-auto sm:inline-flex sm:grid-cols-none">
                 {adminTabs.map(tab => (
                      <TabsTrigger value={tab.value} key={tab.value} asChild>
@@ -77,6 +78,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
     );
   }
 
+  // Hide tabs on settings page or its children
   const showTabs = !pathname.startsWith('/admin/settings');
 
 

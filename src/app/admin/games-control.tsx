@@ -42,9 +42,16 @@ export function GamesControl() {
 
     useEffect(() => {
         if (gameStatuses) {
-            setEditableStatuses(gameStatuses);
+            // Ensure all default games are present, adding missing ones
+            const allStatuses = defaultGameStatuses.map(defaultStatus => {
+                const existing = gameStatuses.find(s => s.id === defaultStatus.id);
+                return existing || defaultStatus;
+            });
+            setEditableStatuses(allStatuses);
+        } else if (!isLoading) {
+            setEditableStatuses(defaultGameStatuses);
         }
-    }, [gameStatuses]);
+    }, [gameStatuses, isLoading]);
 
     const handleToggle = (gameId: string, isEnabled: boolean) => {
         setEditableStatuses(prev => 
@@ -119,7 +126,7 @@ export function GamesControl() {
         if (isLoading) {
              return (
                 <div className="space-y-6">
-                    {Array.from({ length: 3 }).map((_, i) => (
+                    {Array.from({ length: 4 }).map((_, i) => (
                         <div key={i} className="border rounded-lg p-4 space-y-3">
                             <div className="flex justify-between items-center">
                                 <Skeleton className="h-6 w-1/3" />
