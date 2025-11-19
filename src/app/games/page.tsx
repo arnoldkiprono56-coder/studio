@@ -136,7 +136,7 @@ export default function GamesPage() {
                                     </Link>
                                 </Button>
                             ) : (
-                                <Button asChild variant="secondary" className="w-full">
+                                <Button asChild variant="secondary" className="w-all">
                                     <Link href={`/purchase/${game.planId}`}>
                                         Buy License <ArrowRight className="w-4 h-4 ml-2" />
                                     </Link>
