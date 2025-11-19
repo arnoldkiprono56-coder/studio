@@ -78,7 +78,6 @@ export default function VipSlipPage() {
 
             const auditLogData = {
                 userId: userProfile.id,
-                licenseId: activeLicense.id,
                 action: 'prediction_request',
                 details: `Game: VIP Slip, Prediction: ${JSON.stringify(result)}`,
                 timestamp: timestamp,

@@ -85,7 +85,6 @@ export default function GemsAndMinesPage() {
 
             const auditLogData = {
                 userId: userProfile.id,
-                licenseId: activeLicense.id,
                 action: 'prediction_request',
                 details: `Game: Gems & Mines, Prediction: ${JSON.stringify(result.predictionData)}`,
                 timestamp: timestamp,

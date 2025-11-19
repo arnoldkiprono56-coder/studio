@@ -176,12 +176,18 @@
         "ipAddress": {
           "type": "string",
           "description": "IP address of the user who performed the action."
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp of when the action occurred."
         }
       },
       "required": [
         "id",
         "userId",
-        "action"
+        "action",
+        "timestamp"
       ]
     },
     "PaymentTransaction": {
@@ -502,5 +508,3 @@
     "reasoning": "The Firestore structure is updated to align with the Master System Prompt. It defines user roles (User, Assistant, Admin, SuperAdmin) and sets the default to 'User' on registration. It maintains the core logic for Users, Licenses, Predictions, and Payments. User profiles are managed by Firebase Auth and user data is stored in Firestore. Licenses are tied to a user and expire based on 'roundsRemaining' and payment verification. Predictions are linked to both a user and a license. A top-level `transactions` collection tracks payments, with verification handled by a webhook. A global `auditlogs` collection is included for security monitoring. A `plans` collection is added to store pricing information. A new `prompts` collection is added to store editable AI prompts, manageable by admins."
   }
 }
-
-    
