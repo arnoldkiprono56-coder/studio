@@ -2,7 +2,7 @@
 
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { useFirestore, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
-import { collection, doc, updateDoc, writeBatch } from 'firebase/firestore';
+import { collection, doc, writeBatch } from 'firebase/firestore';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
@@ -11,10 +11,9 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { LicenseManagementDialog } from './license-management';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
-import { setDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { LicenseManagementDialog } from './users/license-management';
 
 interface User {
     id: string;
@@ -74,7 +73,9 @@ export function UserManagementTable() {
         if (!firestore) return;
         const userRef = doc(firestore, 'users', user.id);
         const updateData = { isSuspended: !user.isSuspended };
-        updateDoc(userRef, updateData).catch(error => {
+        const batch = writeBatch(firestore);
+        batch.update(userRef, updateData);
+        batch.commit().catch(error => {
             errorEmitter.emit('permission-error', new FirestorePermissionError({
                 path: userRef.path,
                 operation: 'update',
@@ -91,15 +92,12 @@ export function UserManagementTable() {
 
         const batch = writeBatch(firestore);
 
-        // Update the role in the user's document
         batch.update(userRef, { role: newRole });
 
-        // If the user is being promoted to an admin role
-        if ((newRole === 'Admin' || newRole === 'SuperAdmin') && (oldRole !== 'Admin' && oldRole !== 'SuperAdmin')) {
+        if ((newRole === 'Admin' || newRole === 'SuperAdmin') && oldRole !== 'Admin' && oldRole !== 'SuperAdmin') {
             batch.set(adminRef, { userId: userId, isAdmin: true });
         } 
-        // If the user is being demoted from an admin role
-        else if ((oldRole === 'Admin' || oldRole === 'SuperAdmin') && (newRole !== 'Admin' && newRole !== 'SuperAdmin')) {
+        else if (newRole !== 'Admin' && newRole !== 'SuperAdmin' && (oldRole === 'Admin' || oldRole === 'SuperAdmin')) {
              batch.delete(adminRef);
         }
 
@@ -230,5 +228,3 @@ export function UserManagementTable() {
         </>
     );
 }
-
-    

@@ -52,7 +52,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (!isProfileLoading && userProfile) {
-      if (userProfile.role === 'SuperAdmin' || userProfile.role === 'Admin') {
+      if (userProfile.role === 'SuperAdmin' || userProfile.role === 'Admin' || userProfile.role === 'Assistant') {
         router.replace('/admin');
       }
     }
@@ -110,7 +110,7 @@ export default function DashboardPage() {
   }
 
   // Only render user dashboard if role is not Admin/SuperAdmin
-  if (userProfile.role === 'SuperAdmin' || userProfile.role === 'Admin') {
+  if (['SuperAdmin', 'Admin', 'Assistant'].includes(userProfile.role)) {
     return null; // or a loading indicator while redirecting
   }
 
@@ -215,7 +215,7 @@ export default function DashboardPage() {
                                     </span>
                                 </div>
                                 <span className="text-xs text-muted-foreground">
-                                    {new Date(p.timestamp).toLocaleDateString()}
+                                    {p.timestamp ? new Date(p.timestamp).toLocaleDateString() : 'N/A'}
                                 </span>
                             </li>
                         ))}
