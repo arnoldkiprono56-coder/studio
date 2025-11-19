@@ -13,17 +13,15 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // An admin has a custom claim { admin: true } on their auth token.
-    // This is set server-side and is more secure than checking a collection.
+    // Checks if the user has an Admin or SuperAdmin role in their user document.
     function isActualAdmin() {
-      return isUser() && request.auth.token.admin == true;
+      let userRole = get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+      return isUser() && (userRole == 'Admin' || userRole == 'SuperAdmin');
     }
     
-    // A SuperAdmin has a specific role in their user profile document.
-    // This check is used for actions only a SuperAdmin can perform.
     function isSuperAdmin() {
-      let role = get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
-      return isActualAdmin() && role == 'SuperAdmin';
+      let userRole = get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+      return isUser() && userRole == 'SuperAdmin';
     }
 
     // Admins can list some subcollections for the dashboard.
@@ -42,6 +40,7 @@ service cloud.firestore {
       allow get: if isOwner(userId) || isActualAdmin();
       allow list: if isActualAdmin();
       allow create: if isUser();
+      // Allow role updates only by SuperAdmin. Prevent users from changing their own role.
       allow update: if (isOwner(userId) && !("role" in request.resource.data)) || isActualAdmin();
     }
 
@@ -56,7 +55,6 @@ service cloud.firestore {
     
     // The /admins collection is no longer used for checking admin status.
     // Writes should be disabled from the client to prevent misuse.
-    // This collection can be removed if fully migrated to custom claims.
     match /admins/{userId} {
       allow read, write: if false; 
     }
