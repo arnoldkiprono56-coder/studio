@@ -63,20 +63,22 @@ function ActivateLicenseDialog({ user, onOpenChange, open }: { user: UserProfile
             createdAt: serverTimestamp(),
         };
 
-        try {
-            await setDoc(licenseRef, licensePayload);
-            toast({ title: 'Success!', description: `${gamePlan.name} license activated for ${user.email}.` });
-            onOpenChange(false);
-            setSelectedGame('');
-        } catch (error) {
-             errorEmitter.emit('permission-error', new FirestorePermissionError({
-                path: licenseRef.path,
-                operation: 'write',
-                requestResourceData: licensePayload
-            }));
-        } finally {
-            setIsActivating(false);
-        }
+        setDoc(licenseRef, licensePayload)
+            .then(() => {
+                toast({ title: 'Success!', description: `${gamePlan.name} license activated for ${user.email}.` });
+                onOpenChange(false);
+                setSelectedGame('');
+            })
+            .catch((error) => {
+                 errorEmitter.emit('permission-error', new FirestorePermissionError({
+                    path: licenseRef.path,
+                    operation: 'write',
+                    requestResourceData: licensePayload
+                }));
+            })
+            .finally(() => {
+                setIsActivating(false);
+            });
     };
 
 
@@ -132,7 +134,7 @@ export function UserManagement() {
         console.error("Firestore error in UserManagement:", error);
     }
 
-    const handleRoleChange = async (userId: string, newRole: UserProfile['role']) => {
+    const handleRoleChange = (userId: string, newRole: UserProfile['role']) => {
         if (!firestore || !adminProfile) return;
         if (adminProfile.role !== 'SuperAdmin' && (newRole === 'SuperAdmin' || newRole === 'Admin')) {
             toast({ variant: 'destructive', title: 'Permission Denied', description: 'Only SuperAdmins can promote to Admin or SuperAdmin.' });
@@ -142,33 +144,36 @@ export function UserManagement() {
         const userRef = doc(firestore, 'users', userId);
         const updateData = { role: newRole };
         
-        try {
-            await updateDoc(userRef, updateData);
-            toast({ title: 'Success', description: `User role updated to ${newRole}. This will take effect on their next login.` });
-        } catch (e: any) {
-            errorEmitter.emit('permission-error', new FirestorePermissionError({
-                path: userRef.path,
-                operation: 'update',
-                requestResourceData: updateData
-            }));
-        }
+        updateDoc(userRef, updateData)
+            .then(() => {
+                toast({ title: 'Success', description: `User role updated to ${newRole}. This will take effect on their next login.` });
+            })
+            .catch((e: any) => {
+                errorEmitter.emit('permission-error', new FirestorePermissionError({
+                    path: userRef.path,
+                    operation: 'update',
+                    requestResourceData: updateData
+                }));
+            });
     };
 
-    const handleBanChange = async (userId: string, isBanned: boolean) => {
+    const handleBanChange = (userId: string, isBanned: boolean) => {
         if (!firestore) return;
         
         const userRef = doc(firestore, 'users', userId);
         const updateData = { isSuspended: isBanned };
-        try {
-            await updateDoc(userRef, updateData);
-            toast({ title: 'Success', description: `User has been ${isBanned ? 'banned' : 'un-banned'}.` });
-        } catch (e: any) {
-            errorEmitter.emit('permission-error', new FirestorePermissionError({
-                path: userRef.path,
-                operation: 'update',
-                requestResourceData: updateData
-            }));
-        }
+        
+        updateDoc(userRef, updateData)
+            .then(() => {
+                toast({ title: 'Success', description: `User has been ${isBanned ? 'banned' : 'un-banned'}.` });
+            })
+            .catch((e: any) => {
+                errorEmitter.emit('permission-error', new FirestorePermissionError({
+                    path: userRef.path,
+                    operation: 'update',
+                    requestResourceData: updateData
+                }));
+            });
     };
 
     const openDialogForUser = (user: UserProfile) => {
