@@ -12,6 +12,7 @@ import { cn } from '@/lib/utils';
 
 const adminTabs = [
   { value: 'dashboard', label: 'Dashboard', href: '/admin' },
+  { value: 'assistant', label: 'AI Assistant', href: '/admin/assistant' },
   { value: 'users', label: 'Users', href: '/admin/users' },
   { value: 'licenses', label: 'Licenses', href: '/admin/licenses' },
   { value: 'payments', label: 'Payments', href: '/admin/payments' },
