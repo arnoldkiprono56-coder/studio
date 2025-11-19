@@ -1,9 +1,7 @@
 'use server';
 
-import { initializeFirebase } from '@/firebase';
+import { firestore } from '@/firebase/server-init';
 import { doc, getDoc } from 'firebase/firestore';
-
-const { firestore } = initializeFirebase();
 
 // This is a server-side cache to reduce Firestore reads for prompts.
 // In a real production app, you might use a more robust caching solution like Redis.
@@ -42,5 +40,3 @@ export async function getPrompt(promptId: string): Promise<string> {
 
   return content;
 }
-
-    
