@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { useFirestore, useMemoFirebase } from '@/firebase';
+import { useFirestore, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
 import { useProfile } from '@/context/profile-context';
 import { useDoc } from '@/firebase/firestore/use-doc';
 import { doc, collection, writeBatch, getDoc, runTransaction, DocumentReference } from 'firebase/firestore';
@@ -56,12 +56,15 @@ export default function PurchasePage() {
             await runTransaction(firestore, async (transaction) => {
                 const userRef = doc(firestore, 'users', userProfile.id);
                 const userSnap = await transaction.get(userRef);
+                if (!userSnap.exists()) {
+                    throw new Error("User data not found.");
+                }
                 const currentUserData = userSnap.data();
 
                 // 1. Create a new license document
                 const licenseId = `${plan.id}-${userProfile.id}`;
                 const licenseRef = doc(firestore, 'users', userProfile.id, 'user_licenses', licenseId);
-                transaction.set(licenseRef, {
+                const licensePayload = {
                     id: licenseId,
                     userId: userProfile.id,
                     gameType: plan.name,
@@ -69,12 +72,13 @@ export default function PurchasePage() {
                     paymentVerified: false,
                     isActive: false,
                     createdAt: new Date().toISOString(),
-                });
+                };
+                transaction.set(licenseRef, licensePayload);
 
                 // 2. Create a new payment transaction document
                 const transactionId = `txn_purchase_${Date.now()}`;
                 const transactionRef = doc(firestore, 'transactions', transactionId);
-                transaction.set(transactionRef, {
+                const transactionPayload = {
                     id: transactionId,
                     userId: userProfile.id,
                     licenseId: licenseId,
@@ -85,17 +89,23 @@ export default function PurchasePage() {
                     type: 'purchase',
                     description: `Purchase of ${plan.name} license`,
                     createdAt: new Date().toISOString(),
-                });
+                };
+                transaction.set(transactionRef, transactionPayload);
 
                 // 3. Handle referral commission if applicable
                 const isFirstPurchase = !(currentUserData?.hasPurchased);
                 if (isFirstPurchase && currentUserData?.referredBy) {
                     const referrerRef = doc(firestore, 'users', currentUserData.referredBy);
-                    
+                    const referrerSnap = await transaction.get(referrerRef);
+                    if (!referrerSnap.exists()) {
+                        console.warn(`Referrer with ID ${currentUserData.referredBy} not found. Skipping commission.`);
+                        return;
+                    }
+
                     // Create commission transaction for the referrer
                     const commissionTxnId = `txn_commission_${Date.now()}`;
                     const commissionTxnRef = doc(firestore, 'transactions', commissionTxnId);
-                    transaction.set(commissionTxnRef, {
+                    const commissionPayload = {
                         id: commissionTxnId,
                         userId: currentUserData.referredBy,
                         type: 'commission',
@@ -104,12 +114,13 @@ export default function PurchasePage() {
                         currency: 'KES',
                         status: 'completed',
                         createdAt: new Date().toISOString(),
-                    });
+                    };
+                    transaction.set(commissionTxnRef, commissionPayload);
 
                     // Update referrer's balance
-                    transaction.update(referrerRef, {
-                        balance: (await transaction.get(referrerRef)).data()?.balance + COMMISSION_AMOUNT
-                    });
+                    const referrerData = referrerSnap.data();
+                    const newBalance = (referrerData?.balance || 0) + COMMISSION_AMOUNT;
+                    transaction.update(referrerRef, { balance: newBalance });
                     
                     // Mark current user as having made a purchase
                     transaction.update(userRef, { hasPurchased: true });
@@ -120,8 +131,16 @@ export default function PurchasePage() {
             router.push('/purchase/success');
 
         } catch (error: any) {
-            console.error("Purchase failed:", error);
-            toast({ variant: 'destructive', title: 'Purchase Failed', description: error.message || 'An unexpected error occurred.' });
+             if (error.code === 'permission-denied') {
+                errorEmitter.emit('permission-error', new FirestorePermissionError({
+                    path: 'transactions',
+                    operation: 'write',
+                    requestResourceData: { planId, userId: userProfile.id }
+                }));
+            } else {
+                console.error("Purchase failed:", error);
+                toast({ variant: 'destructive', title: 'Purchase Failed', description: error.message || 'An unexpected error occurred.' });
+            }
         } finally {
             setIsProcessing(false);
         }
