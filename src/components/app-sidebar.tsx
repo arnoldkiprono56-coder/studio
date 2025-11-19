@@ -109,32 +109,18 @@ export function AppSidebar() {
             <SidebarMenu>
             {navItems.map((item) => {
                 const Icon = item.icon;
-                const isActive = pathname === item.href || (pathname.startsWith(item.href) && item.href !== '/admin' && item.href !== '/dashboard' && item.href !== '/admin/users');
-
-                const isSpecialDashboard = item.href === '/admin' && pathname !== '/admin' && pathname.startsWith('/admin');
-                const isSpecialUsers = item.href === '/admin/users' && pathname !== '/admin/users' && pathname.startsWith('/admin/users');
                 
-                if (isSpecialDashboard || isSpecialUsers) {
-                  return (
-                     <SidebarMenuItem key={item.label}>
-                        <Link href={item.href} legacyBehavior passHref>
-                        <SidebarMenuButton
-                            isActive={false}
-                            tooltip={item.label}
-                        >
-                            <Icon />
-                            <span>{item.label}</span>
-                        </SidebarMenuButton>
-                        </Link>
-                    </SidebarMenuItem>
-                  )
-                }
+                // This logic correctly handles nested routes highlighting their parent.
+                // e.g., /admin/users/edit/123 will highlight the /admin/users link.
+                const isActive = item.href === '/admin' 
+                    ? pathname === item.href 
+                    : pathname.startsWith(item.href);
 
                 return (
                 <SidebarMenuItem key={item.label}>
                     <Link href={item.href} legacyBehavior passHref>
                     <SidebarMenuButton
-                        isActive={pathname === item.href}
+                        isActive={isActive}
                         tooltip={item.label}
                     >
                         <Icon />
