@@ -49,6 +49,24 @@
         "role"
       ]
     },
+    "AdminUser": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "AdminUser",
+      "type": "object",
+      "description": "A record indicating that a user has admin privileges, for efficient security rule checks.",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "The UID of the user with admin privileges."
+        },
+        "isAdmin": {
+          "type": "boolean",
+          "description": "Always true, indicates admin status.",
+          "default": true
+        }
+      },
+      "required": ["userId", "isAdmin"]
+    },
     "License": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "License",
@@ -314,6 +332,22 @@
             {
               "name": "userId",
               "description": "Unique identifier for the user from Firebase."
+            }
+          ]
+        }
+      },
+       {
+        "path": "/admins/{userId}",
+        "definition": {
+          "entityName": "AdminUser",
+          "schema": {
+            "$ref": "#/backend/entities/AdminUser"
+          },
+          "description": "Stores a list of admin UIDs for efficient security rule checks.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The UID of the user with admin privileges."
             }
           ]
         }

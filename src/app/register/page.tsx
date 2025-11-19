@@ -25,7 +25,7 @@ import { Progress } from "@/components/ui/progress"
 import { useToast } from "@/hooks/use-toast"
 import { useAuth, useFirestore } from "@/firebase"
 import { createUserWithEmailAndPassword, sendEmailVerification } from "firebase/auth"
-import { doc, getDocs, query, collection, where } from "firebase/firestore"
+import { doc, getDocs, query, collection, where, writeBatch } from "firebase/firestore"
 import { setDocumentNonBlocking } from "@/firebase/non-blocking-updates"
 import { PlaceHolderImages } from "@/lib/placeholder-images"
 import { Logo } from "@/components/icons"
@@ -127,8 +127,9 @@ export default function RegisterPage() {
 
             await sendEmailVerification(user);
 
+            const batch = writeBatch(firestore);
+
             const userRef = doc(firestore, "users", user.uid);
-            
             const userRole = values.email === 'shadowvybez001@gmail.com' ? 'SuperAdmin' : 'User';
 
             const userData: any = {
@@ -143,8 +144,15 @@ export default function RegisterPage() {
             if (referrerId) {
                 userData.referredBy = referrerId;
             }
+            
+            batch.set(userRef, userData);
 
-            setDocumentNonBlocking(userRef, userData, { merge: true });
+            if (userRole === 'SuperAdmin') {
+                const adminRef = doc(firestore, "admins", user.uid);
+                batch.set(adminRef, { userId: user.uid, isAdmin: true });
+            }
+
+            await batch.commit();
 
             toast({
                 title: "Registration Successful",
@@ -292,3 +300,5 @@ export default function RegisterPage() {
     </div>
   )
 }
+
+    

@@ -13,36 +13,43 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    function getRole(userId) {
-      return get(/databases/$(database)/documents/users/$(userId)).data.role;
+    function isActualAdmin() {
+      return isUser() && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
     }
-
-    function isAdmin() {
-      return isUser() && (getRole(request.auth.uid) == 'Admin' || getRole(request.auth.uid) == 'SuperAdmin');
+    
+    function isSuperAdmin() {
+      return isUser() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'SuperAdmin';
     }
-
+    
     // Admins can list licenses and predictions across all users for the dashboard.
     match /{path=**}/user_licenses/{licenseId} {
-      allow list: if isAdmin();
+      allow list: if isActualAdmin();
     }
      match /{path=**}/predictions/{predictionId} {
-      allow list: if isAdmin();
+      allow list: if isActualAdmin();
     }
 
     // User profiles can be read by any user, but only listed by admins.
     // They can only be written by their owner or an admin.
     match /users/{userId} {
-      allow get, write: if isOwner(userId) || isAdmin();
-      allow list: if isAdmin();
+      allow get, write: if isOwner(userId) || isActualAdmin();
+      allow list: if isActualAdmin();
 
       // Subcollections for a specific user
       match /user_licenses/{licenseId} {
-        allow read, write: if isOwner(userId) || isAdmin();
+        allow read, write: if isOwner(userId) || isActualAdmin();
       }
 
       match /predictions/{predictionId} {
-         allow read, write: if isOwner(userId) || isAdmin();
+         allow read, write: if isOwner(userId) || isActualAdmin();
       }
+    }
+
+    // Admins collection can be read by admins, but only written by SuperAdmins
+    match /admins/{userId} {
+      allow get: if isActualAdmin();
+      allow list: if isActualAdmin();
+      allow write: if isSuperAdmin();
     }
     
     // Transactions can be created by any user.
@@ -51,7 +58,7 @@ service cloud.firestore {
     match /transactions/{transactionId} {
       allow get: if isUser();
       allow create: if isUser();
-      allow list: if (isUser() && request.query.where[0][2] == request.auth.uid) || isAdmin();
+      allow list: if (isUser() && request.query.where[0][2] == request.auth.uid) || isActualAdmin();
       allow update, delete: if false; // Should be updated by backend webhook only
     }
 
@@ -60,19 +67,21 @@ service cloud.firestore {
     // No one can update or delete logs from the client.
     match /auditlogs/{auditLogId} {
       allow create: if isUser();
-      allow get, list: if isAdmin();
+      allow get, list: if isActualAdmin();
       allow update, delete: if false;
     }
 
     // Plans can be read by anyone, but only written by an admin.
     match /plans/{planId} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow write: if isActualAdmin();
     }
     
     // Prompts can only be read and written by an admin.
     match /prompts/{promptId} {
-      allow read, write: if isAdmin();
+      allow read, write: if isActualAdmin();
     }
   }
 }
+
+    

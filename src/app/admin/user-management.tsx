@@ -2,7 +2,7 @@
 
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { useFirestore, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
-import { collection, doc, updateDoc } from 'firebase/firestore';
+import { collection, doc, updateDoc, writeBatch } from 'firebase/firestore';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button';
 import { LicenseManagementDialog } from './license-management';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
+import { setDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 
 interface User {
     id: string;
@@ -82,17 +83,35 @@ export function UserManagementTable() {
         });
     };
     
-    const handleRoleChange = (userId: string, newRole: User['role']) => {
+    const handleRoleChange = async (userId: string, newRole: User['role'], oldRole: User['role']) => {
         if (!firestore) return;
+        
         const userRef = doc(firestore, 'users', userId);
-        const updateData = { role: newRole };
-        updateDoc(userRef, updateData).catch(error => {
-            errorEmitter.emit('permission-error', new FirestorePermissionError({
-                path: userRef.path,
-                operation: 'update',
-                requestResourceData: updateData
+        const adminRef = doc(firestore, 'admins', userId);
+
+        const batch = writeBatch(firestore);
+
+        // Update the role in the user's document
+        batch.update(userRef, { role: newRole });
+
+        // If the user is being promoted to an admin role
+        if ((newRole === 'Admin' || newRole === 'SuperAdmin') && (oldRole !== 'Admin' && oldRole !== 'SuperAdmin')) {
+            batch.set(adminRef, { userId: userId, isAdmin: true });
+        } 
+        // If the user is being demoted from an admin role
+        else if ((oldRole === 'Admin' || oldRole === 'SuperAdmin') && (newRole !== 'Admin' && newRole !== 'SuperAdmin')) {
+             batch.delete(adminRef);
+        }
+
+        try {
+            await batch.commit();
+        } catch (error) {
+             errorEmitter.emit('permission-error', new FirestorePermissionError({
+                path: 'multiple documents',
+                operation: 'write',
+                requestResourceData: { userId, newRole }
             }));
-        });
+        }
     };
 
     const filteredUsers = users?.filter(user => {
@@ -161,7 +180,7 @@ export function UserManagementTable() {
                                             {user.role === 'SuperAdmin' ? (
                                                 <RoleBadge role={user.role} />
                                             ) : (
-                                                <Select value={user.role} onValueChange={(newRole: User['role']) => handleRoleChange(user.id, newRole)}>
+                                                <Select value={user.role} onValueChange={(newRole: User['role']) => handleRoleChange(user.id, newRole, user.role)}>
                                                     <SelectTrigger className="w-[140px]">
                                                         <SelectValue asChild>
                                                             <RoleBadge role={user.role} />
@@ -211,3 +230,5 @@ export function UserManagementTable() {
         </>
     );
 }
+
+    
