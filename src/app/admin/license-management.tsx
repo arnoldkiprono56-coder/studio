@@ -1,196 +1,157 @@
 'use client';
 
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { useCollection } from '@/firebase/firestore/use-collection';
-import { useFirestore, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
-import { collection, doc, updateDoc, setDoc, addDoc } from 'firebase/firestore';
-import type { License } from '@/lib/types';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
-import { useToast } from '@/hooks/use-toast';
-import { AlertCircle } from 'lucide-react';
-import { useProfile } from '@/context/profile-context';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Users, AlertTriangle, ShieldCheck, Gem, DollarSign, Clock, BrainCircuit, ShieldAlert } from "lucide-react";
+import { TransactionManagement } from "./transaction-management";
+import { AuditLogViewer } from "./audit-log";
+import { PricingManagement } from "./pricing-management";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useProfile } from "@/context/profile-context";
+import { Skeleton } from "@/components/ui/skeleton";
+import { PromptManagement } from "./prompt-management";
+import { useFirestore, useMemoFirebase } from "@/firebase";
+import { useCollection } from "@/firebase/firestore/use-collection";
+import { collection, collectionGroup, query, where } from "firebase/firestore";
+import { formatCurrency } from "@/lib/utils";
 
-
-interface LicenseManagementDialogProps {
-    user: { id: string; email: string };
-    open: boolean;
-    onOpenChange: (open: boolean) => void;
-}
-
-const ALL_GAME_TYPES = ["VIP Slip", "Aviator", "Crash", "Mines & Gems"];
-
-export function LicenseManagementDialog({ user, open, onOpenChange }: LicenseManagementDialogProps) {
+export default function AdminDashboardPage() {
+    const { userProfile, isProfileLoading } = useProfile();
     const firestore = useFirestore();
-    const { toast } = useToast();
-    const { userProfile: adminProfile } = useProfile();
 
-    const licensesCollection = useMemoFirebase(() => {
-        if (!firestore) return null;
-        return collection(firestore, 'users', user.id, 'user_licenses');
-    }, [firestore, user.id]);
-
-    const { data: licenses, isLoading } = useCollection<License>(licensesCollection);
+    const licensesQuery = useMemoFirebase(() => firestore ? query(collectionGroup(firestore, 'user_licenses'), where('isActive', '==', true)) : null, [firestore]);
+    const { data: activeLicenses, isLoading: licensesLoading } = useCollection(licensesQuery);
     
-    const logAdminAction = (action: string, details: object) => {
-        if (!firestore || !adminProfile) return;
-        const auditLogData = {
-            userId: adminProfile.id,
-            action,
-            details: JSON.stringify(details),
-            timestamp: new Date().toISOString(),
-            ipAddress: 'not_collected',
-        };
-        addDoc(collection(firestore, 'auditlogs'), auditLogData).catch(error => {
-            errorEmitter.emit('permission-error', new FirestorePermissionError({
-                path: 'auditlogs',
-                operation: 'create',
-                requestResourceData: auditLogData
-            }));
-        });
-    };
+    const transactionsQuery = useMemoFirebase(() => firestore ? collection(firestore, 'transactions') : null, [firestore]);
+    const { data: transactions, isLoading: transactionsLoading } = useCollection(transactionsQuery);
 
-    const handleActivateLicense = (gameType: string) => {
-        if (!firestore) return;
-        const licenseId = `${gameType.toLowerCase().replace(/ & /g, '-').replace(/\s/g, '-')}-${user.id}`;
-        const licenseRef = doc(firestore, 'users', user.id, 'user_licenses', licenseId);
-        
-        const licenseData = {
-            id: licenseId,
-            userId: user.id,
-            gameType,
-            roundsRemaining: 100,
-            paymentVerified: true,
-            isActive: true,
-        };
-
-        setDoc(licenseRef, licenseData, { merge: true }).then(() => {
-            toast({ title: 'Success', description: `${gameType} license activated for ${user.email}.` });
-            logAdminAction('license_activated', { targetUserId: user.id, targetUserEmail: user.email, gameType });
-        }).catch(error => {
-             errorEmitter.emit('permission-error', new FirestorePermissionError({
-                path: licenseRef.path,
-                operation: 'write',
-                requestResourceData: licenseData
-            }));
-        });
-    };
+    const predictionsQuery = useMemoFirebase(() => firestore ? collectionGroup(firestore, 'predictions') : null, [firestore]);
+    const { data: predictions, isLoading: predictionsLoading } = useCollection(predictionsQuery);
     
-    const handleResetRounds = (license: License) => {
-        if (!firestore) return;
-        const licenseRef = doc(firestore, 'users', user.id, 'user_licenses', license.id);
-        const updateData = { roundsRemaining: 100, isActive: true };
+    const alertsQuery = useMemoFirebase(() => firestore ? query(collection(firestore, 'auditlogs'), where('action', 'in', ['bypass_attempt', 'security_alert'])) : null, [firestore]);
+    const { data: securityAlerts, isLoading: alertsLoading } = useCollection(alertsQuery);
 
-        updateDoc(licenseRef, updateData).then(() => {
-            toast({ title: 'Success', description: `Rounds reset to 100 for ${license.gameType} license.` });
-            logAdminAction('rounds_reset', { targetUserId: user.id, targetUserEmail: user.email, gameType: license.gameType, rounds: 100 });
-        }).catch(error => {
-             errorEmitter.emit('permission-error', new FirestorePermissionError({
-                path: licenseRef.path,
-                operation: 'update',
-                requestResourceData: updateData
-            }));
-        });
-    };
+    const isLoading = isProfileLoading || licensesLoading || transactionsLoading || predictionsLoading || alertsLoading;
+    
+    const totalRevenue = transactions?.filter(t => t.status === 'verified').reduce((sum, t) => sum + t.amount, 0) || 0;
+    const pendingVerifications = transactions?.filter(t => t.status === 'pending').length || 0;
 
-    const handleDeactivateLicense = (license: License) => {
-        if (!firestore) return;
-        const licenseRef = doc(firestore, 'users', user.id, 'user_licenses', license.id);
-        const updateData = { roundsRemaining: 0, isActive: false };
-        
-        updateDoc(licenseRef, updateData).then(() => {
-            toast({ title: 'Success', description: `${license.gameType} license has been deactivated.` });
-            logAdminAction('license_deactivated', { targetUserId: user.id, targetUserEmail: user.email, gameType: license.gameType });
-        }).catch(error => {
-            errorEmitter.emit('permission-error', new FirestorePermissionError({
-                path: licenseRef.path,
-                operation: 'update',
-                requestResourceData: updateData
-            }));
-        });
-    };
 
-    const userLicenses = ALL_GAME_TYPES.map(gameType => {
-        const foundLicense = licenses?.find(l => l.gameType === gameType);
-        return foundLicense || { id: gameType, gameType, roundsRemaining: 0, paymentVerified: false, isActive: false, userId: user.id };
-    });
-
-    return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-4xl">
-                <DialogHeader>
-                    <DialogTitle>Manage Licenses for {user.email}</DialogTitle>
-                    <DialogDescription>
-                        View, activate, and manage game licenses for this user.
-                    </DialogDescription>
-                </DialogHeader>
-                <div className="mt-4">
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Game Type</TableHead>
-                                <TableHead>Status</TableHead>
-                                <TableHead>Rounds Left</TableHead>
-                                <TableHead>Payment</TableHead>
-                                <TableHead className="text-right">Actions</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {isLoading ? (
-                                Array.from({ length: 4 }).map((_, i) => (
-                                    <TableRow key={i}>
-                                        <TableCell colSpan={5}><Skeleton className="h-8 w-full" /></TableCell>
-                                    </TableRow>
-                                ))
-                            ) : userLicenses && userLicenses.length > 0 ? (
-                                userLicenses.map(license => (
-                                    <TableRow key={license.id}>
-                                        <TableCell className="font-medium">{license.gameType}</TableCell>
-                                        <TableCell>
-                                            {licenses?.some(l => l.id === license.id) ? (
-                                                <Badge variant={license.isActive ? 'default' : 'destructive'} className={license.isActive ? 'bg-success' : ''}>
-                                                    {license.isActive ? 'Active' : 'Inactive'}
-                                                </Badge>
-                                            ) : (
-                                                 <Badge variant="secondary">Not Created</Badge>
-                                            )}
-                                        </TableCell>
-                                        <TableCell>{licenses?.some(l => l.id === license.id) ? license.roundsRemaining : 'N/A'}</TableCell>
-                                        <TableCell>
-                                             {licenses?.some(l => l.id === license.id) ? (
-                                                <Badge variant={license.paymentVerified ? 'default' : 'secondary'} className={license.paymentVerified ? 'bg-success' : ''}>
-                                                    {license.paymentVerified ? 'Verified' : 'Pending'}
-                                                </Badge>
-                                            ) : 'N/A'}
-                                        </TableCell>
-                                        <TableCell className="text-right space-x-2">
-                                            {licenses?.some(l => l.id === license.id) ? (
-                                                <>
-                                                    <Button variant="outline" size="sm" onClick={() => handleResetRounds(license as License)}>Reset Rounds</Button>
-                                                    <Button variant="destructive" size="sm" onClick={() => handleDeactivateLicense(license as License)} disabled={!license.isActive}>Deactivate</Button>
-                                                </>
-                                            ) : (
-                                                <Button size="sm" onClick={() => handleActivateLicense(license.gameType)}>Activate</Button>
-                                            )}
-                                        </TableCell>
-                                    </TableRow>
-                                ))
-                            ) : (
-                                <TableRow>
-                                    <TableCell colSpan={5} className="text-center h-24">
-                                        <div className="flex items-center justify-center gap-2 text-muted-foreground">
-                                            <AlertCircle className="h-5 w-5" />
-                                            No licenses found for this user.
-                                        </div>
-                                    </TableCell>
-                                </TableRow>
-                            )}
-                        </TableBody>
-                    </Table>
+    if (isLoading || !userProfile) {
+        return (
+            <div className="space-y-8">
+                <div>
+                    <Skeleton className="h-9 w-64 mb-2" />
+                    <Skeleton className="h-5 w-80" />
                 </div>
-            </DialogContent>
-        </Dialog>
-    );
+                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+                    {Array.from({ length: 8 }).map((_, i) => (
+                         <Card key={i}>
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <Skeleton className="h-5 w-24" />
+                                <Skeleton className="h-4 w-4" />
+                            </CardHeader>
+                            <CardContent>
+                                <Skeleton className="h-8 w-16 mb-2" />
+                                <Skeleton className="h-4 w-32" />
+                            </CardContent>
+                        </Card>
+                    ))}
+                </div>
+                 <Skeleton className="h-10 w-[480px]" />
+                 <Skeleton className="h-[400px] w-full" />
+            </div>
+        )
+    }
+
+  return (
+    <div className="space-y-8">
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
+        <p className="text-muted-foreground">Welcome, {userProfile.role}. Here's the platform overview.</p>
+      </div>
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Active Licenses</CardTitle>
+            <Gem className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{activeLicenses?.length || 0}</div>
+            <p className="text-xs text-muted-foreground">Currently active user licenses</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
+            <DollarSign className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{formatCurrency(totalRevenue, 'KES')}</div>
+            <p className="text-xs text-muted-foreground">Verified transactions</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Pending Verifications</CardTitle>
+            <Clock className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{pendingVerifications}</div>
+            <p className="text-xs text-muted-foreground">Payments awaiting approval</p>
+          </CardContent>
+        </Card>
+         <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">AI Prediction Usage</CardTitle>
+            <BrainCircuit className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{predictions?.length || 0}</div>
+            <p className="text-xs text-muted-foreground">Total predictions generated</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Security Alerts</CardTitle>
+            <ShieldAlert className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-warning">{securityAlerts?.length || 0}</div>
+            <p className="text-xs text-muted-foreground">Critical alerts to review</p>
+          </CardContent>
+        </Card>
+         <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">System Status</CardTitle>
+            <ShieldCheck className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-success">Operational</div>
+            <p className="text-xs text-muted-foreground">All systems are running normally.</p>
+          </CardContent>
+        </Card>
+      </div>
+      
+        <Tabs defaultValue="pricing" className="space-y-4">
+            <TabsList>
+                <TabsTrigger value="pricing">Pricing & Plans</TabsTrigger>
+                <TabsTrigger value="prompts">AI Prompts</TabsTrigger>
+                <TabsTrigger value="transactions">Transactions</TabsTrigger>
+                <TabsTrigger value="security">Security Logs</TabsTrigger>
+            </TabsList>
+            <TabsContent value="pricing">
+                <PricingManagement />
+            </TabsContent>
+            <TabsContent value="prompts">
+                <PromptManagement />
+            </TabsContent>
+            <TabsContent value="transactions">
+                <TransactionManagement />
+            </TabsContent>
+            <TabsContent value="security">
+                <AuditLogViewer />
+            </TabsContent>
+        </Tabs>
+    </div>
+  );
 }

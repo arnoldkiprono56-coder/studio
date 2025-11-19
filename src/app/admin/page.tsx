@@ -2,7 +2,6 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, AlertTriangle, ShieldCheck, Gem, DollarSign, Clock, BrainCircuit, ShieldAlert } from "lucide-react";
-import { UserManagementTable } from "./user-management";
 import { TransactionManagement } from "./transaction-management";
 import { AuditLogViewer } from "./audit-log";
 import { PricingManagement } from "./pricing-management";
@@ -19,9 +18,6 @@ export default function AdminDashboardPage() {
     const { userProfile, isProfileLoading } = useProfile();
     const firestore = useFirestore();
 
-    const usersQuery = useMemoFirebase(() => firestore ? collection(firestore, 'users') : null, [firestore]);
-    const { data: users, isLoading: usersLoading } = useCollection(usersQuery);
-
     const licensesQuery = useMemoFirebase(() => firestore ? query(collectionGroup(firestore, 'user_licenses'), where('isActive', '==', true)) : null, [firestore]);
     const { data: activeLicenses, isLoading: licensesLoading } = useCollection(licensesQuery);
     
@@ -34,7 +30,7 @@ export default function AdminDashboardPage() {
     const alertsQuery = useMemoFirebase(() => firestore ? query(collection(firestore, 'auditlogs'), where('action', 'in', ['bypass_attempt', 'security_alert'])) : null, [firestore]);
     const { data: securityAlerts, isLoading: alertsLoading } = useCollection(alertsQuery);
 
-    const isLoading = isProfileLoading || usersLoading || licensesLoading || transactionsLoading || predictionsLoading || alertsLoading;
+    const isLoading = isProfileLoading || licensesLoading || transactionsLoading || predictionsLoading || alertsLoading;
     
     const totalRevenue = transactions?.filter(t => t.status === 'verified').reduce((sum, t) => sum + t.amount, 0) || 0;
     const pendingVerifications = transactions?.filter(t => t.status === 'pending').length || 0;
@@ -74,16 +70,6 @@ export default function AdminDashboardPage() {
         <p className="text-muted-foreground">Welcome, {userProfile.role}. Here's the platform overview.</p>
       </div>
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Users</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{users?.length || 0}</div>
-            <p className="text-xs text-muted-foreground">Registered users on the platform</p>
-          </CardContent>
-        </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Active Licenses</CardTitle>
@@ -146,17 +132,13 @@ export default function AdminDashboardPage() {
         </Card>
       </div>
       
-        <Tabs defaultValue="users" className="space-y-4">
+        <Tabs defaultValue="pricing" className="space-y-4">
             <TabsList>
-                <TabsTrigger value="users">User Management</TabsTrigger>
                 <TabsTrigger value="pricing">Pricing & Plans</TabsTrigger>
                 <TabsTrigger value="prompts">AI Prompts</TabsTrigger>
                 <TabsTrigger value="transactions">Transactions</TabsTrigger>
                 <TabsTrigger value="security">Security Logs</TabsTrigger>
             </TabsList>
-            <TabsContent value="users">
-                <UserManagementTable />
-            </TabsContent>
             <TabsContent value="pricing">
                 <PricingManagement />
             </TabsContent>
