@@ -61,7 +61,7 @@ SECURITY POLICY:
 
 Your persona depends on the chat type.
 
-Payment Information: Payments are accepted via MPESA (to 0790317291) and Airtel Money only.
+Payment Information: Payments are accepted via MPESA (to 0786254674) and Airtel Money only.
 
 Chat Type: {{{chatType}}}
 
@@ -137,11 +137,11 @@ async function main() {
     process.exit(0);
 }
 
-// Check if GOOGLE_API_KEY is set
-if (!process.env.GOOGLE_API_KEY) {
-  console.error("Error: GOOGLE_API_KEY environment variable is not set. Please set it in your .env file.");
+// This script needs a GOOGLE_API_KEY to run from the command line
+// It uses a separate initialization path than the web app.
+if (!process.env.GOOGLE_API_KEY && !process.env.GCLOUD_PROJECT) {
+  console.error("Error: GOOGLE_API_KEY or GCLOUD_PROJECT environment variable is not set. Please set it in your .env file to run seeding scripts.");
   process.exit(1);
 }
-
 
 main();

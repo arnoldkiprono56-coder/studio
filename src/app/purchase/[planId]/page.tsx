@@ -5,11 +5,11 @@ import { useParams, useRouter } from 'next/navigation';
 import { useFirestore, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
 import { useProfile } from '@/context/profile-context';
 import { useDoc } from '@/firebase/firestore/use-doc';
-import { doc, collection, writeBatch, getDoc, runTransaction, DocumentReference } from 'firebase/firestore';
+import { doc, collection, writeBatch, getDoc, runTransaction, DocumentReference, serverTimestamp } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, CreditCard, ShieldCheck, Tag, CircleCheck } from 'lucide-react';
+import { ArrowLeft, CreditCard, ShieldCheck, Tag, CircleCheck, Loader2 } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -53,6 +53,8 @@ export default function PurchasePage() {
         setIsProcessing(true);
 
         try {
+            const transactionId = `txn_purchase_${Date.now()}`;
+
             await runTransaction(firestore, async (transaction) => {
                 const userRef = doc(firestore, 'users', userProfile.id);
                 const userSnap = await transaction.get(userRef);
@@ -71,12 +73,11 @@ export default function PurchasePage() {
                     roundsRemaining: plan.rounds,
                     paymentVerified: false,
                     isActive: false,
-                    createdAt: new Date().toISOString(),
+                    createdAt: serverTimestamp(),
                 };
                 transaction.set(licenseRef, licensePayload);
 
                 // 2. Create a new payment transaction document
-                const transactionId = `txn_purchase_${Date.now()}`;
                 const transactionRef = doc(firestore, 'transactions', transactionId);
                 const transactionPayload = {
                     id: transactionId,
@@ -88,7 +89,7 @@ export default function PurchasePage() {
                     status: 'pending',
                     type: 'purchase',
                     description: `Purchase of ${plan.name} license`,
-                    createdAt: new Date().toISOString(),
+                    createdAt: serverTimestamp(),
                 };
                 transaction.set(transactionRef, transactionPayload);
 
@@ -99,30 +100,30 @@ export default function PurchasePage() {
                     const referrerSnap = await transaction.get(referrerRef);
                     if (!referrerSnap.exists()) {
                         console.warn(`Referrer with ID ${currentUserData.referredBy} not found. Skipping commission.`);
-                        return;
+                        // Don't stop the main transaction, just skip the commission part.
+                    } else {
+                         // Create commission transaction for the referrer
+                        const commissionTxnId = `txn_commission_${Date.now()}`;
+                        const commissionTxnRef = doc(firestore, 'transactions', commissionTxnId);
+                        const commissionPayload = {
+                            id: commissionTxnId,
+                            userId: currentUserData.referredBy,
+                            type: 'commission',
+                            description: `Referral commission from ${userProfile.email}`,
+                            amount: COMMISSION_AMOUNT,
+                            currency: 'KES',
+                            status: 'completed',
+                            createdAt: serverTimestamp(),
+                        };
+                        transaction.set(commissionTxnRef, commissionPayload);
+
+                        // Update referrer's balance
+                        const referrerData = referrerSnap.data();
+                        const newBalance = (referrerData?.balance || 0) + COMMISSION_AMOUNT;
+                        transaction.update(referrerRef, { balance: newBalance });
                     }
-
-                    // Create commission transaction for the referrer
-                    const commissionTxnId = `txn_commission_${Date.now()}`;
-                    const commissionTxnRef = doc(firestore, 'transactions', commissionTxnId);
-                    const commissionPayload = {
-                        id: commissionTxnId,
-                        userId: currentUserData.referredBy,
-                        type: 'commission',
-                        description: `Referral commission from ${userProfile.email}`,
-                        amount: COMMISSION_AMOUNT,
-                        currency: 'KES',
-                        status: 'completed',
-                        createdAt: new Date().toISOString(),
-                    };
-                    transaction.set(commissionTxnRef, commissionPayload);
-
-                    // Update referrer's balance
-                    const referrerData = referrerSnap.data();
-                    const newBalance = (referrerData?.balance || 0) + COMMISSION_AMOUNT;
-                    transaction.update(referrerRef, { balance: newBalance });
                     
-                    // Mark current user as having made a purchase
+                    // Mark current user as having made a purchase regardless of whether referrer was found
                     transaction.update(userRef, { hasPurchased: true });
                 }
             });
@@ -133,9 +134,9 @@ export default function PurchasePage() {
         } catch (error: any) {
              if (error.code === 'permission-denied') {
                 errorEmitter.emit('permission-error', new FirestorePermissionError({
-                    path: 'transactions',
+                    path: 'transactions', // This is a transaction, path is complex.
                     operation: 'write',
-                    requestResourceData: { planId, userId: userProfile.id }
+                    requestResourceData: { planId, userId: userProfile.id, transactionId }
                 }));
             } else {
                 console.error("Purchase failed:", error);
@@ -207,7 +208,7 @@ export default function PurchasePage() {
                         </RadioGroup>
                     </div>
                      <div className="text-center p-4 bg-muted/50 rounded-lg text-sm">
-                        <p className="font-bold">Pay {formatCurrency(plan.price, plan.currency)} to Till Number: <span className="text-primary font-code">555444</span></p>
+                        <p className="font-bold">Pay {formatCurrency(plan.price, plan.currency)} to Till Number: <span className="text-primary font-code">0786254674</span></p>
                         <p className="text-muted-foreground mt-1">Your license will be activated once payment is confirmed.</p>
                     </div>
                 </CardContent>
@@ -218,6 +219,7 @@ export default function PurchasePage() {
                         onClick={handlePurchase}
                         disabled={isProcessing}
                     >
+                        {isProcessing && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                         {isProcessing ? 'Processing...' : 'Complete Purchase'}
                     </Button>
                     <p className="text-xs text-muted-foreground flex items-center gap-1.5"><ShieldCheck className="w-3.5 h-3.5" /> Secure payments processed by our team.</p>

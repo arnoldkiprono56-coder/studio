@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 import { useCollection } from '@/firebase/firestore/use-collection';
-import { useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, doc, updateDoc, writeBatch, query, where, getDocs } from 'firebase/firestore';
+import { useFirestore, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
+import { collection, doc, writeBatch, query, where, getDocs, orderBy } from 'firebase/firestore';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { formatCurrency } from '@/lib/utils';
-import { AlertCircle, CreditCard } from 'lucide-react';
+import { AlertCircle, CreditCard, Loader2 } from 'lucide-react';
 
 interface PaymentTransaction {
     id: string;
@@ -30,7 +30,7 @@ export function TransactionManagement() {
     const firestore = useFirestore();
     const transactionsCollection = useMemoFirebase(() => {
         if (!firestore) return null;
-        return collection(firestore, 'transactions');
+        return query(collection(firestore, 'transactions'), orderBy('createdAt', 'desc'));
     }, [firestore]);
 
     const { data: transactions, isLoading } = useCollection<PaymentTransaction>(transactionsCollection);
@@ -48,27 +48,39 @@ export function TransactionManagement() {
 
         setIsVerifying(true);
         try {
-            const q = query(collection(firestore, 'transactions'), where('id', '==', transactionId.trim()));
-            const querySnapshot = await getDocs(q);
-
-            if (querySnapshot.empty) {
+            // Firestore does not natively use the document ID from the client in a query.
+            // A common pattern is to store the ID as a field if you need to query by it.
+            // Assuming `id` field is stored in the document.
+            const transactionRef = doc(firestore, 'transactions', transactionId.trim());
+            const transactionSnap = await getDocs(query(collection(firestore, 'transactions'), where('id', '==', transactionId.trim())));
+            
+            if (transactionSnap.empty) {
                 toast({ variant: 'destructive', title: 'Not Found', description: `Transaction with ID "${transactionId}" not found.` });
                 setIsVerifying(false);
                 return;
             }
 
-            const transactionDoc = querySnapshot.docs[0];
+            const transactionDoc = transactionSnap.docs[0];
             const transactionData = transactionDoc.data() as PaymentTransaction;
+
+            if (transactionData.status === 'verified') {
+                 toast({ variant: 'default', title: 'Already Verified', description: `Transaction ${transactionId} is already verified.` });
+                 setIsVerifying(false);
+                 return;
+            }
 
             const batch = writeBatch(firestore);
 
             // 1. Update the transaction
-            const transactionRef = doc(firestore, 'transactions', transactionDoc.id);
-            batch.update(transactionRef, { status: 'verified', webhookVerified: true });
+            batch.update(transactionDoc.ref, { status: 'verified', webhookVerified: true });
 
             // 2. Update the corresponding license
-            const licenseRef = doc(firestore, 'users', transactionData.userId, 'user_licenses', transactionData.licenseId);
-            batch.update(licenseRef, { paymentVerified: true, isActive: true });
+            if (transactionData.userId && transactionData.licenseId) {
+                const licenseRef = doc(firestore, 'users', transactionData.userId, 'user_licenses', transactionData.licenseId);
+                batch.update(licenseRef, { paymentVerified: true, isActive: true });
+            } else {
+                 throw new Error('Transaction is missing required user or license ID.');
+            }
 
             await batch.commit();
 
@@ -76,13 +88,22 @@ export function TransactionManagement() {
             setTransactionId('');
         } catch (error: any) {
             console.error('Verification failed:', error);
+            const isPermissionError = error.code === 'permission-denied';
+            
+            if(isPermissionError) {
+                errorEmitter.emit('permission-error', new FirestorePermissionError({
+                    path: `transactions/${transactionId.trim()}`,
+                    operation: 'update',
+                }));
+            }
+            
             toast({ variant: 'destructive', title: 'Error', description: error.message || 'Failed to verify transaction.' });
         } finally {
             setIsVerifying(false);
         }
     };
     
-    const sortedTransactions = transactions?.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+    const sortedTransactions = transactions; // Already sorted by query
 
     return (
         <Card>
@@ -94,7 +115,7 @@ export function TransactionManagement() {
                 <CardDescription>View recent transactions and manually verify payments if a webhook fails.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-                <div className="p-4 border rounded-lg space-y-4 bg-muted/20">
+                <div className="p-4 border rounded-lg space-y-3 bg-muted/20">
                     <h3 className="font-semibold">Manual Payment Verification</h3>
                      <div className="flex items-center gap-2">
                         <Input
@@ -103,7 +124,8 @@ export function TransactionManagement() {
                             onChange={(e) => setTransactionId(e.target.value)}
                             className="max-w-xs"
                         />
-                        <Button onClick={handleVerifyTransaction} disabled={isVerifying}>
+                        <Button onClick={handleVerifyTransaction} disabled={isVerifying || !transactionId}>
+                            {isVerifying && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                             {isVerifying ? 'Verifying...' : 'Verify Transaction'}
                         </Button>
                     </div>
@@ -148,7 +170,7 @@ export function TransactionManagement() {
                                             tx.status === 'pending' ? 'secondary' : 'destructive'
                                         } className={
                                              tx.status === 'verified' ? 'bg-success' : 
-                                             tx.status === 'pending' ? 'border-amber-500/50 text-amber-500' : ''
+                                             tx.status === 'pending' ? 'border-warning text-warning' : ''
                                         }>
                                             {tx.status}
                                         </Badge>
