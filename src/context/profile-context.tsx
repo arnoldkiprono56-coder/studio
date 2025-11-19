@@ -73,7 +73,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
   }, [userProfile, updateUserProfile]);
 
   useEffect(() => {
-    if (userProfile?.isSuspended && pathname !== '/suspended') {
+    if (userProfile?.isSuspended && pathname !== '/suspended' && !pathname.startsWith('/support')) {
       router.replace('/suspended');
     }
   }, [userProfile, pathname, router]);
