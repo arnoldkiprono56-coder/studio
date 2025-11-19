@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { LicenseManagementDialog } from './license-management';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { cn } from '@/lib/utils';
 
 interface User {
     id: string;
@@ -23,6 +24,36 @@ interface User {
 }
 
 const ROLES: User['role'][] = ['User', 'Assistant', 'Admin'];
+
+const roleConfig = {
+    SuperAdmin: {
+        icon: '👑',
+        className: 'bg-gold text-black hover:bg-gold/90',
+    },
+    Admin: {
+        icon: '🛡️',
+        className: 'bg-purple text-white hover:bg-purple/90',
+    },
+    Assistant: {
+        icon: '🤖',
+        className: 'bg-sky-blue text-black hover:bg-sky-blue/90',
+    },
+    User: {
+        icon: '👤',
+        className: 'bg-gray text-black hover:bg-gray/90',
+    },
+};
+
+const RoleBadge = ({ role }: { role: User['role'] }) => {
+    const config = roleConfig[role] || roleConfig.User;
+    return (
+        <Badge className={cn('gap-2', config.className)}>
+            <span>{config.icon}</span>
+            <span>{role}</span>
+        </Badge>
+    );
+};
+
 
 export function UserManagementTable() {
     const firestore = useFirestore();
@@ -128,15 +159,22 @@ export function UserManagementTable() {
                                         <TableCell className="font-code text-xs">{user.oneXBetId || 'N/A'}</TableCell>
                                         <TableCell>
                                             {user.role === 'SuperAdmin' ? (
-                                                <Badge variant='destructive'>SuperAdmin</Badge>
+                                                <RoleBadge role={user.role} />
                                             ) : (
                                                 <Select value={user.role} onValueChange={(newRole: User['role']) => handleRoleChange(user.id, newRole)}>
-                                                    <SelectTrigger className="w-[120px]">
-                                                        <SelectValue placeholder="Select role" />
+                                                    <SelectTrigger className="w-[140px]">
+                                                        <SelectValue asChild>
+                                                            <RoleBadge role={user.role} />
+                                                        </SelectValue>
                                                     </SelectTrigger>
                                                     <SelectContent>
                                                         {ROLES.map(role => (
-                                                            <SelectItem key={role} value={role}>{role}</SelectItem>
+                                                            <SelectItem key={role} value={role}>
+                                                                <div className="flex items-center gap-2">
+                                                                     <span>{roleConfig[role].icon}</span>
+                                                                     <span>{role}</span>
+                                                                </div>
+                                                            </SelectItem>
                                                         ))}
                                                     </SelectContent>
                                                 </Select>

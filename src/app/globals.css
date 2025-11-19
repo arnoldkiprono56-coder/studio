@@ -4,11 +4,11 @@
 
 @layer base {
   :root {
-    --background: 213 69% 12%; /* #0A1A2F */
+    --background: 213 69% 9%; /* #0A1A2F */
     --foreground: 210 40% 98%;
     --card: 216 28% 12%; /* #1B1F24 */
     --card-foreground: 210 40% 98%;
-    --popover: 213 69% 12%; /* #0A1A2F */
+    --popover: 213 69% 9%; /* #0A1A2F */
     --popover-foreground: 210 40% 98%;
     --primary: 211 100% 40%; /* #0052CC */
     --primary-foreground: 210 40% 98%;
@@ -18,7 +18,7 @@
     --muted-foreground: 215 20% 65%;
     --accent: 195 100% 50%; /* #00C2FF */
     --accent-foreground: 214 53% 12%;
-    --destructive: 8 100% 60%; /* #FF3B30 */
+    --destructive: 0 84% 60%; /* #FF3B30 */
     --destructive-foreground: 210 40% 98%;
     --border: 216 12% 52%; /* #C7CCD3 */
     --input: 216 12% 52%;
@@ -31,9 +31,15 @@
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
 
-    --success: 140 67% 50%; /* #30D158 */
+    --success: 140 67% 44%; /* #30D158 */
     --warning: 36 100% 50%; /* #FF9500 */
-    --error: 8 100% 60%; /* #FF3B30 */
+    --error: 0 84% 60%; /* #FF3B30 */
+    
+    --gold: 51 100% 50%; /* #FFD700 */
+    --purple: 282 31% 56%; /* #9B59B6 */
+    --sky-blue: 195 100% 50%; /* #00C2FF */
+    --gray: 216 12% 81%; /* #C7CCD3 */
+
 
     --accent-basic: 203 93% 60%;
     --accent-standard: 217 82% 52%;
@@ -50,11 +56,11 @@
   }
 
   .dark {
-    --background: 213 69% 12%; /* #0A1A2F */
+    --background: 213 69% 9%; /* #0A1A2F */
     --foreground: 210 40% 98%;
     --card: 216 28% 12%; /* #1B1F24 */
     --card-foreground: 210 40% 98%;
-    --popover: 213 69% 12%; /* #0A1A2F */
+    --popover: 213 69% 9%; /* #0A1A2F */
     --popover-foreground: 210 40% 98%;
     --primary: 211 100% 40%; /* #0052CC */
     --primary-foreground: 210 40% 98%;
@@ -64,7 +70,7 @@
     --muted-foreground: 215 20% 65%;
     --accent: 195 100% 50%; /* #00C2FF */
     --accent-foreground: 214 53% 12%;
-    --destructive: 8 100% 60%; /* #FF3B30 */
+    --destructive: 0 84% 60%; /* #FF3B30 */
     --destructive-foreground: 210 40% 98%;
     --border: 216 12% 52%; /* #C7CCD3 */
     --input: 216 12% 52%;

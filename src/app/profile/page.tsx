@@ -11,6 +11,39 @@ import { useProfile } from "@/context/profile-context";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
+
+type UserRole = 'User' | 'Assistant' | 'Admin' | 'SuperAdmin';
+
+const roleConfig: Record<UserRole, { icon: string; className: string }> = {
+    SuperAdmin: {
+        icon: '👑',
+        className: 'bg-gold text-black hover:bg-gold/90',
+    },
+    Admin: {
+        icon: '🛡️',
+        className: 'bg-purple text-white hover:bg-purple/90',
+    },
+    Assistant: {
+        icon: '🤖',
+        className: 'bg-sky-blue text-black hover:bg-sky-blue/90',
+    },
+    User: {
+        icon: '👤',
+        className: 'bg-gray text-black hover:bg-gray/90',
+    },
+};
+
+const RoleBadge = ({ role }: { role: UserRole }) => {
+    const config = roleConfig[role] || roleConfig.User;
+    return (
+        <Badge className={cn('gap-2 text-base', config.className)}>
+            <span>{config.icon}</span>
+            <span>{role.toUpperCase()}</span>
+        </Badge>
+    );
+};
+
 
 export default function ProfilePage() {
     const { userProfile, isProfileLoading, updateUserProfile } = useProfile();
@@ -82,7 +115,7 @@ export default function ProfilePage() {
         avatar: `https://i.pravatar.cc/150?u=${userProfile.id}`,
         plan: "Pro Plus", // This seems to be mock data
         mpesaNumber: "0712345678", // This seems to be mock data
-        role: userProfile.role || 'User',
+        role: userProfile.role as UserRole || 'User',
     };
     
     const referralCode = `PRO-${userProfile.id.substring(0, 6).toUpperCase()}`;
@@ -109,10 +142,9 @@ export default function ProfilePage() {
             <div className="flex-grow">
               <h3 className="font-semibold">{name}</h3>
               <p className="text-sm text-muted-foreground">{email}</p>
-              <Badge variant="secondary" className="mt-1">
-                <Shield className="mr-1.5 h-3 w-3"/>
-                {role}
-              </Badge>
+              <div className="mt-1">
+                <RoleBadge role={role}/>
+              </div>
             </div>
             <Button variant="outline" size="sm" disabled>Change Picture</Button>
           </div>

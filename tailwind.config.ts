@@ -52,6 +52,10 @@ export default {
         success: 'hsl(var(--success))',
         warning: 'hsl(var(--warning))',
         error: 'hsl(var(--error))',
+        gold: 'hsl(var(--gold))',
+        purple: 'hsl(var(--purple))',
+        'sky-blue': 'hsl(var(--sky-blue))',
+        gray: 'hsl(var(--gray))',
         popover: {
           DEFAULT: 'hsl(var(--popover))',
           foreground: 'hsl(var(--popover-foreground))',
