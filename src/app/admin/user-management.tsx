@@ -2,16 +2,19 @@
 
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { useFirestore, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
-import { collection, doc, updateDoc } from 'firebase/firestore';
+import { collection, doc, updateDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { AlertCircle, Users } from 'lucide-react';
+import { AlertCircle, Users, PlusCircle, Loader2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useProfile } from '@/context/profile-context';
+import { Button } from '@/components/ui/button';
+import { useState } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
 
 interface UserProfile {
     id: string;
@@ -20,10 +23,103 @@ interface UserProfile {
     isSuspended: boolean;
 }
 
+const gamePlans = [
+    { id: 'vip-slip', name: 'VIP Slip', rounds: 100 },
+    { id: 'aviator', name: 'Aviator', rounds: 100 },
+    { id: 'crash', name: 'Crash', rounds: 100 },
+    { id: 'mines-gems', name: 'Mines & Gems', rounds: 100 }
+];
+
+function ActivateLicenseDialog({ user, onOpenChange, open }: { user: UserProfile, onOpenChange: (open: boolean) => void, open: boolean }) {
+    const firestore = useFirestore();
+    const { toast } = useToast();
+    const [selectedGame, setSelectedGame] = useState<string>('');
+    const [isActivating, setIsActivating] = useState(false);
+
+    const handleActivate = async () => {
+        if (!firestore || !selectedGame) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Please select a game to activate.' });
+            return;
+        }
+
+        const gamePlan = gamePlans.find(g => g.id === selectedGame);
+        if (!gamePlan) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Invalid game plan selected.' });
+            return;
+        }
+
+        setIsActivating(true);
+
+        const licenseId = `${gamePlan.id}-${user.id}`;
+        const licenseRef = doc(firestore, 'users', user.id, 'user_licenses', licenseId);
+
+        const licensePayload = {
+            id: licenseId,
+            userId: user.id,
+            gameType: gamePlan.name,
+            roundsRemaining: gamePlan.rounds,
+            paymentVerified: true,
+            isActive: true,
+            createdAt: serverTimestamp(),
+        };
+
+        try {
+            await setDoc(licenseRef, licensePayload);
+            toast({ title: 'Success!', description: `${gamePlan.name} license activated for ${user.email}.` });
+            onOpenChange(false);
+            setSelectedGame('');
+        } catch (error) {
+             errorEmitter.emit('permission-error', new FirestorePermissionError({
+                path: licenseRef.path,
+                operation: 'write',
+                requestResourceData: licensePayload
+            }));
+        } finally {
+            setIsActivating(false);
+        }
+    };
+
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Activate License for {user.email}</DialogTitle>
+                    <DialogDescription>
+                        Select a game to create a new, active license for this user. This will grant them 100 rounds.
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="py-4">
+                     <Select value={selectedGame} onValueChange={setSelectedGame}>
+                        <SelectTrigger>
+                            <SelectValue placeholder="Select a game..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {gamePlans.map(game => (
+                                <SelectItem key={game.id} value={game.id}>{game.name}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
+                <DialogFooter>
+                    <DialogClose asChild>
+                        <Button variant="outline" disabled={isActivating}>Cancel</Button>
+                    </DialogClose>
+                    <Button onClick={handleActivate} disabled={isActivating || !selectedGame}>
+                        {isActivating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        {isActivating ? 'Activating...' : 'Activate'}
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    )
+}
+
 export function UserManagement() {
     const firestore = useFirestore();
     const { userProfile: adminProfile } = useProfile();
     const { toast } = useToast();
+    const [dialogState, setDialogState] = useState<{ open: boolean, user: UserProfile | null }>({ open: false, user: null });
 
     const usersCollection = useMemoFirebase(() => {
         if (!firestore) return null;
@@ -75,6 +171,9 @@ export function UserManagement() {
         }
     };
 
+    const openDialogForUser = (user: UserProfile) => {
+        setDialogState({ open: true, user });
+    };
 
     return (
         <Card>
@@ -92,7 +191,8 @@ export function UserManagement() {
                             <TableHead>Email</TableHead>
                             <TableHead>Role</TableHead>
                             <TableHead>Status</TableHead>
-                            <TableHead className="text-right">Actions</TableHead>
+                            <TableHead>Ban/Un-ban</TableHead>
+                             <TableHead className="text-right">Activate License</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -102,7 +202,8 @@ export function UserManagement() {
                                     <TableCell><Skeleton className="h-6 w-48" /></TableCell>
                                     <TableCell><Skeleton className="h-8 w-28" /></TableCell>
                                     <TableCell><Skeleton className="h-6 w-24" /></TableCell>
-                                    <TableCell className="text-right"><Skeleton className="h-8 w-20" /></TableCell>
+                                    <TableCell><Skeleton className="h-8 w-20" /></TableCell>
+                                    <TableCell className="text-right"><Skeleton className="h-8 w-32" /></TableCell>
                                 </TableRow>
                             ))
                         ) : users && users.length > 0 ? (
@@ -131,9 +232,8 @@ export function UserManagement() {
                                             {user.isSuspended ? 'Banned' : 'Active'}
                                         </Badge>
                                     </TableCell>
-                                    <TableCell className="text-right">
-                                        <div className="flex items-center justify-end gap-2">
-                                            <span>{user.isSuspended ? 'Un-ban' : 'Ban'}</span>
+                                    <TableCell>
+                                        <div className="flex items-center justify-start gap-2">
                                             <Switch
                                                 checked={user.isSuspended}
                                                 onCheckedChange={(checked) => handleBanChange(user.id, checked)}
@@ -141,11 +241,17 @@ export function UserManagement() {
                                             />
                                         </div>
                                     </TableCell>
+                                     <TableCell className="text-right">
+                                        <Button variant="outline" size="sm" onClick={() => openDialogForUser(user)}>
+                                            <PlusCircle className="mr-2 h-4 w-4"/>
+                                            Activate License
+                                        </Button>
+                                    </TableCell>
                                 </TableRow>
                             ))
                         ) : (
                             <TableRow>
-                                <TableCell colSpan={4} className="text-center h-24">
+                                <TableCell colSpan={5} className="text-center h-24">
                                      <div className="flex items-center justify-center gap-2 text-muted-foreground">
                                         {error ? <AlertCircle className="h-5 w-5 text-destructive" /> : <AlertCircle className="h-5 w-5" />}
                                         {error ? "Permission Denied: Could not load users." : "No users found."}
@@ -155,6 +261,13 @@ export function UserManagement() {
                         )}
                     </TableBody>
                 </Table>
+                {dialogState.open && dialogState.user && (
+                    <ActivateLicenseDialog 
+                        user={dialogState.user}
+                        open={dialogState.open}
+                        onOpenChange={(open) => setDialogState({ open, user: open ? dialogState.user : null })}
+                    />
+                )}
             </CardContent>
         </Card>
     );
