@@ -195,20 +195,20 @@ export default function PurchasePage() {
                                 <RadioGroupItem value="mpesa" id="mpesa" />
                                 <div>
                                     <p className="font-semibold">M-Pesa</p>
-                                    <p className="text-sm text-muted-foreground">Pay with M-Pesa STK Push or Till Number.</p>
+                                    <p className="text-sm text-muted-foreground">Pay using M-Pesa Send Money.</p>
                                 </div>
                             </Label>
-                             <Label htmlFor="card" className="flex items-center gap-4 p-4 border rounded-md has-[:checked]:border-primary has-[:checked]:bg-primary/5 cursor-pointer">
-                                <RadioGroupItem value="card" id="card" />
+                             <Label htmlFor="airtel" className="flex items-center gap-4 p-4 border rounded-md has-[:checked]:border-primary has-[:checked]:bg-primary/5 cursor-pointer">
+                                <RadioGroupItem value="airtel" id="airtel" />
                                 <div>
-                                    <p className="font-semibold">Card</p>
-                                    <p className="text-sm text-muted-foreground">Pay with Visa, Mastercard, or M-Pesa virtual card.</p>
+                                    <p className="font-semibold">Airtel Money</p>
+                                    <p className="text-sm text-muted-foreground">Pay using Airtel Send Money.</p>
                                 </div>
                             </Label>
                         </RadioGroup>
                     </div>
                      <div className="text-center p-4 bg-muted/50 rounded-lg text-sm">
-                        <p className="font-bold">Pay {formatCurrency(plan.price, plan.currency)} to Till Number: <span className="text-primary font-code">0786254674</span></p>
+                        <p className="font-bold">Send Money: {formatCurrency(plan.price, plan.currency)} to Number: <span className="text-primary font-code">0784667400</span></p>
                         <p className="text-muted-foreground mt-1">Your license will be activated once payment is confirmed.</p>
                     </div>
                 </CardContent>
