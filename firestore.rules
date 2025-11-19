@@ -21,6 +21,14 @@ service cloud.firestore {
       return isUser() && (getRole(request.auth.uid) == 'Admin' || getRole(request.auth.uid) == 'SuperAdmin');
     }
 
+    // Admins can list licenses and predictions across all users for the dashboard.
+    match /{path=**}/user_licenses/{licenseId} {
+      allow list: if isAdmin();
+    }
+     match /{path=**}/predictions/{predictionId} {
+      allow list: if isAdmin();
+    }
+
     // User profiles can be read by any user, but only listed by admins.
     // They can only be written by their owner or an admin.
     match /users/{userId} {
@@ -65,14 +73,6 @@ service cloud.firestore {
     // Prompts can only be read and written by an admin.
     match /prompts/{promptId} {
       allow read, write: if isAdmin();
-    }
-
-    // Admins can list licenses and predictions across all users for the dashboard.
-    match /{path=**}/user_licenses/{licenseId} {
-      allow list: if isAdmin();
-    }
-     match /{path=**}/predictions/{predictionId} {
-      allow list: if isAdmin();
     }
   }
 }
