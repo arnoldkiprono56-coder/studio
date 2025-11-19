@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { useFirestore, useMemoFirebase, useProfile } from '@/firebase';
+import { useFirestore, useMemoFirebase } from '@/firebase';
+import { useProfile } from '@/context/profile-context';
 import { useDoc } from '@/firebase/firestore/use-doc';
 import { doc, collection, writeBatch, getDoc, runTransaction, DocumentReference } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -206,5 +207,3 @@ export default function PurchasePage() {
         </div>
     )
 }
-
-    

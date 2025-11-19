@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
-import { useUser, useFirestore, useMemoFirebase } from '@/firebase';
+import { useUser, useFirestore, useMemoFirebase, FirestorePermissionError, errorEmitter } from '@/firebase';
 import { doc, DocumentData, DocumentReference, setDoc, updateDoc } from 'firebase/firestore';
 import { useDoc } from '@/firebase/firestore/use-doc';
 import { Button } from '@/components/ui/button';
@@ -51,7 +51,14 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     if (!userDocRef) {
       throw new Error("User document reference is not available.");
     }
-    await updateDoc(userDocRef, data);
+    // Using .catch() for non-blocking error handling
+    updateDoc(userDocRef, data).catch(error => {
+      errorEmitter.emit('permission-error', new FirestorePermissionError({
+        path: userDocRef.path,
+        operation: 'update',
+        requestResourceData: data,
+      }));
+    });
   }, [userDocRef]);
 
   useEffect(() => {
@@ -85,7 +92,8 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         });
         setIsDialogOpen(false);
     } catch (error) {
-        console.error("Failed to save 1xBet ID:", error);
+        // The updateUserProfile function will now handle emitting the error.
+        // We can still show a generic toast here if we want.
         toast({
             variant: "destructive",
             title: "Error",

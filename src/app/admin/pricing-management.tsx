@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useCollection } from '@/firebase/firestore/use-collection';
-import { useFirestore, useMemoFirebase } from '@/firebase';
+import { useFirestore, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
 import { collection, doc, updateDoc } from 'firebase/firestore';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -50,28 +50,29 @@ export function PricingManagement() {
         );
     };
 
-    const handleSaveChanges = async (planId: string) => {
+    const handleSaveChanges = (planId: string) => {
         if (!firestore) return;
         const planToSave = editablePlans.find(p => p.id === planId);
         if (!planToSave) return;
 
         const planRef = doc(firestore, 'plans', planId);
-        try {
-            await updateDoc(planRef, {
-                price: planToSave.price,
-                rounds: planToSave.rounds
-            });
+        const updateData = {
+            price: planToSave.price,
+            rounds: planToSave.rounds
+        };
+
+        updateDoc(planRef, updateData).then(() => {
             toast({
                 title: 'Success!',
                 description: `${planToSave.name} plan has been updated.`,
             });
-        } catch (error: any) {
-             toast({
-                variant: 'destructive',
-                title: 'Update Failed',
-                description: `Could not update plan: ${error.message}`,
-            });
-        }
+        }).catch(error => {
+            errorEmitter.emit('permission-error', new FirestorePermissionError({
+                path: planRef.path,
+                operation: 'update',
+                requestResourceData: updateData
+            }));
+        });
     };
 
     return (
@@ -144,5 +145,3 @@ export function PricingManagement() {
         </Card>
     );
 }
-
-    

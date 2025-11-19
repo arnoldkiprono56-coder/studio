@@ -1,7 +1,7 @@
 'use client';
 
 import { useCollection } from '@/firebase/firestore/use-collection';
-import { useFirestore, useMemoFirebase } from '@/firebase';
+import { useFirestore, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
 import { collection, doc, updateDoc } from 'firebase/firestore';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -38,19 +38,29 @@ export function UserManagementTable() {
     const [oneXBetIdFilter, setOneXBetIdFilter] = useState('');
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
 
-    const handleSuspendToggle = async (user: User) => {
+    const handleSuspendToggle = (user: User) => {
         if (!firestore) return;
         const userRef = doc(firestore, 'users', user.id);
-        await updateDoc(userRef, {
-            isSuspended: !user.isSuspended
+        const updateData = { isSuspended: !user.isSuspended };
+        updateDoc(userRef, updateData).catch(error => {
+            errorEmitter.emit('permission-error', new FirestorePermissionError({
+                path: userRef.path,
+                operation: 'update',
+                requestResourceData: updateData
+            }));
         });
     };
     
-    const handleRoleChange = async (userId: string, newRole: User['role']) => {
+    const handleRoleChange = (userId: string, newRole: User['role']) => {
         if (!firestore) return;
         const userRef = doc(firestore, 'users', userId);
-        await updateDoc(userRef, {
-            role: newRole
+        const updateData = { role: newRole };
+        updateDoc(userRef, updateData).catch(error => {
+            errorEmitter.emit('permission-error', new FirestorePermissionError({
+                path: userRef.path,
+                operation: 'update',
+                requestResourceData: updateData
+            }));
         });
     };
 

@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useCollection } from '@/firebase/firestore/use-collection';
-import { useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { useFirestore, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
+import { collection, doc, updateDoc } from 'firebase/firestore';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
@@ -46,29 +46,30 @@ export function PromptManagement() {
         );
     };
 
-    const handleSaveChanges = async (promptId: string) => {
+    const handleSaveChanges = (promptId: string) => {
         if (!firestore) return;
         const promptToSave = editablePrompts.find(p => p.id === promptId);
         if (!promptToSave) return;
 
         const promptRef = doc(firestore, 'prompts', promptId);
-        try {
-            await updateDoc(promptRef, {
-                content: promptToSave.content,
-                lastModified: new Date().toISOString(),
-                version: (promptToSave.version || 1) + 1
-            });
+        const updateData = {
+            content: promptToSave.content,
+            lastModified: new Date().toISOString(),
+            version: (promptToSave.version || 1) + 1
+        };
+
+        updateDoc(promptRef, updateData).then(() => {
             toast({
                 title: 'Success!',
                 description: `Prompt "${promptToSave.name}" has been updated.`,
             });
-        } catch (error: any) {
-             toast({
-                variant: 'destructive',
-                title: 'Update Failed',
-                description: `Could not update prompt: ${error.message}`,
-            });
-        }
+        }).catch(error => {
+            errorEmitter.emit('permission-error', new FirestorePermissionError({
+                path: promptRef.path,
+                operation: 'update',
+                requestResourceData: updateData
+            }));
+        });
     };
 
     return (

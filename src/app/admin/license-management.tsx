@@ -52,48 +52,64 @@ export function LicenseManagementDialog({ user, open, onOpenChange }: LicenseMan
         });
     };
 
-    const handleActivateLicense = async (gameType: string) => {
+    const handleActivateLicense = (gameType: string) => {
         if (!firestore) return;
         const licenseId = `${gameType.toLowerCase().replace(/ & /g, '-').replace(/\s/g, '-')}-${user.id}`;
         const licenseRef = doc(firestore, 'users', user.id, 'user_licenses', licenseId);
-        try {
-            await setDoc(licenseRef, {
-                id: licenseId,
-                userId: user.id,
-                gameType,
-                roundsRemaining: 100,
-                paymentVerified: true,
-                isActive: true,
-            }, { merge: true });
+        
+        const licenseData = {
+            id: licenseId,
+            userId: user.id,
+            gameType,
+            roundsRemaining: 100,
+            paymentVerified: true,
+            isActive: true,
+        };
+
+        setDoc(licenseRef, licenseData, { merge: true }).then(() => {
             toast({ title: 'Success', description: `${gameType} license activated for ${user.email}.` });
             logAdminAction('license_activated', { targetUserId: user.id, targetUserEmail: user.email, gameType });
-        } catch (error: any) {
-            toast({ variant: 'destructive', title: 'Error', description: `Failed to activate license: ${error.message}` });
-        }
+        }).catch(error => {
+             errorEmitter.emit('permission-error', new FirestorePermissionError({
+                path: licenseRef.path,
+                operation: 'write',
+                requestResourceData: licenseData
+            }));
+        });
     };
     
-    const handleResetRounds = async (license: License) => {
+    const handleResetRounds = (license: License) => {
         if (!firestore) return;
         const licenseRef = doc(firestore, 'users', user.id, 'user_licenses', license.id);
-        try {
-            await updateDoc(licenseRef, { roundsRemaining: 100, isActive: true });
+        const updateData = { roundsRemaining: 100, isActive: true };
+
+        updateDoc(licenseRef, updateData).then(() => {
             toast({ title: 'Success', description: `Rounds reset to 100 for ${license.gameType} license.` });
             logAdminAction('rounds_reset', { targetUserId: user.id, targetUserEmail: user.email, gameType: license.gameType, rounds: 100 });
-        } catch (error: any) {
-             toast({ variant: 'destructive', title: 'Error', description: `Failed to reset rounds: ${error.message}` });
-        }
+        }).catch(error => {
+             errorEmitter.emit('permission-error', new FirestorePermissionError({
+                path: licenseRef.path,
+                operation: 'update',
+                requestResourceData: updateData
+            }));
+        });
     };
 
-    const handleDeactivateLicense = async (license: License) => {
+    const handleDeactivateLicense = (license: License) => {
         if (!firestore) return;
         const licenseRef = doc(firestore, 'users', user.id, 'user_licenses', license.id);
-        try {
-            await updateDoc(licenseRef, { roundsRemaining: 0, isActive: false });
+        const updateData = { roundsRemaining: 0, isActive: false };
+        
+        updateDoc(licenseRef, updateData).then(() => {
             toast({ title: 'Success', description: `${license.gameType} license has been deactivated.` });
             logAdminAction('license_deactivated', { targetUserId: user.id, targetUserEmail: user.email, gameType: license.gameType });
-        } catch (error: any) {
-             toast({ variant: 'destructive', title: 'Error', description: `Failed to deactivate license: ${error.message}` });
-        }
+        }).catch(error => {
+            errorEmitter.emit('permission-error', new FirestorePermissionError({
+                path: licenseRef.path,
+                operation: 'update',
+                requestResourceData: updateData
+            }));
+        });
     };
 
     const userLicenses = ALL_GAME_TYPES.map(gameType => {
@@ -178,5 +194,3 @@ export function LicenseManagementDialog({ user, open, onOpenChange }: LicenseMan
         </Dialog>
     );
 }
-
-    
