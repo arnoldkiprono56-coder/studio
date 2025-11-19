@@ -1,6 +1,6 @@
 'use client';
 
-import { GamesControl } from '../games-control';
+import { GamesControl } from '@/app/admin/games-control';
 
 export default function AdminGamesPage() {
     return (

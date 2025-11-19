@@ -1,6 +1,6 @@
 'use client';
 
-import { UserManagement } from '../user-management';
+import { UserManagement } from '@/app/admin/user-management';
 
 export default function AdminUsersPage() {
     return (
