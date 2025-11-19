@@ -18,13 +18,13 @@ const MatchSchema = z.object({
   odd: z.number().min(1.2).max(3.0).describe('The betting odd, between 1.20 and 3.00.'),
 });
 
-export const GenerateVipSlipInputSchema = z.object({
+const GenerateVipSlipInputSchema = z.object({
   userId: z.string().describe('The ID of the user requesting the slip.'),
   licenseId: z.string().describe('The license ID being used for this request.'),
 });
 export type GenerateVipSlipInput = z.infer<typeof GenerateVipSlipInputSchema>;
 
-export const GenerateVipSlipOutputSchema = z.object({
+const GenerateVipSlipOutputSchema = z.object({
   matches: z.array(MatchSchema).min(3).max(5).describe('An array of 3 to 5 matches for the VIP slip.'),
   slipType: z.string().default("Premium AI VIP").describe('The type of the slip.'),
   disclaimer: z.string().default('⚠ Predictions are approximations and not guaranteed.'),
@@ -55,5 +55,3 @@ const generateVipSlipFlow = ai.defineFlow(
     return output!;
   }
 );
-
-    
