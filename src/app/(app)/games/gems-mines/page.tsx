@@ -231,7 +231,7 @@ export default function GemsAndMinesPage() {
                                 disabled={isLoading || licensesLoading || !canGenerate} 
                                 size="lg"
                             >
-                                {isLoading || licensesLoading ? 'Loading...' : 'Get Prediction'}
+                                {isLoading ? 'Loading...' : 'Get Prediction'}
                             </Button>
                         </div>
                         {prediction && (
