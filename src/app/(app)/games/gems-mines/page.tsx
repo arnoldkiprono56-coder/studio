@@ -205,20 +205,16 @@ export default function GemsAndMinesPage() {
                                 <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto" />
                                 <p className='font-semibold text-muted-foreground'>Connecting to 1xBet servers...</p>
                             </div>
-                        ): (
-                            <div className="text-center">
-                                {gemsMinesData ? (
-                                    <div className='space-y-2'>
-                                        <p className="text-muted-foreground font-semibold">💎 Mines &amp; Gems Prediction (1xBet)</p>
-                                        <p>Safe Tiles (Gems): <span className='font-bold'>{gemsMinesData.safeTileIndices.length}</span></p>
-                                        <p>Mines to Avoid: <span className='font-bold'>{gemsMinesData.mineTileIndices.length}</span></p>
-                                        <p>Risk: <span className='font-bold'>{gemsMinesData.risk}</span></p>
-                                    </div>
-                                ) : (
-                                    <div className="text-center text-muted-foreground">
-                                       {renderStatus()}
-                                    </div>
-                                )}
+                        ): gemsMinesData ? (
+                            <div className='space-y-2 text-center'>
+                                <p className="text-muted-foreground font-semibold">💎 Mines &amp; Gems Prediction (1xBet)</p>
+                                <p>Safe Tiles (Gems): <span className='font-bold'>{gemsMinesData.safeTileIndices.length}</span></p>
+                                <p>Mines to Avoid: <span className='font-bold'>{gemsMinesData.mineTileIndices.length}</span></p>
+                                <p>Risk: <span className='font-bold'>{gemsMinesData.risk}</span></p>
+                            </div>
+                        ) : (
+                            <div className="text-center text-muted-foreground">
+                               {renderStatus()}
                             </div>
                         )}
                         
