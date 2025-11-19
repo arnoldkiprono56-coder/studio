@@ -1,5 +1,1 @@
-import { redirect } from 'next/navigation';
-
-export default function Home() {
-  redirect('/login');
-}
+// This file is intentionally left blank. It has been deleted.
