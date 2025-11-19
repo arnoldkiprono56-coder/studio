@@ -4,6 +4,7 @@
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/app-sidebar';
 import { Header } from '@/components/header';
+import { BroadcastListener } from '@/components/BroadcastListener';
 
 export default function AppLayout({
     children,
@@ -19,6 +20,7 @@ export default function AppLayout({
                     <main className="flex-1 container py-8 flex flex-col">{children}</main>
                 </div>
             </div>
+            <BroadcastListener />
         </SidebarProvider>
     );
 }

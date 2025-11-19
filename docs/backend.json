@@ -326,6 +326,41 @@
         }
       },
       "required": ["id", "name", "isEnabled"]
+    },
+    "Notification": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Notification",
+      "type": "object",
+      "description": "A global notification or broadcast message for users.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique ID for the notification."
+        },
+        "message": {
+          "type": "string",
+          "description": "The content of the broadcast message (supports Markdown)."
+        },
+        "targetAudience": {
+          "type": "string",
+          "description": "The target audience for the notification.",
+          "enum": ["all", "premium", "staff"]
+        },
+        "senderId": {
+          "type": "string",
+          "description": "The ID of the admin who sent the message."
+        },
+        "senderEmail": {
+          "type": "string",
+          "description": "The email of the admin who sent the message."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The timestamp of when the notification was created."
+        }
+      },
+      "required": ["id", "message", "targetAudience", "createdAt"]
     }
   },
   "auth": {
@@ -467,6 +502,22 @@
             {
               "name": "gameId",
               "description": "The unique identifier for the game (e.g., 'aviator')."
+            }
+          ]
+        }
+      },
+       {
+        "path": "/notifications/{notificationId}",
+        "definition": {
+          "entityName": "Notification",
+          "schema": {
+            "$ref": "#/backend/entities/Notification"
+          },
+          "description": "Stores global broadcast messages for users.",
+          "params": [
+            {
+              "name": "notificationId",
+              "description": "The unique identifier for the notification."
             }
           ]
         }

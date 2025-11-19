@@ -42,7 +42,7 @@ const superAdminNav = [
   { href: '/admin/predictions', label: 'Prediction Logs', icon: History },
   { href: '/admin/pricing', label: 'Plans & Pricing', icon: Tag },
   { href: '/admin/games', label: 'Games Control', icon: Gamepad2 },
-  { href: '/admin/broadcast', label: 'Broadcast', icon: Megaphone },
+  { href: '/admin/broadcast', label: 'Broadcasts', icon: Megaphone },
   { href: '/admin/support', label: 'Support Center', icon: LifeBuoy },
   { href: '/admin/settings', label: 'System Settings', icon: Settings },
   { href: '/admin/staff', label: 'Staff Management', icon: Users2 },
@@ -56,7 +56,7 @@ const adminNav = [
   { href: '/admin/payments', label: 'Payments', icon: CreditCard },
   { href: '/admin/predictions', label: 'Prediction Logs', icon: History },
   { href: '/admin/games', label: 'Games Control', icon: Gamepad2 },
-  { href: '/admin/broadcast', label: 'Broadcast', icon: Megaphone },
+  { href: '/admin/broadcast', label: 'Broadcasts', icon: Megaphone },
   { href: '/admin/support', label: 'Support Center', icon: LifeBuoy },
 ];
 

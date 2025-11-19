@@ -111,5 +111,5 @@ export default {
       },
     },
   },
-  plugins: [require('tailwindcss-animate'), require("tailwindcss-debug-screens")],
+  plugins: [require('tailwindcss-animate'), require("tailwindcss-debug-screens"), require('@tailwindcss/typography')],
 } satisfies Config;
