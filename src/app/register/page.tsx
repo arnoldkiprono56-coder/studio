@@ -26,7 +26,6 @@ import { useToast } from "@/hooks/use-toast"
 import { useAuth, useFirestore } from "@/firebase"
 import { createUserWithEmailAndPassword, sendEmailVerification } from "firebase/auth"
 import { doc, getDocs, query, collection, where, writeBatch } from "firebase/firestore"
-import { setDocumentNonBlocking } from "@/firebase/non-blocking-updates"
 import { PlaceHolderImages } from "@/lib/placeholder-images"
 import { Logo } from "@/components/icons"
 
@@ -147,7 +146,7 @@ export default function RegisterPage() {
             
             batch.set(userRef, userData);
 
-            if (userRole === 'SuperAdmin') {
+            if (userRole === 'SuperAdmin' || userRole === 'Admin') {
                 const adminRef = doc(firestore, "admins", user.uid);
                 batch.set(adminRef, { userId: user.uid, isAdmin: true });
             }
@@ -300,5 +299,3 @@ export default function RegisterPage() {
     </div>
   )
 }
-
-    

@@ -18,7 +18,8 @@ service cloud.firestore {
     }
     
     function isSuperAdmin() {
-      return isUser() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'SuperAdmin';
+      let role = get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+      return isUser() && role == 'SuperAdmin';
     }
     
     // Admins can list licenses and predictions across all users for the dashboard.
@@ -83,5 +84,3 @@ service cloud.firestore {
     }
   }
 }
-
-    
