@@ -1,6 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
+import { useRouter, usePathname } from 'next/navigation';
 import { useUser, useFirestore, useMemoFirebase, FirestorePermissionError, errorEmitter } from '@/firebase';
 import { doc, DocumentData, DocumentReference, setDoc, updateDoc } from 'firebase/firestore';
 import { useDoc } from '@/firebase/firestore/use-doc';
@@ -19,6 +20,7 @@ interface UserProfile {
   balance?: number;
   referredBy?: string;
   hasPurchased?: boolean;
+  isSuspended?: boolean;
   [key: string]: any;
 }
 
@@ -35,6 +37,8 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
   const { toast } = useToast();
+  const router = useRouter();
+  const pathname = usePathname();
 
   const userDocRef = useMemoFirebase(() => {
     if (!user || !firestore) return null;
@@ -67,6 +71,12 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       updateUserProfile({ role: 'SuperAdmin' }).catch(console.error);
     }
   }, [userProfile, updateUserProfile]);
+
+  useEffect(() => {
+    if (userProfile?.isSuspended && pathname !== '/suspended') {
+      router.replace('/suspended');
+    }
+  }, [userProfile, pathname, router]);
   
   useEffect(() => {
     if(userProfile?.oneXBetId) {
