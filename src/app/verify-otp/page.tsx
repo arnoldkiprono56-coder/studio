@@ -26,45 +26,30 @@ function VerifyOtpContent() {
   const [resendCooldown, setResendCooldown] = useState(30);
 
   useEffect(() => {
-    const interval = setInterval(() => {
+    const cooldownInterval = setInterval(() => {
       setResendCooldown(prev => (prev > 0 ? prev - 1 : 0));
     }, 1000);
-    return () => clearInterval(interval);
+    return () => clearInterval(cooldownInterval);
   }, []);
 
   useEffect(() => {
+    // The onAuthStateChanged listener in FirebaseProvider will handle user object updates.
+    // When the email is verified, the `user` object will update, and `user.emailVerified` will be true.
+    // This effect will then trigger the redirect.
     if (!isUserLoading && user && user.emailVerified) {
       toast({ title: "Success", description: "Account verified successfully." });
       router.push('/dashboard');
     }
-
-    if (!isUserLoading && !user) {
-        // Not logged in, maybe direct access to page
-        // Let's not redirect to login, as they might have just registered
-        // and are waiting for the user object to be available.
-    }
-
-    const interval = setInterval(async () => {
-      if (user) {
-        await user.reload();
-        if (user.emailVerified) {
-          clearInterval(interval);
-          toast({ title: "Success", description: "Account verified successfully." });
-          router.push('/dashboard');
-        }
-      }
-    }, 3000);
-
-    return () => clearInterval(interval);
-
   }, [user, isUserLoading, router, toast]);
 
   const handleResend = async () => {
-    if (resendCooldown > 0) return;
-    if (!user) {
-      toast({ variant: "destructive", title: "Error", description: "You are not logged in. Cannot resend verification." });
-      return;
+    if (resendCooldown > 0 || !user) {
+        if (!user) {
+            toast({ variant: "destructive", title: "Error", description: "You are not logged in. Cannot resend verification." });
+        }
+        return;
     }
+    
     try {
       await sendEmailVerification(user);
       setResendCooldown(60);
@@ -75,6 +60,11 @@ function VerifyOtpContent() {
   };
 
   if (isUserLoading) {
+    return <div className="flex justify-center items-center"><Loader2 className="h-8 w-8 animate-spin text-primary"/></div>;
+  }
+
+  // If the user is already verified and somehow landed here, redirect them.
+  if (user && user.emailVerified) {
     return <div className="flex justify-center items-center"><Loader2 className="h-8 w-8 animate-spin text-primary"/></div>;
   }
 
