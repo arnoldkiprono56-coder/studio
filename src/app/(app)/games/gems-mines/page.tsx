@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Loader2, ArrowLeft, Gem, ShieldAlert, AlertCircle } from "lucide-react";
@@ -31,6 +31,13 @@ export default function GemsAndMinesPage() {
     const { userProfile, openOneXBetDialog } = useProfile();
     const firestore = useFirestore();
     const { toast } = useToast();
+    const [randomSeed, setRandomSeed] = useState<number | null>(null);
+    
+    useEffect(() => {
+        // Generate a random number client-side to avoid hydration mismatches
+        setRandomSeed(Math.random());
+    }, []);
+
 
     const licensesQuery = useMemoFirebase(() => {
         if (!userProfile?.id || !firestore) return null;
@@ -59,8 +66,17 @@ export default function GemsAndMinesPage() {
         setIsLoading(true);
         setPrediction(null);
         setFeedbackSent(false);
+
+        // Generate a new seed for this specific request to ensure uniqueness
+        const currentSeed = Math.random();
+        setRandomSeed(currentSeed);
+
         try {
-            const result = await generateGamePredictions({ gameType: 'gems-mines', userId: userProfile.id });
+            const result = await generateGamePredictions({ 
+                gameType: 'gems-mines', 
+                userId: userProfile.id,
+                seed: currentSeed // Pass the unique seed to the flow
+            });
             setPrediction(result);
             
             const timestamp = new Date().toISOString();
@@ -142,7 +158,7 @@ export default function GemsAndMinesPage() {
 
     const gemsMinesData = prediction?.predictionData as GemsMinesPredictionData | undefined;
     const roundsRemaining = activeLicense?.roundsRemaining ?? 0;
-    const canGenerate = !!activeLicense && !!userProfile?.oneXBetId && roundsRemaining > 0;
+    const canGenerate = !!activeLicense && !!userProfile?.oneXBetId && roundsRemaining > 0 && randomSeed !== null;
 
     const renderStatus = () => {
         if (licensesLoading) {
@@ -154,7 +170,7 @@ export default function GemsAndMinesPage() {
         if (licenses && licenses.length === 0) {
             return (
                 <div className='text-center'>
-                    <p>No Mines & Gems license found.</p>
+                    <p>No Mines &amp; Gems license found.</p>
                     <Button asChild variant="link"><Link href="/purchase/mines-gems">Purchase a License</Link></Button>
                 </div>
             )
@@ -185,8 +201,8 @@ export default function GemsAndMinesPage() {
                     </Link>
                 </Button>
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Gems & Mines Predictions</h1>
-                    <p className="text-muted-foreground">Generate AI-powered predictions for the Gems & Mines game on 1xBet.</p>
+                    <h1 className="text-3xl font-bold tracking-tight">Gems &amp; Mines Predictions</h1>
+                    <p className="text-muted-foreground">Generate AI-powered predictions for the Gems &amp; Mines game on 1xBet.</p>
                 </div>
             </div>
 
@@ -203,7 +219,7 @@ export default function GemsAndMinesPage() {
                             <div className="text-center">
                                 {gemsMinesData ? (
                                     <div className='space-y-2'>
-                                        <p className="text-muted-foreground font-semibold">💎 Mines & Gems Prediction (1xBet)</p>
+                                        <p className="text-muted-foreground font-semibold">💎 Mines &amp; Gems Prediction (1xBet)</p>
                                         <p>Safe Tiles: <span className='font-bold'>{gemsMinesData.safeTiles}</span></p>
                                         <p>Avoid Tiles: <span className='font-bold'>{gemsMinesData.avoidTiles}</span></p>
                                         <p>Pattern: <span className='font-bold'>{gemsMinesData.pattern}</span></p>

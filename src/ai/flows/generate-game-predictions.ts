@@ -21,11 +21,14 @@ Based on the game type provided, generate a prediction for the corresponding gam
 
 Game Type: {{{gameType}}}
 User ID: {{{userId}}}
+{{#if seed}}
+Randomness Seed: {{{seed}}}
+{{/if}}
 
 Provide the predictionData based on the game type, using realistic values for 1xBet.
 - For 'aviator', use the format: Target Cashout: {multiplier range from 1.10x to 12x}, Risk Level: {risk}, Round Confidence: {confidence}%.
 - For 'crash', use the format: Target Cashout: {cashout range from 1.10x to 12x}, Risk Level: {risk}, Round Confidence: {confidence}%.
-- For 'gems-mines', use the format: Safe Tiles: {number}, Avoid Tiles: {number}, Pattern: {pattern type}, Risk: {risk}.
+- For 'gems-mines', use the format: Safe Tiles: {number}, Avoid Tiles: {number}, Pattern: {pattern type}, Risk: {risk}. Use the provided randomness seed to generate a unique pattern.
 
 The output must be a JSON object that strictly conforms to the output schema. Ensure you include the mandatory disclaimer: "⚠ Predictions are approximations and not guaranteed."
 `;
@@ -35,6 +38,7 @@ const GenerateGamePredictionsInputSchema = z.object({
     .enum(['aviator', 'crash', 'gems-mines'])
     .describe('The type of game for which to generate predictions.'),
   userId: z.string().describe('The ID of the user requesting the prediction.'),
+  seed: z.number().optional().describe('An optional random seed to ensure prediction uniqueness.'),
 });
 export type GenerateGamePredictionsInput = z.infer<typeof GenerateGamePredictionsInputSchema>;
 
