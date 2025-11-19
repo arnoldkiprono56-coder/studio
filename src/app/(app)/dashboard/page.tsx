@@ -11,7 +11,7 @@ import { ArrowRight, Star } from "lucide-react";
 import Link from "next/link";
 import { formatCurrency } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
-import OnboardingPage from "@/app/onboarding/page";
+import OnboardingPage from "@/app/(app)/onboarding/page";
 import { useCollection } from "@/firebase/firestore/use-collection";
 import { useFirestore, useMemoFirebase } from "@/firebase";
 import { collection, query, where, limit, orderBy } from "firebase/firestore";

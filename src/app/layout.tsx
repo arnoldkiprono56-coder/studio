@@ -3,10 +3,7 @@ import './globals.css';
 import { Toaster } from "@/components/ui/toaster"
 import { cn } from '@/lib/utils';
 import { FirebaseClientProvider } from '@/firebase';
-import { Header } from '@/components/header';
 import { ProfileProvider } from '@/context/profile-context';
-import { SidebarProvider } from '@/components/ui/sidebar';
-import { AppSidebar } from '@/components/app-sidebar';
 
 const APP_NAME = "PredictPro";
 const APP_DESCRIPTION = "Advanced predictive analytics for popular games.";
@@ -45,15 +42,7 @@ export default function RootLayout({
       <body className={cn("font-sans antialiased", process.env.NODE_ENV === "development" ? "debug-screens" : "")}>
         <FirebaseClientProvider>
           <ProfileProvider>
-            <SidebarProvider>
-              <div className="flex">
-                <AppSidebar />
-                <div className="flex-1 flex flex-col">
-                  <Header />
-                  <main className="flex-1 container py-8 flex flex-col">{children}</main>
-                </div>
-              </div>
-            </SidebarProvider>
+            {children}
           </ProfileProvider>
         </FirebaseClientProvider>
         <Toaster />
