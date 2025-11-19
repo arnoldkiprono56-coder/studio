@@ -46,7 +46,7 @@ export default function RootLayout({
           <ProfileProvider>
             <div className="relative flex min-h-screen flex-col">
               <Header />
-              <main className="flex-1 container py-8">{children}</main>
+              <main className="flex-1 container py-8 flex flex-col">{children}</main>
               <MobileNav />
               <div className="h-16 md:hidden" /> {/* Spacer for mobile nav */}
             </div>

@@ -85,7 +85,7 @@ export default function ChatPage() {
 
 
     return (
-        <div className="flex flex-col h-[85vh]">
+        <div className="flex flex-col h-full flex-grow">
             <div className="flex items-center mb-4">
                 <Button variant="ghost" size="icon" asChild>
                     <Link href="/support">
