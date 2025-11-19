@@ -5,3 +5,4 @@ import '@/ai/flows/generate-game-predictions';
 import '@/ai/flows/adapt-predictions-based-on-feedback';
 import '@/ai/flows/generate-support-response';
 import '@/ai/flows/generate-vip-slip';
+import '@/ai/tools/admin-tools';
