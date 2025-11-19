@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Logo } from "@/components/icons";
 import { Button } from "@/components/ui/button";
-import { User, LogOut } from "lucide-react";
+import { User, LogOut, PanelLeft } from "lucide-react";
 import { useAuth } from "@/firebase";
 import { signOut } from "firebase/auth";
 import {
@@ -13,22 +13,33 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
     DropdownMenuSeparator,
-  } from "@/components/ui/dropdown-menu"
+  } from "@/components/ui/dropdown-menu";
+import { useSidebar } from "./ui/sidebar";
 
 export function Header() {
   const auth = useAuth();
   const router = useRouter();
+  const { toggleSidebar } = useSidebar();
 
   const handleLogout = async () => {
-    await signOut(auth);
+    if (auth) {
+        await signOut(auth);
+    }
     router.push('/login');
   };
 
   return (
     <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur-sm">
       <div className="container flex h-16 items-center space-x-4 sm:justify-between sm:space-x-0">
-        <div className="flex gap-6 md:gap-10">
-          <Link href="/dashboard" className="flex items-center space-x-2">
+        <div className="flex gap-6 md:gap-10 items-center">
+            <button
+                onClick={toggleSidebar}
+                className="md:hidden"
+                aria-label="Toggle Menu"
+            >
+                <PanelLeft />
+            </button>
+          <Link href="/dashboard" className="hidden items-center space-x-2 md:flex">
             <Logo className="h-6 w-6" />
             <span className="inline-block font-bold">PredictPro</span>
           </Link>
