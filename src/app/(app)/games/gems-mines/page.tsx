@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { Loader2, ArrowLeft, Gem, ShieldAlert, AlertCircle } from "lucide-react";
+import { Loader2, ArrowLeft, Gem, ShieldAlert, AlertCircle, Bomb } from "lucide-react";
 import { generateGamePredictions, GenerateGamePredictionsOutput } from '@/ai/flows/generate-game-predictions';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
@@ -18,9 +18,8 @@ import { useToast } from '@/hooks/use-toast';
 const GRID_SIZE = 25;
 
 type GemsMinesPredictionData = {
-    safeTiles: number;
-    avoidTiles: number;
-    pattern: string;
+    safeTileIndices: number[];
+    mineTileIndices: number[];
     risk: string;
 }
 
@@ -208,9 +207,8 @@ export default function GemsAndMinesPage() {
                                 {gemsMinesData ? (
                                     <div className='space-y-2'>
                                         <p className="text-muted-foreground font-semibold">💎 Mines &amp; Gems Prediction (1xBet)</p>
-                                        <p>Safe Tiles: <span className='font-bold'>{gemsMinesData.safeTiles}</span></p>
-                                        <p>Avoid Tiles: <span className='font-bold'>{gemsMinesData.avoidTiles}</span></p>
-                                        <p>Pattern: <span className='font-bold'>{gemsMinesData.pattern}</span></p>
+                                        <p>Safe Tiles (Gems): <span className='font-bold'>{gemsMinesData.safeTileIndices.length}</span></p>
+                                        <p>Mines to Avoid: <span className='font-bold'>{gemsMinesData.mineTileIndices.length}</span></p>
                                         <p>Risk: <span className='font-bold'>{gemsMinesData.risk}</span></p>
                                     </div>
                                 ) : (
@@ -255,21 +253,30 @@ export default function GemsAndMinesPage() {
                  <Card>
                     <CardHeader>
                         <CardTitle>Prediction Grid</CardTitle>
-                        <CardDescription>This is a conceptual grid. Use the data from the prediction.</CardDescription>
+                        <CardDescription>
+                             {gemsMinesData ? "Follow the path of gems and avoid the mines." : "Your prediction will appear here."}
+                        </CardDescription>
                     </CardHeader>
                     <CardContent>
                          <div className="grid grid-cols-5 gap-2">
-                            {Array.from({ length: GRID_SIZE }).map((_, index) => (
-                                <div
-                                    key={index}
-                                    className={cn(
-                                        "w-full aspect-square rounded-md flex items-center justify-center border bg-muted/30",
-                                    )}
-                                >
-                                    {index % 4 === 0 && <Gem className="w-6 h-6 text-accent-pro" />}
-                                    {index % 7 === 0 && <ShieldAlert className="w-6 h-6 text-warning" />}
-                                </div>
-                            ))}
+                            {Array.from({ length: GRID_SIZE }).map((_, index) => {
+                                const isMine = gemsMinesData?.mineTileIndices.includes(index);
+                                const isSafe = gemsMinesData?.safeTileIndices.includes(index);
+                                
+                                return (
+                                    <div
+                                        key={index}
+                                        className={cn(
+                                            "w-full aspect-square rounded-md flex items-center justify-center border",
+                                            isMine ? 'bg-destructive/20 border-destructive' : 'bg-muted/30',
+                                            isSafe && 'bg-green-500/20 border-green-500',
+                                        )}
+                                    >
+                                        {isMine && <Bomb className="w-6 h-6 text-destructive" />}
+                                        {isSafe && <Gem className="w-6 h-6 text-green-400" />}
+                                    </div>
+                                );
+                            })}
                         </div>
                     </CardContent>
                 </Card>

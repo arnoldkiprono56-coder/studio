@@ -25,9 +25,8 @@ const CrashPredictionSchema = z.object({
 });
 
 const GemsMinesPredictionSchema = z.object({
-    safeTiles: z.number().describe('The number of safe tiles.'),
-    avoidTiles: z.number().describe('The number of tiles to avoid.'),
-    pattern: z.string().describe('The recommended pattern type.'),
+    safeTileIndices: z.array(z.number()).describe('An array of tile indices (0-24) that are predicted to be safe (gems).'),
+    mineTileIndices: z.array(z.number()).describe('An array of tile indices (0-24) that are predicted to be mines.'),
     risk: z.string().describe('The risk level (Low, Medium, or High).'),
 });
 
@@ -50,27 +49,39 @@ export type GenerateGamePredictionsOutput = z.infer<typeof GenerateGamePredictio
 const generateGamePattern = ai.defineTool(
   {
     name: 'generateGamePattern',
-    description: 'Generates a random but plausible game pattern for a tile-based game based on a seed.',
+    description: 'Generates a random but plausible game pattern for a tile-based game, returning the indices of safe and mine tiles.',
     inputSchema: z.object({
       seed: z.number().describe('A random number between 0 and 1 to ensure uniqueness.'),
+      gridSize: z.number().default(25).describe('The total number of tiles in the grid.'),
+      numMines: z.number().min(3).max(8).describe('The number of mines to place on the grid.'),
     }),
     outputSchema: z.object({
-        safeTiles: z.number().min(5).max(15),
-        avoidTiles: z.number().min(3).max(8),
-        pattern: z.enum(['diagonal-split', 'corners-first', 'center-out', 'snake-path', 'checkerboard']),
+        safeTileIndices: z.array(z.number()),
+        mineTileIndices: z.array(z.number()),
         risk: z.enum(['Low', 'Medium', 'High']),
     }),
   },
-  async ({seed}) => {
-    // This is a simple simulation. A real implementation might have more complex logic.
-    const patterns = ['diagonal-split', 'corners-first', 'center-out', 'snake-path', 'checkerboard'];
-    const risks = ['Low', 'Medium', 'High'];
+  async ({seed, gridSize, numMines}) => {
+    const indices = Array.from({ length: gridSize }, (_, i) => i);
+    
+    // Pseudo-random shuffle based on seed for deterministic "randomness"
+    for (let i = indices.length - 1; i > 0; i--) {
+        const j = Math.floor(seed * (i + 1));
+        [indices[i], indices[j]] = [indices[j], indices[i]];
+        // alter seed to get new pseudo-random sequence
+        seed = (seed * 9301 + 49297) % 233280;
+    }
 
+    const mineTileIndices = indices.slice(0, numMines);
+    const safeTileIndices = indices.slice(numMines);
+    
+    const risks = ['Low', 'Medium', 'High'];
+    const risk = risks[Math.floor(seed * risks.length)];
+    
     return {
-        safeTiles: Math.floor(seed * 10) + 5,
-        avoidTiles: Math.floor(seed * 5) + 3,
-        pattern: patterns[Math.floor(seed * patterns.length)],
-        risk: risks[Math.floor(seed * risks.length)],
+        safeTileIndices,
+        mineTileIndices,
+        risk,
     }
   }
 );
@@ -90,10 +101,10 @@ const generateGamePredictionsFlow = ai.defineFlow(
   },
   async (input) => {
     
-    // Handle gems-mines separately to inject randomness via the tool
     if (input.gameType === 'gems-mines') {
       const seed = Math.random();
-      const patternData = await generateGamePattern({ seed });
+      const numMines = Math.floor(Math.random() * 6) + 3; // 3 to 8 mines
+      const patternData = await generateGamePattern({ seed, gridSize: 25, numMines });
       return {
         predictionData: patternData,
         disclaimer: '⚠ Predictions are approximations and not guaranteed.',
