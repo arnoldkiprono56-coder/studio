@@ -15,7 +15,6 @@ import { Logo } from '@/components/icons';
 import { useProfile } from '@/context/profile-context';
 import {
   Shield,
-  Users,
   Ticket,
   CreditCard,
   History,
@@ -24,8 +23,8 @@ import {
   LifeBuoy,
   Settings,
   Users2,
-  FileText,
   LayoutDashboard,
+  Users,
 } from 'lucide-react';
 import { Skeleton } from './ui/skeleton';
 
@@ -110,10 +109,12 @@ export function AppSidebar() {
             <SidebarMenu>
             {navItems.map((item) => {
                 const Icon = item.icon;
-                const isActive = pathname === item.href || (pathname.startsWith(item.href) && item.href !== '/');
+                const isActive = pathname === item.href || (pathname.startsWith(item.href) && item.href !== '/admin' && item.href !== '/dashboard' && item.href !== '/admin/users');
+
+                const isSpecialDashboard = item.href === '/admin' && pathname !== '/admin' && pathname.startsWith('/admin');
+                const isSpecialUsers = item.href === '/admin/users' && pathname !== '/admin/users' && pathname.startsWith('/admin/users');
                 
-                // Special case for the main admin dashboard to avoid it being active for all sub-routes
-                if (item.href === '/admin' && pathname !== '/admin') {
+                if (isSpecialDashboard || isSpecialUsers) {
                   return (
                      <SidebarMenuItem key={item.label}>
                         <Link href={item.href} legacyBehavior passHref>
@@ -133,7 +134,7 @@ export function AppSidebar() {
                 <SidebarMenuItem key={item.label}>
                     <Link href={item.href} legacyBehavior passHref>
                     <SidebarMenuButton
-                        isActive={isActive}
+                        isActive={pathname === item.href}
                         tooltip={item.label}
                     >
                         <Icon />
