@@ -8,6 +8,7 @@ import { PricingManagement } from "./pricing-management";
 import { PromptManagement } from "./prompt-management";
 import { AuditLogViewer } from "./audit-log";
 import { LicenseManagement } from "./license-management";
+import { PredictionLogs } from "./prediction-logs";
 
 
 function DashboardHeader() {
@@ -28,6 +29,7 @@ export default function AdminDashboardPage() {
                 <TabsList className="grid w-full grid-cols-1 h-auto sm:w-auto sm:inline-flex sm:grid-cols-none">
                     <TabsTrigger value="users">User Management</TabsTrigger>
                     <TabsTrigger value="licenses">Licenses</TabsTrigger>
+                    <TabsTrigger value="predictions">Predictions</TabsTrigger>
                     <TabsTrigger value="transactions">Transactions</TabsTrigger>
                     <TabsTrigger value="pricing">Pricing</TabsTrigger>
                     <TabsTrigger value="prompts">Prompts</TabsTrigger>
@@ -38,6 +40,9 @@ export default function AdminDashboardPage() {
                 </TabsContent>
                 <TabsContent value="licenses" className="space-y-4">
                     <LicenseManagement />
+                </TabsContent>
+                <TabsContent value="predictions" className="space-y-4">
+                    <PredictionLogs />
                 </TabsContent>
                  <TabsContent value="transactions" className="space-y-4">
                     <TransactionManagement />
