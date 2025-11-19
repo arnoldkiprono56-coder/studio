@@ -110,9 +110,27 @@ export function AppSidebar() {
             <SidebarMenu>
             {navItems.map((item) => {
                 const Icon = item.icon;
-                const isActive = item.href === '/admin' ? pathname === item.href : pathname.startsWith(item.href);
+                const isActive = pathname === item.href || (pathname.startsWith(item.href) && item.href !== '/');
+                
+                // Special case for the main admin dashboard to avoid it being active for all sub-routes
+                if (item.href === '/admin' && pathname !== '/admin') {
+                  return (
+                     <SidebarMenuItem key={item.label}>
+                        <Link href={item.href} legacyBehavior passHref>
+                        <SidebarMenuButton
+                            isActive={false}
+                            tooltip={item.label}
+                        >
+                            <Icon />
+                            <span>{item.label}</span>
+                        </SidebarMenuButton>
+                        </Link>
+                    </SidebarMenuItem>
+                  )
+                }
+
                 return (
-                <SidebarMenuItem key={item.href}>
+                <SidebarMenuItem key={item.label}>
                     <Link href={item.href} legacyBehavior passHref>
                     <SidebarMenuButton
                         isActive={isActive}

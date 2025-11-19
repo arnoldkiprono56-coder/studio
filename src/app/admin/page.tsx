@@ -4,7 +4,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PricingManagement } from "./pricing-management";
 import { GamesControl } from "./games-control";
-import Link from "next/link";
 
 
 function DashboardHeader() {
@@ -24,7 +23,6 @@ export default function AdminDashboardPage() {
             <Tabs defaultValue="dashboard" className="space-y-4">
                 <TabsList className="grid w-full grid-cols-1 h-auto sm:w-auto sm:inline-flex sm:grid-cols-none">
                     <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
-                    <TabsTrigger value="users"><Link href="/admin/users">Users</Link></TabsTrigger>
                     <TabsTrigger value="pricing">Pricing</TabsTrigger>
                     <TabsTrigger value="games">Games</TabsTrigger>
                 </TabsList>

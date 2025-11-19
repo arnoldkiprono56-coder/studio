@@ -1,6 +1,5 @@
 'use client';
 
-import { useState } from 'react';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { useFirestore, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
 import { collection, doc, writeBatch } from 'firebase/firestore';
@@ -22,7 +21,7 @@ interface UserProfile {
     isSuspended: boolean;
 }
 
-export default function UserManagementPage() {
+export function UserManagement() {
     const firestore = useFirestore();
     const { userProfile: adminProfile } = useProfile();
     const { toast } = useToast();
@@ -76,7 +75,9 @@ export default function UserManagementPage() {
         
         const userRef = doc(firestore, 'users', userId);
         try {
-            await writeBatch(firestore).update(userRef, { isSuspended }).commit();
+            const batch = writeBatch(firestore);
+            batch.update(userRef, { isSuspended });
+            await batch.commit();
             toast({ title: 'Success', description: `User has been ${isSuspended ? 'suspended' : 'unsuspended'}.` });
         } catch (e: any) {
             errorEmitter.emit('permission-error', new FirestorePermissionError({
