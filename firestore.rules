@@ -23,7 +23,6 @@ service cloud.firestore {
     }
     
     // Admins can list licenses and predictions across all users for the dashboard.
-    // This uses the correct syntax for collection group queries.
     match /{path=**}/user_licenses/{document=**} {
       allow list: if isActualAdmin();
     }
@@ -60,7 +59,7 @@ service cloud.firestore {
     match /transactions/{transactionId} {
       allow get: if isUser(); // A user can get a specific transaction they know the ID of.
       allow create: if isUser();
-      allow list: if isActualAdmin(); // Admins can list all transactions.
+      allow list: if (isUser() && request.query.where[0][2] == request.auth.uid) || isActualAdmin();
       allow update, delete: if false; // Should be updated by backend webhook or trusted server process only
     }
 
