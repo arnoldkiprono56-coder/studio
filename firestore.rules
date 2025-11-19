@@ -15,6 +15,7 @@ service cloud.firestore {
 
     // Checks if the user has an Admin or SuperAdmin role in their user document.
     function isActualAdmin() {
+      // This requires that users can read their own user document.
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['Admin', 'SuperAdmin'];
     }
     
@@ -32,14 +33,15 @@ service cloud.firestore {
 
     // User profiles can be read by their owner or an admin.
     // They can be listed only by admins.
+    // Users can create their own profile.
     // Their role can only be changed by a SuperAdmin.
-    // Other fields can be written by their owner or an admin.
+    // Other fields can be written by their owner.
     match /users/{userId} {
       allow get: if isOwner(userId) || isActualAdmin();
       allow list: if isActualAdmin();
-      allow create: if isUser();
-      // Allow role updates only by SuperAdmin. Prevent users from changing their own role.
-      allow update: if (isOwner(userId) && !("role" in request.resource.data)) || isActualAdmin();
+      allow create: if isOwner(userId);
+      // Role updates are restricted to SuperAdmins. Other fields can be updated by the owner.
+      allow update: if (isOwner(userId) && !("role" in request.resource.data)) || isSuperAdmin();
     }
 
     // Subcollections for a specific user
@@ -61,7 +63,7 @@ service cloud.firestore {
     // Admins can list all transactions. Regular users can only get their own.
     // Transactions cannot be updated or deleted by clients directly.
     match /transactions/{transactionId} {
-      allow get: if isOwner(get(/databases/$(database)/documents/transactions/$(transactionId)).data.userId) || isActualAdmin();
+      allow get: if isUser() && (isOwner(get(/databases/$(database)/documents/transactions/$(transactionId)).data.userId) || isActualAdmin());
       allow list: if isActualAdmin();
       allow create: if isUser();
       allow update, delete: if false; // Should be updated by backend webhook or trusted server process only
