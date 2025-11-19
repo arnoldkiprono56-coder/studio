@@ -22,8 +22,8 @@ service cloud.firestore {
       let role = get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
       return isUser() && role == 'SuperAdmin';
     }
-    
-    // Admins can list licenses and predictions across all users for the dashboard.
+
+    // Admins can list some subcollections for the dashboard.
     match /{path=**}/user_licenses/{document=**} {
       allow list: if isActualAdmin();
     }
@@ -31,7 +31,8 @@ service cloud.firestore {
       allow list: if isActualAdmin();
     }
 
-    // User profiles can be read by any user, but only listed by admins.
+    // User profiles can be read by their owner or an admin.
+    // They can be listed only by admins.
     // They can only be written by their owner or an admin.
     match /users/{userId} {
       allow get, write: if isOwner(userId) || isActualAdmin();
@@ -49,8 +50,7 @@ service cloud.firestore {
 
     // Admins collection can be read by admins, but only written by SuperAdmins
     match /admins/{userId} {
-      allow get: if isActualAdmin();
-      allow list: if isActualAdmin();
+      allow read, list: if isActualAdmin();
       allow write: if isSuperAdmin();
     }
     

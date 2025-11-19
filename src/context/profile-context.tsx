@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useUser, useFirestore, useMemoFirebase, FirestorePermissionError, errorEmitter } from '@/firebase';
-import { doc, DocumentData, DocumentReference, setDoc, updateDoc, writeBatch } from 'firebase/firestore';
+import { doc, DocumentData, DocumentReference, setDoc, updateDoc, writeBatch, getDoc } from 'firebase/firestore';
 import { useDoc } from '@/firebase/firestore/use-doc';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
@@ -52,43 +52,59 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
 
 
   const updateUserProfile = useCallback(async (data: Partial<UserProfile>) => {
-    if (!userDocRef || !firestore) {
+    if (!userDocRef || !firestore || !user) {
       throw new Error("User document reference or firestore is not available.");
     }
     
-    // If updating role to SuperAdmin, ensure /admins entry exists
-    if (data.role === 'SuperAdmin' && user) {
+    try {
         const batch = writeBatch(firestore);
-        const adminRef = doc(firestore, 'admins', user.uid);
-        
         batch.update(userDocRef, data);
-        batch.set(adminRef, { userId: user.uid, isAdmin: true });
 
-        await batch.commit().catch(error => {
-             errorEmitter.emit('permission-error', new FirestorePermissionError({
-                path: userDocRef.path, // or a more general path
-                operation: 'write',
-                requestResourceData: data,
-            }));
-        });
-    } else {
-        // Using .catch() for non-blocking error handling for regular updates
-        updateDoc(userDocRef, data).catch(error => {
-          errorEmitter.emit('permission-error', new FirestorePermissionError({
+        if (data.role === 'Admin' || data.role === 'SuperAdmin') {
+            const adminRef = doc(firestore, 'admins', user.uid);
+            batch.set(adminRef, { userId: user.uid, isAdmin: true });
+        }
+        
+        await batch.commit();
+
+    } catch (error) {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
             path: userDocRef.path,
-            operation: 'update',
+            operation: 'write',
             requestResourceData: data,
-          }));
-        });
+        }));
+        // Re-throw or handle as needed, for now we let the emitter handle it
+        throw error;
     }
+
   }, [userDocRef, firestore, user]);
 
   useEffect(() => {
     // Automatically elevate the specific user to SuperAdmin if they aren't already.
-    if (userProfile && userProfile.email === 'shadowvybez001@gmail.com' && userProfile.role !== 'SuperAdmin') {
-      updateUserProfile({ role: 'SuperAdmin' }).catch(console.error);
-    }
-  }, [userProfile, updateUserProfile]);
+    const ensureSuperAdmin = async () => {
+        if (userProfile && userProfile.email === 'shadowvybez001@gmail.com' && userProfile.role !== 'SuperAdmin' && firestore && user) {
+            const adminRef = doc(firestore, 'admins', user.uid);
+            const adminDoc = await getDoc(adminRef);
+
+            if (userProfile.role !== 'SuperAdmin' || !adminDoc.exists()) {
+                console.log("Attempting to elevate user to SuperAdmin...");
+                try {
+                    const batch = writeBatch(firestore);
+                    const userRef = doc(firestore, 'users', user.uid);
+                    
+                    batch.update(userRef, { role: 'SuperAdmin' });
+                    batch.set(adminRef, { userId: user.uid, isAdmin: true });
+                    
+                    await batch.commit();
+                    console.log("Successfully elevated to SuperAdmin and created admin entry.");
+                } catch (error) {
+                    console.error("Failed to elevate user to SuperAdmin:", error);
+                }
+            }
+        }
+    };
+    ensureSuperAdmin();
+  }, [userProfile, firestore, user]);
 
   useEffect(() => {
     if (userProfile?.isSuspended && pathname !== '/suspended' && !pathname.startsWith('/support')) {
