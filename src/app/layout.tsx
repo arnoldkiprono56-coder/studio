@@ -25,7 +25,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0f0f0f",
+  themeColor: "#0A1A2F",
 };
 
 
@@ -41,7 +41,7 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Source+Code+Pro&display=swap" rel="stylesheet" />
       </head>
-      <body className={cn("font-body antialiased", process.env.NODE_ENV === "development" ? "debug-screens" : "")}>
+      <body className={cn("font-sans antialiased", process.env.NODE_ENV === "development" ? "debug-screens" : "")}>
         <FirebaseClientProvider>
           <ProfileProvider>
             <div className="relative flex min-h-screen flex-col">
