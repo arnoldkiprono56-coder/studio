@@ -85,7 +85,7 @@ export default function ChatPage() {
 
 
     return (
-        <div className="flex flex-col flex-1 h-full max-h-[calc(100vh-12rem)]">
+        <div className="flex flex-col flex-1 h-full max-h-[calc(100vh-14rem)]">
             <div className="flex items-center mb-4">
                 <Button variant="ghost" size="icon" asChild>
                     <Link href="/support">
@@ -100,20 +100,25 @@ export default function ChatPage() {
                         <div className="space-y-6">
                             {messages.map((message) => (
                                 <div key={message.id} className={cn(
-                                    "flex items-start gap-3",
-                                    message.sender === 'user' ? 'flex-row-reverse' : 'flex-row'
+                                    "flex items-start gap-3 w-full",
+                                    message.sender === 'user' ? 'justify-end' : 'justify-start'
                                 )}>
-                                    <Avatar className="h-8 w-8 border flex-shrink-0">
-                                        <AvatarFallback>
-                                            {message.sender === 'user' ? <User className="h-4 w-4" /> : <Bot className="h-4 w-4" />}
-                                        </AvatarFallback>
-                                    </Avatar>
+                                     {message.sender === 'model' && (
+                                        <Avatar className="h-8 w-8 border flex-shrink-0">
+                                            <AvatarFallback><Bot className="h-4 w-4" /></AvatarFallback>
+                                        </Avatar>
+                                     )}
                                     <div className={cn(
                                         "rounded-lg px-4 py-2 max-w-[80%] whitespace-pre-wrap",
                                         message.sender === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted'
                                     )}>
                                         <p className="text-sm">{message.text}</p>
                                     </div>
+                                    {message.sender === 'user' && (
+                                        <Avatar className="h-8 w-8 border flex-shrink-0">
+                                            <AvatarFallback><User className="h-4 w-4" /></AvatarFallback>
+                                        </Avatar>
+                                     )}
                                 </div>
                             ))}
                              {isLoading && (
