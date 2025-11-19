@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect } from "react";
@@ -18,10 +19,10 @@ import type { License, Prediction } from "@/lib/types";
 
 
 const games = [
-    { name: "VIP Slip", href: "/games/vip-slip", status: "active" },
-    { name: "Aviator", href: "/games/aviator", status: "active" },
-    { name: "Crash", href: "/games/crash", status: "active" },
-    { name: "Mines & Gems", href: "/games/gems-mines", status: "locked" },
+    { name: "VIP Slip", href: "/games/vip-slip", planId: "vip-slip" },
+    { name: "Aviator", href: "/games/aviator", planId: "aviator" },
+    { name: "Crash", href: "/games/crash", planId: "crash" },
+    { name: "Mines & Gems", href: "/games/gems-mines", planId: "mines-gems" },
 ]
 
 export default function DashboardPage() {
@@ -33,7 +34,6 @@ export default function DashboardPage() {
     if (!userProfile?.id || !firestore) return null;
     return query(
         collection(firestore, 'users', userProfile.id, 'user_licenses'),
-        where('isActive', '==', true)
     );
   }, [userProfile?.id, firestore]);
 
@@ -46,9 +46,10 @@ export default function DashboardPage() {
     );
   }, [userProfile?.id, firestore]);
 
-  const { data: activeLicenses, isLoading: licensesLoading } = useCollection<License>(licensesQuery);
+  const { data: allLicenses, isLoading: licensesLoading } = useCollection<License>(licensesQuery);
   const { data: recentPredictions, isLoading: predictionsLoading } = useCollection<Prediction>(predictionsQuery);
 
+  const activeLicenses = allLicenses?.filter(l => l.isActive);
 
   useEffect(() => {
     if (!isProfileLoading && userProfile) {

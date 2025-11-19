@@ -12,7 +12,7 @@ import { ArrowRight, Zap, Shield, Gem, Ticket } from "lucide-react";
 import { Skeleton } from '@/components/ui/skeleton';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, query, where } from 'firebase/firestore';
+import { collection, query } from 'firebase/firestore';
 import type { License } from '@/lib/types';
 
 
@@ -60,12 +60,11 @@ export default function GamesPage() {
      const licensesQuery = useMemoFirebase(() => {
         if (!userProfile?.id || !firestore) return null;
         return query(
-            collection(firestore, 'users', userProfile.id, 'user_licenses'),
-            where('isActive', '==', true)
+            collection(firestore, 'users', userProfile.id, 'user_licenses')
         );
     }, [userProfile?.id, firestore]);
 
-    const { data: activeLicenses, isLoading: licensesLoading } = useCollection<License>(licensesQuery);
+    const { data: allLicenses, isLoading: licensesLoading } = useCollection<License>(licensesQuery);
 
     useEffect(() => {
         if (!isProfileLoading && userProfile) {
@@ -108,8 +107,8 @@ export default function GamesPage() {
       <div className="grid gap-6 md:grid-cols-2">
         {games.map(game => {
             const Icon = game.icon;
-            const hasLicense = activeLicenses?.some(l => l.gameType === game.name && l.isActive);
-            const status = hasLicense ? 'active' : 'locked';
+            const hasActiveLicense = allLicenses?.some(l => l.gameType === game.name && l.isActive);
+            const status = hasActiveLicense ? 'active' : 'locked';
             
             return (
                 <Card key={game.name} className="flex flex-col hover:border-primary transition-all">
@@ -136,7 +135,7 @@ export default function GamesPage() {
                                     </Link>
                                 </Button>
                             ) : (
-                                <Button asChild variant="secondary" className="w-all">
+                                <Button asChild variant="secondary" className="w-full">
                                     <Link href={`/purchase/${game.planId}`}>
                                         Buy License <ArrowRight className="w-4 h-4 ml-2" />
                                     </Link>
