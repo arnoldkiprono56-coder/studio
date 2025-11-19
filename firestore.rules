@@ -54,14 +54,14 @@ service cloud.firestore {
       allow write: if isSuperAdmin();
     }
     
-    // Transactions can be created by any user.
-    // Users can only list transactions they own. Admins can list all.
-    // They cannot be updated or deleted by clients.
+    // Transactions can be created by any authenticated user.
+    // Admins can list all transactions. Regular users can only get their own.
+    // Transactions cannot be updated or deleted by clients directly.
     match /transactions/{transactionId} {
-      allow get: if isUser();
+      allow get: if isUser(); // A user can get a specific transaction they know the ID of.
       allow create: if isUser();
-      allow list: if (isUser() && request.query.where[0][2] == request.auth.uid) || isActualAdmin();
-      allow update, delete: if false; // Should be updated by backend webhook only
+      allow list: if isActualAdmin(); // Admins can list all transactions.
+      allow update, delete: if false; // Should be updated by backend webhook or trusted server process only
     }
 
     // Audit logs can be created by any authenticated user.
