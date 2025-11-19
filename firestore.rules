@@ -57,9 +57,9 @@ service cloud.firestore {
     // Admins can list all transactions. Regular users can only get their own.
     // Transactions cannot be updated or deleted by clients directly.
     match /transactions/{transactionId} {
-      allow get: if isUser(); // A user can get a specific transaction they know the ID of.
+      allow get: if isOwner(get(/databases/$(database)/documents/transactions/$(transactionId)).data.userId) || isActualAdmin();
+      allow list: if (isUser() && request.query.userId == request.auth.uid) || isActualAdmin();
       allow create: if isUser();
-      allow list: if (isUser() && request.query.where[0][2] == request.auth.uid) || isActualAdmin();
       allow update, delete: if false; // Should be updated by backend webhook or trusted server process only
     }
 
