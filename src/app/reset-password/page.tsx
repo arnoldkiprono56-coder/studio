@@ -21,6 +21,9 @@ import { Input } from "@/components/ui/input"
 import { CardTitle, CardDescription } from "@/components/ui/card"
 import { PlaceHolderImages } from "@/lib/placeholder-images"
 import { Logo } from "@/components/icons"
+import { useAuth } from "@/firebase"
+import { sendPasswordResetEmail } from "firebase/auth"
+import { useToast } from "@/hooks/use-toast"
 
 
 const formSchema = z.object({
@@ -30,6 +33,8 @@ const formSchema = z.object({
 export default function ResetPasswordPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [isSuccess, setIsSuccess] = useState(false)
+  const auth = useAuth();
+  const { toast } = useToast();
   
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -38,14 +43,29 @@ export default function ResetPasswordPage() {
     },
   })
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
+  async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
-    console.log(values)
-    // Simulate API call
-    setTimeout(() => {
+    if (!auth) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Authentication service not available.",
+      });
+      setIsLoading(false);
+      return;
+    }
+    try {
+      await sendPasswordResetEmail(auth, values.email);
+      setIsSuccess(true);
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Failed to send email",
+        description: error.message || "An unexpected error occurred.",
+      });
+    } finally {
         setIsLoading(false);
-        setIsSuccess(true);
-    }, 2000);
+    }
   }
   
   const bgImage = PlaceHolderImages.find(img => img.id === 'auth-background');
@@ -57,7 +77,7 @@ export default function ResetPasswordPage() {
           <div className="text-center space-y-4">
               <CheckCircle className="mx-auto h-12 w-12 text-success" />
               <CardTitle className="text-2xl">Check your email</CardTitle>
-              <CardDescription>We&apos;ve sent a password reset link to your email address.</CardDescription>
+              <CardDescription>We've sent a password reset link to your email address.</CardDescription>
               <Button variant="ghost" asChild>
                   <Link href="/login">Back to Login</Link>
               </Button>
