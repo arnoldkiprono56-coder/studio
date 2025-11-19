@@ -10,12 +10,16 @@ import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import { ArrowRight, Zap, Shield, Gem, Ticket } from "lucide-react";
 import { Skeleton } from '@/components/ui/skeleton';
+import { useCollection } from '@/firebase/firestore/use-collection';
+import { useFirestore, useMemoFirebase } from '@/firebase';
+import { collection, query, where } from 'firebase/firestore';
+import type { License } from '@/lib/types';
+
 
 const games = [
     { 
         name: "VIP Slip", 
         href: "/games/vip-slip", 
-        status: "active", 
         description: "Get a VIP slip with 3-5 high-confidence matches for 1xBet.",
         icon: Ticket,
         accent: "hsl(var(--primary))"
@@ -23,7 +27,6 @@ const games = [
     { 
         name: "Aviator", 
         href: "/games/aviator", 
-        status: "active", 
         description: "Predict the best time to cash out before the plane flies away.",
         icon: Zap,
         accent: "hsl(var(--accent-basic))"
@@ -31,16 +34,14 @@ const games = [
     { 
         name: "Crash", 
         href: "/games/crash", 
-        status: "active", 
         description: "Anticipate the crash point of the rising multiplier.",
         icon: Shield,
         accent: "hsl(var(--accent-standard))"
 
     },
     { 
-        name: "Gems & Mines", 
+        name: "Mines & Gems", 
         href: "/games/gems-mines", 
-        status: "locked", 
         description: "Uncover valuable gems while avoiding hidden mines.",
         icon: Gem,
         accent: "hsl(var(--accent-pro))"
@@ -50,6 +51,17 @@ const games = [
 export default function GamesPage() {
     const { userProfile, isProfileLoading } = useProfile();
     const router = useRouter();
+    const firestore = useFirestore();
+
+     const licensesQuery = useMemoFirebase(() => {
+        if (!userProfile?.id || !firestore) return null;
+        return query(
+            collection(firestore, 'users', userProfile.id, 'user_licenses'),
+            where('isActive', '==', true)
+        );
+    }, [userProfile?.id, firestore]);
+
+    const { data: activeLicenses, isLoading: licensesLoading } = useCollection<License>(licensesQuery);
 
     useEffect(() => {
         if (!isProfileLoading && userProfile) {
@@ -60,7 +72,9 @@ export default function GamesPage() {
         }
     }, [userProfile, isProfileLoading, router]);
 
-    if (isProfileLoading || !userProfile || ['SuperAdmin', 'Admin', 'Assistant'].includes(userProfile.role)) {
+    const isLoading = isProfileLoading || !userProfile || licensesLoading;
+
+    if (isLoading || ['SuperAdmin', 'Admin', 'Assistant'].includes(userProfile?.role || '')) {
         return (
             <div className="space-y-8">
                 <Skeleton className="h-9 w-64 mb-2" />
@@ -90,6 +104,9 @@ export default function GamesPage() {
       <div className="grid gap-6 md:grid-cols-2">
         {games.map(game => {
             const Icon = game.icon;
+            const hasLicense = activeLicenses?.some(l => l.gameType === game.name && l.isActive);
+            const status = hasLicense ? 'active' : 'locked';
+            
             return (
                 <Card key={game.name} className="flex flex-col hover:border-primary transition-all">
                     <CardHeader>
@@ -100,15 +117,15 @@ export default function GamesPage() {
                                 </div>
                                 <CardTitle className="text-2xl">{game.name}</CardTitle>
                             </div>
-                            <Badge variant={game.status === 'active' ? 'default' : 'secondary'} className={game.status === 'active' ? 'bg-success/80' : ''}>
-                                {game.status}
+                            <Badge variant={status === 'active' ? 'default' : 'secondary'} className={status === 'active' ? 'bg-success/80' : ''}>
+                                {status}
                             </Badge>
                         </div>
                     </CardHeader>
                     <CardContent className="flex-grow flex flex-col">
                         <CardDescription className="flex-grow">{game.description}</CardDescription>
                         <div className="mt-6">
-                            {game.status === 'active' ? (
+                            {status === 'active' ? (
                                 <Button asChild className="w-full">
                                     <Link href={game.href}>
                                         Access Predictions <ArrowRight className="w-4 h-4 ml-2" />
@@ -116,7 +133,7 @@ export default function GamesPage() {
                                 </Button>
                             ) : (
                                 <Button asChild variant="secondary" className="w-full">
-                                    <Link href={`/purchase/${game.name.toLowerCase().replace(/ & /g, '-')}`}>
+                                    <Link href={`/purchase/${game.name.toLowerCase().replace(/ & /g, '-').replace(/\s/g, '-')}`}>
                                         Buy License <ArrowRight className="w-4 h-4 ml-2" />
                                     </Link>
                                 </Button>

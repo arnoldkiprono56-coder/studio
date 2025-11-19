@@ -21,7 +21,7 @@ const games = [
     { name: "VIP Slip", href: "/games/vip-slip", status: "active" },
     { name: "Aviator", href: "/games/aviator", status: "active" },
     { name: "Crash", href: "/games/crash", status: "active" },
-    { name: "Gems & Mines", href: "/games/gems-mines", status: "locked" },
+    { name: "Mines & Gems", href: "/games/gems-mines", status: "locked" },
 ]
 
 export default function DashboardPage() {
@@ -119,9 +119,11 @@ export default function DashboardPage() {
   }
 
   const userName = userProfile.email?.split('@')[0] || "Player";
-  const userPlan = "Pro Plus"; // Mock data
-  const planExpires = "in 25 days"; // Mock data
-  const walletBalance = 1250.50; // Mock data
+  const walletBalance = userProfile.balance || 0;
+
+  const hasActiveLicenses = activeLicenses && activeLicenses.length > 0;
+  const userPlan = hasActiveLicenses ? 'Active' : 'No Plan';
+
 
   return (
     <div className="space-y-8">
@@ -130,21 +132,25 @@ export default function DashboardPage() {
           <h1 className="text-3xl font-bold tracking-tight">Welcome, {userName}!</h1>
           <p className="text-muted-foreground">Here&apos;s your gaming analytics overview.</p>
         </div>
-        <Badge variant="outline" className="text-base border-accent-pro text-accent-pro py-1 px-3">
-          <Star className="w-4 h-4 mr-2 fill-accent-pro" />
-          {userPlan} Plan
-        </Badge>
+        {hasActiveLicenses && (
+            <Badge variant="outline" className="text-base border-success text-success py-1 px-3">
+              <Star className="w-4 h-4 mr-2 fill-success" />
+              Active Licenses
+            </Badge>
+        )}
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
         <Card className="bg-card/70 backdrop-blur-sm">
           <CardHeader>
             <CardTitle>Current Plan</CardTitle>
-            <CardDescription>{planExpires}</CardDescription>
+            <CardDescription>{userPlan}</CardDescription>
           </CardHeader>
           <CardContent>
-            <Link href="/upgrade">
-              <Button className="w-full">Upgrade Plan</Button>
+            <Link href="/games">
+              <Button className="w-full">
+                {hasActiveLicenses ? 'View Games' : 'Purchase a License'}
+              </Button>
             </Link>
           </CardContent>
         </Card>
@@ -171,22 +177,26 @@ export default function DashboardPage() {
       <div>
         <h2 className="text-2xl font-semibold tracking-tight mb-4">Game Access</h2>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {games.map(game => (
+            {games.map(game => {
+                 const hasLicense = activeLicenses?.some(l => l.gameType === game.name);
+                 const status = hasLicense ? 'active' : 'locked';
+                 return (
                  <Card key={game.name} className="hover:bg-accent/50 transition-colors">
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
                         <CardTitle className="text-lg">{game.name}</CardTitle>
-                        <Badge variant={game.status === 'active' ? 'default' : 'secondary'} className={game.status === 'active' ? 'bg-success' : ''}>{game.status}</Badge>
+                        <Badge variant={status === 'active' ? 'default' : 'secondary'} className={status === 'active' ? 'bg-success' : ''}>{status}</Badge>
                     </CardHeader>
                     <CardContent>
                         <p className="text-sm text-muted-foreground mb-4">
-                            {game.status === 'active' ? 'Predictions available' : 'License required'}
+                            {status === 'active' ? 'Predictions available' : 'License required'}
                         </p>
                         <Button variant="ghost" size="sm" asChild>
                             <Link href={game.href}>Go to game <ArrowRight className="w-4 h-4 ml-2" /></Link>
                         </Button>
                     </CardContent>
                  </Card>
-            ))}
+                 )
+            })}
         </div>
       </div>
 
@@ -220,5 +230,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-
-    
