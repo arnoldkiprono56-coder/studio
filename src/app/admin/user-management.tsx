@@ -36,10 +36,6 @@ export function UserManagement() {
         console.error("Firestore error in UserManagement:", error);
     }
 
-    // IMPORTANT: In a real app, this should call a Firebase Function
-    // to set a custom claim on the user. The client should not be able
-    // to change its own role or other users' roles directly in Firestore
-    // without server-side validation.
     const handleRoleChange = async (userId: string, newRole: UserProfile['role']) => {
         if (!firestore || !adminProfile) return;
         if (adminProfile.role !== 'SuperAdmin' && (newRole === 'SuperAdmin' || newRole === 'Admin')) {
@@ -53,7 +49,6 @@ export function UserManagement() {
         try {
             await updateDoc(userRef, updateData);
             toast({ title: 'Success', description: `User role updated to ${newRole}. This will take effect on their next login.` });
-            // In a full implementation, you would trigger a Firebase Function here.
         } catch (e: any) {
             errorEmitter.emit('permission-error', new FirestorePermissionError({
                 path: userRef.path,
@@ -63,14 +58,14 @@ export function UserManagement() {
         }
     };
 
-    const handleSuspensionChange = async (userId: string, isSuspended: boolean) => {
+    const handleBanChange = async (userId: string, isBanned: boolean) => {
         if (!firestore) return;
         
         const userRef = doc(firestore, 'users', userId);
-        const updateData = { isSuspended };
+        const updateData = { isSuspended: isBanned };
         try {
             await updateDoc(userRef, updateData);
-            toast({ title: 'Success', description: `User has been ${isSuspended ? 'suspended' : 'unsuspended'}.` });
+            toast({ title: 'Success', description: `User has been ${isBanned ? 'banned' : 'un-banned'}.` });
         } catch (e: any) {
             errorEmitter.emit('permission-error', new FirestorePermissionError({
                 path: userRef.path,
@@ -118,7 +113,7 @@ export function UserManagement() {
                                         <Select
                                             defaultValue={user.role}
                                             onValueChange={(value: UserProfile['role']) => handleRoleChange(user.id, value)}
-                                            disabled={user.id === adminProfile?.id}
+                                            disabled={user.id === adminProfile?.id || adminProfile?.role !== 'SuperAdmin'}
                                         >
                                             <SelectTrigger className="w-[120px]">
                                                 <SelectValue placeholder="Select role" />
@@ -133,15 +128,15 @@ export function UserManagement() {
                                     </TableCell>
                                     <TableCell>
                                         <Badge variant={user.isSuspended ? 'destructive' : 'default'} className={!user.isSuspended ? 'bg-success' : ''}>
-                                            {user.isSuspended ? 'Suspended' : 'Active'}
+                                            {user.isSuspended ? 'Banned' : 'Active'}
                                         </Badge>
                                     </TableCell>
                                     <TableCell className="text-right">
                                         <div className="flex items-center justify-end gap-2">
-                                            <span>{user.isSuspended ? 'Unsuspend' : 'Suspend'}</span>
+                                            <span>{user.isSuspended ? 'Un-ban' : 'Ban'}</span>
                                             <Switch
                                                 checked={user.isSuspended}
-                                                onCheckedChange={(checked) => handleSuspensionChange(user.id, checked)}
+                                                onCheckedChange={(checked) => handleBanChange(user.id, checked)}
                                                 disabled={user.id === adminProfile?.id}
                                             />
                                         </div>
