@@ -146,6 +146,7 @@ export default function RegisterPage() {
             
             batch.set(userRef, userData);
 
+            // Correctly add SuperAdmin to the /admins collection
             if (userRole === 'SuperAdmin' || userRole === 'Admin') {
                 const adminRef = doc(firestore, "admins", user.uid);
                 batch.set(adminRef, { userId: user.uid, isAdmin: true });
