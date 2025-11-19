@@ -32,7 +32,7 @@ export default function AviatorPage() {
         if (!userProfile?.id || !firestore) return null;
         return query(
             collection(firestore, 'users', userProfile.id, 'user_licenses'),
-            where('gameType', '==', 'Aviator') 
+            where('gameType', '==', 'Aviator')
         );
     }, [userProfile?.id, firestore]);
 

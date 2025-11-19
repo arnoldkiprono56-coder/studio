@@ -32,7 +32,7 @@ export default function CrashPage() {
         if (!userProfile?.id || !firestore) return null;
         return query(
             collection(firestore, 'users', userProfile.id, 'user_licenses'),
-            where('gameType', '==', 'Crash') 
+            where('gameType', '==', 'Crash')
         );
     }, [userProfile?.id, firestore]);
 

@@ -36,7 +36,7 @@ export default function GemsAndMinesPage() {
         if (!userProfile?.id || !firestore) return null;
         return query(
             collection(firestore, 'users', userProfile.id, 'user_licenses'),
-            where('gameType', '==', 'Mines & Gems') 
+            where('gameType', '==', 'Mines & Gems')
         );
     }, [userProfile?.id, firestore]);
 

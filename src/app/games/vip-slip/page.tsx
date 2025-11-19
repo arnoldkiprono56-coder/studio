@@ -26,7 +26,7 @@ export default function VipSlipPage() {
         if (!userProfile?.id || !firestore) return null;
         return query(
             collection(firestore, 'users', userProfile.id, 'user_licenses'),
-            where('gameType', '==', 'VIP Slip') 
+            where('gameType', '==', 'VIP Slip')
         );
     }, [userProfile?.id, firestore]);
 
