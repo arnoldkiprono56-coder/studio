@@ -5,14 +5,14 @@ import { useParams, useRouter } from 'next/navigation';
 import { useFirestore, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
 import { useProfile } from '@/context/profile-context';
 import { useDoc } from '@/firebase/firestore/use-doc';
-import { doc, collection, writeBatch, getDoc, runTransaction, DocumentReference, serverTimestamp } from 'firebase/firestore';
+import { doc, collection, writeBatch, serverTimestamp, runTransaction } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ArrowLeft, CreditCard, ShieldCheck, Tag, CircleCheck, Loader2 } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import Link from 'next/link';
 
@@ -34,7 +34,7 @@ export default function PurchasePage() {
     const { userProfile } = useProfile();
     const firestore = useFirestore();
 
-    const [paymentMethod, setPaymentMethod] = useState('mpesa');
+    const [transactionMessage, setTransactionMessage] = useState('');
     const [isProcessing, setIsProcessing] = useState(false);
 
     const planDocRef = useMemoFirebase(() => {
@@ -44,9 +44,42 @@ export default function PurchasePage() {
 
     const { data: plan, isLoading } = useDoc<Plan>(planDocRef);
 
+    const extractDetails = (message: string): { txId: string | null; amount: number | null } => {
+        // Regex for M-PESA: e.g., "SAI... Confirmed. Ksh... sent to..." or "SAI... Confirmed. You have received..."
+        const mpesaRegex = /(?:([A-Z0-9]{10})\sConfirmed\.)(?:\s.*Ksh([\d,]+\.\d{2}))?/i;
+        const mpesaMatch = message.match(mpesaRegex);
+
+        if (mpesaMatch) {
+            return {
+                txId: mpesaMatch[1],
+                amount: mpesaMatch[2] ? parseFloat(mpesaMatch[2].replace(/,/g, '')) : null
+            };
+        }
+        
+        // Add other regex for Airtel if the format is known
+        
+        return { txId: null, amount: null };
+    }
+
     const handlePurchase = async () => {
         if (!firestore || !userProfile || !plan) {
             toast({ variant: 'destructive', title: 'Error', description: 'Cannot process purchase. User or plan not found.' });
+            return;
+        }
+
+        if (!transactionMessage.trim()) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Please paste your transaction message.' });
+            return;
+        }
+        
+        const { txId, amount } = extractDetails(transactionMessage);
+
+        if (!txId) {
+            toast({
+                variant: 'destructive',
+                title: 'Invalid Message',
+                description: 'Could not extract a valid Transaction ID from the message. Please paste the full, original message.'
+            });
             return;
         }
 
@@ -83,12 +116,15 @@ export default function PurchasePage() {
                     id: transactionId,
                     userId: userProfile.id,
                     licenseId: licenseId,
-                    amount: plan.price,
+                    userClaimedAmount: amount ?? plan.price, // Use extracted amount if available
+                    finalAmount: null,
                     currency: plan.currency,
-                    paymentMethod: paymentMethod,
+                    userSubmittedTxId: txId,
+                    finalTxId: null,
                     status: 'pending',
                     type: 'purchase',
                     description: `Purchase of ${plan.name} license`,
+                    rawMessage: transactionMessage,
                     createdAt: serverTimestamp(),
                 };
                 transaction.set(transactionRef, transactionPayload);
@@ -96,34 +132,31 @@ export default function PurchasePage() {
                 // 3. Handle referral commission if applicable
                 const isFirstPurchase = !(currentUserData?.hasPurchased);
                 if (isFirstPurchase && currentUserData?.referredBy) {
-                    const referrerRef = doc(firestore, 'users', currentUserData.referredBy);
-                    const referrerSnap = await transaction.get(referrerRef);
-                    if (!referrerSnap.exists()) {
-                        console.warn(`Referrer with ID ${currentUserData.referredBy} not found. Skipping commission.`);
-                        // Don't stop the main transaction, just skip the commission part.
-                    } else {
-                         // Create commission transaction for the referrer
-                        const commissionTxnId = `txn_commission_${Date.now()}`;
-                        const commissionTxnRef = doc(firestore, 'transactions', commissionTxnId);
-                        const commissionPayload = {
-                            id: commissionTxnId,
-                            userId: currentUserData.referredBy,
-                            type: 'commission',
-                            description: `Referral commission from ${userProfile.email}`,
-                            amount: COMMISSION_AMOUNT,
-                            currency: 'KES',
-                            status: 'completed',
-                            createdAt: serverTimestamp(),
-                        };
-                        transaction.set(commissionTxnRef, commissionPayload);
+                     const referrerRef = doc(firestore, 'users', currentUserData.referredBy);
+                    // No need to get and check existence inside a transaction, it's optimistic
+                    // Just queue up the updates.
+                    const commissionTxnId = `txn_commission_${Date.now()}`;
+                    const commissionTxnRef = doc(firestore, 'transactions', commissionTxnId);
+                    const commissionPayload = {
+                        id: commissionTxnId,
+                        userId: currentUserData.referredBy,
+                        type: 'commission',
+                        description: `Referral commission from ${userProfile.email}`,
+                        amount: COMMISSION_AMOUNT,
+                        currency: 'KES',
+                        status: 'completed',
+                        createdAt: serverTimestamp(),
+                    };
+                    transaction.set(commissionTxnRef, commissionPayload);
 
-                        // Update referrer's balance
+                    // Update referrer's balance by getting current and adding to it
+                    const referrerSnap = await transaction.get(referrerRef);
+                    if(referrerSnap.exists()){
                         const referrerData = referrerSnap.data();
-                        const newBalance = (referrerData?.balance || 0) + COMMISSION_AMOUNT;
+                        const newBalance = (referrerData.balance || 0) + COMMISSION_AMOUNT;
                         transaction.update(referrerRef, { balance: newBalance });
                     }
                     
-                    // Mark current user as having made a purchase regardless of whether referrer was found
                     transaction.update(userRef, { hasPurchased: true });
                 }
             });
@@ -136,7 +169,7 @@ export default function PurchasePage() {
                 errorEmitter.emit('permission-error', new FirestorePermissionError({
                     path: 'transactions', // This is a transaction, path is complex.
                     operation: 'write',
-                    requestResourceData: { planId, userId: userProfile.id, transactionId }
+                    requestResourceData: { planId, userId: userProfile.id }
                 }));
             } else {
                 console.error("Purchase failed:", error);
@@ -188,28 +221,21 @@ export default function PurchasePage() {
                     </div>
                 </CardHeader>
                 <CardContent className="space-y-6 border-t pt-6">
-                    <div>
-                        <h3 className="text-lg font-semibold mb-4">Select Payment Method</h3>
-                        <RadioGroup defaultValue="mpesa" value={paymentMethod} onValueChange={setPaymentMethod} className="space-y-3">
-                             <Label htmlFor="mpesa" className="flex items-center gap-4 p-4 border rounded-md has-[:checked]:border-primary has-[:checked]:bg-primary/5 cursor-pointer">
-                                <RadioGroupItem value="mpesa" id="mpesa" />
-                                <div>
-                                    <p className="font-semibold">M-Pesa</p>
-                                    <p className="text-sm text-muted-foreground">Pay using M-Pesa Send Money.</p>
-                                </div>
-                            </Label>
-                             <Label htmlFor="airtel" className="flex items-center gap-4 p-4 border rounded-md has-[:checked]:border-primary has-[:checked]:bg-primary/5 cursor-pointer">
-                                <RadioGroupItem value="airtel" id="airtel" />
-                                <div>
-                                    <p className="font-semibold">Airtel Money</p>
-                                    <p className="text-sm text-muted-foreground">Pay using Airtel Send Money.</p>
-                                </div>
-                            </Label>
-                        </RadioGroup>
-                    </div>
                      <div className="text-center p-4 bg-muted/50 rounded-lg text-sm">
-                        <p className="font-bold">Send Money: {formatCurrency(plan.price, plan.currency)} to Number: <span className="text-primary font-code">0784667400</span></p>
-                        <p className="text-muted-foreground mt-1">Your license will be activated once payment is confirmed.</p>
+                        <p className="font-bold">1. Send Money: {formatCurrency(plan.price, plan.currency)} to <span className="text-primary font-code">0784667400</span></p>
+                        <p className="text-muted-foreground mt-1">Use M-Pesa or Airtel Money.</p>
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label htmlFor="transaction-message" className="font-bold">2. Paste your payment confirmation message</Label>
+                        <Textarea 
+                            id="transaction-message"
+                            value={transactionMessage}
+                            onChange={(e) => setTransactionMessage(e.target.value)}
+                            placeholder="e.g., SAI... Confirmed. Ksh1,500.00 sent to..."
+                            className="min-h-[120px] font-mono text-xs"
+                        />
+                        <p className="text-xs text-muted-foreground">The system will automatically extract the transaction ID and amount.</p>
                     </div>
                 </CardContent>
                 <CardFooter className="flex-col gap-4 border-t pt-6">
@@ -220,9 +246,9 @@ export default function PurchasePage() {
                         disabled={isProcessing}
                     >
                         {isProcessing && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                        {isProcessing ? 'Processing...' : 'Complete Purchase'}
+                        {isProcessing ? 'Submitting...' : 'Submit for Verification'}
                     </Button>
-                    <p className="text-xs text-muted-foreground flex items-center gap-1.5"><ShieldCheck className="w-3.5 h-3.5" /> Secure payments processed by our team.</p>
+                    <p className="text-xs text-muted-foreground flex items-center gap-1.5"><ShieldCheck className="w-3.5 h-3.5" /> Your payment will be manually verified by our team.</p>
                 </CardFooter>
             </Card>
         </div>

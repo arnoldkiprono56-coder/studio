@@ -4,10 +4,43 @@ import { ReactNode, useEffect } from 'react';
 import { useProfile } from '@/context/profile-context';
 import { useRouter } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { cn } from '@/lib/utils';
+
+const adminTabs = [
+  { value: 'dashboard', label: 'Dashboard', href: '/admin' },
+  { value: 'users', label: 'Users', href: '/admin/users' },
+  { value: 'licenses', label: 'Licenses', href: '/admin/licenses' },
+  { value: 'payments', label: 'Payments', href: '/admin/payments' },
+  { value: 'pricing', label: 'Pricing', href: '/admin/pricing' },
+  { value: 'games', label: 'Games', href: '/admin/games' },
+  { value: 'settings', label: 'Settings', href: '/admin/settings' },
+];
+
+function AdminNav() {
+    const pathname = usePathname();
+    const activeTab = adminTabs.find(tab => pathname.startsWith(tab.href))?.value || 'dashboard';
+
+    return (
+        <Tabs defaultValue={activeTab} className="space-y-4">
+            <TabsList className="grid w-full grid-cols-2 h-auto sm:w-auto sm:inline-flex sm:grid-cols-none">
+                {adminTabs.map(tab => (
+                     <TabsTrigger value={tab.value} key={tab.value} asChild>
+                        <Link href={tab.href}>{tab.label}</Link>
+                    </TabsTrigger>
+                ))}
+            </TabsList>
+        </Tabs>
+    )
+}
+
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
   const { userProfile, isProfileLoading } = useProfile();
   const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
     if (!isProfileLoading && userProfile) {
@@ -18,6 +51,9 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
       if (!isAdminOrSuperAdmin) {
         router.replace('/dashboard');
       }
+    }
+     if (!isProfileLoading && !userProfile) {
+        router.replace('/login');
     }
   }, [userProfile, isProfileLoading, router]);
 
@@ -41,10 +77,17 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
     );
   }
 
+  const showTabs = !pathname.startsWith('/admin/settings');
+
 
   return (
-    <div className="space-y-8">
-      {children}
+    <div className="space-y-6">
+        <div className="space-y-2">
+            <h1 className="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
+            <p className="text-muted-foreground">Platform overview and management tools.</p>
+        </div>
+        {showTabs && <AdminNav />}
+        {children}
     </div>
   );
 }
