@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -94,8 +95,8 @@ How can I help?`, sender: 'model' }
             }));
 
             // Inject the adminId if the createPreVerifiedPayment tool is likely to be called
-            if (currentInput.toLowerCase().includes('pre-verified credit') || currentInput.toLowerCase().includes('add a credit')) {
-                currentInput += ` (Admin ID: ${userProfile?.id})`
+            if ((currentInput.toLowerCase().includes('pre-verified credit') || currentInput.toLowerCase().includes('add a credit')) && userProfile?.id) {
+                currentInput += ` (Admin ID: ${userProfile.id})`;
             }
             
             setMessages(prev => [...prev, userMessage]);
