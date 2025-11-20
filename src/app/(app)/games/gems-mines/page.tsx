@@ -19,7 +19,6 @@ const GRID_SIZE = 25;
 
 type GemsMinesPredictionData = {
     safeTileIndices: number[];
-    risk: string;
 }
 
 export default function GemsAndMinesPage() {
@@ -211,8 +210,7 @@ export default function GemsAndMinesPage() {
                         ) : gemsMinesData ? (
                             <div className='space-y-2 text-center'>
                                 <p className="text-muted-foreground font-semibold">💎 Mines &amp; Gems Prediction (1xBet)</p>
-                                <p>Safe Tiles (Gems): <span className='font-bold'>{gemsMinesData.safeTileIndices.length}</span></p>
-                                <p>Risk: <span className='font-bold'>{gemsMinesData.risk}</span></p>
+                                <p>Safest Tiles Found: <span className='font-bold'>{gemsMinesData.safeTileIndices.length}</span></p>
                             </div>
                         ) : (
                             <div className="text-center text-muted-foreground">
@@ -282,4 +280,3 @@ export default function GemsAndMinesPage() {
         </div>
     );
 }
-```
