@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -63,7 +64,6 @@ const adminNav = [
 const assistantNav = [
   { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/admin/assistant', label: 'AI Assistant', icon: Bot },
-  { href: '/admin/users', label: 'Users', icon: Users },
   { href: '/admin/licenses', label: 'Licenses (Read)', icon: Ticket },
   { href: '/admin/payments', label: 'Payments (Read)', icon: CreditCard },
   { href: '/admin/support', label: 'Support Center', icon: LifeBuoy },
