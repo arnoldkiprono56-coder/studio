@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -71,14 +72,6 @@ export default function ProfilePage() {
         }
     };
 
-    const handleCopyReferral = () => {
-        if(userProfile?.id) {
-            const referralCode = `PRO-${userProfile.id.substring(0, 6).toUpperCase()}`;
-            navigator.clipboard.writeText(referralCode);
-            toast({ title: "Copied!", description: "Referral code copied to clipboard." });
-        }
-    };
-
     if (isProfileLoading || !userProfile) {
         return (
             <div className="space-y-8 max-w-3xl mx-auto">
@@ -118,9 +111,6 @@ export default function ProfilePage() {
         role: userProfile.role as UserRole || 'User',
     };
     
-    const referralCode = `PRO-${userProfile.id.substring(0, 6).toUpperCase()}`;
-
-
   return (
     <div className="space-y-8 max-w-3xl mx-auto">
       <div>
@@ -175,7 +165,6 @@ export default function ProfilePage() {
       <Card>
         <CardHeader>
           <CardTitle>Subscription Plan</CardTitle>
-          <CardDescription>Your current plan and referral information.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
            <div className="flex items-center justify-between p-4 rounded-lg bg-accent/50">
@@ -188,15 +177,6 @@ export default function ProfilePage() {
                 </div>
                 <Button variant="secondary">Upgrade</Button>
            </div>
-           <div className="space-y-2">
-            <Label htmlFor="referral">Your Referral Code</Label>
-            <div className="flex items-center gap-2">
-              <Input id="referral" readOnly value={referralCode} className="font-code"/>
-              <Button variant="outline" size="icon" onClick={handleCopyReferral}>
-                <Copy className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
         </CardContent>
       </Card>
 

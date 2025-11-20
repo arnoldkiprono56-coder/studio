@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useForm } from "react-hook-form"
@@ -33,7 +34,6 @@ const formSchema = z.object({
   email: z.string().email({ message: "Invalid email address." }),
   password: z.string().min(8, { message: "Password must be at least 8 characters." }),
   confirmPassword: z.string(),
-  referralCode: z.string().optional(),
   terms: z.boolean().refine(val => val === true, {
     message: "You must accept the terms of service."
   }),
@@ -70,7 +70,6 @@ export default function RegisterPage() {
             email: "",
             password: "",
             confirmPassword: "",
-            referralCode: "",
             terms: false,
         },
     });
@@ -84,28 +83,6 @@ export default function RegisterPage() {
         setPasswordStrength(strength);
     };
 
-    const getReferrerId = async (referralCode: string): Promise<string | null> => {
-        if (!firestore || !referralCode.startsWith('PRO-') || referralCode.length < 10) {
-            return null;
-        }
-
-        const userIdPrefix = referralCode.replace('PRO-', '').toLowerCase();
-        
-        const usersRef = collection(firestore, 'users');
-        const q = query(usersRef, where('id', '>=', userIdPrefix), where('id', '<=', userIdPrefix + '\uf8ff'));
-
-        const querySnapshot = await getDocs(q);
-        
-        for (const docSnap of querySnapshot.docs) {
-             if (docSnap.id.substring(0, 6).toUpperCase() === userIdPrefix.toUpperCase()) {
-                return docSnap.id;
-            }
-        }
-
-        return null;
-    };
-
-
     async function onSubmit(values: z.infer<typeof formSchema>) {
         setIsLoading(true);
 
@@ -118,21 +95,6 @@ export default function RegisterPage() {
           setIsLoading(false);
           return;
         }
-        
-        let referrerId: string | null = null;
-        if (values.referralCode) {
-            referrerId = await getReferrerId(values.referralCode);
-            if (!referrerId) {
-                toast({
-                    variant: "destructive",
-                    title: "Invalid Referral Code",
-                    description: "The referral code you entered is not valid.",
-                });
-                setIsLoading(false);
-                return;
-            }
-        }
-
 
         try {
             const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
@@ -155,10 +117,6 @@ export default function RegisterPage() {
                 balance: 0,
             };
 
-            if (referrerId) {
-                userData.referredBy = referrerId;
-            }
-            
             batch.set(userRef, userData);
 
             if (isSuperAdmin) {
@@ -273,19 +231,6 @@ export default function RegisterPage() {
                     <FormLabel>Confirm Password</FormLabel>
                     <FormControl>
                       <Input type="password" placeholder="••••••••" {...field} autoComplete="new-password" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="referralCode"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Referral Code (Optional)</FormLabel>
-                    <FormControl>
-                      <Input placeholder="PRO-XXXXXX" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

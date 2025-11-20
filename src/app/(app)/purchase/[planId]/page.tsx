@@ -37,8 +37,6 @@ interface PreVerifiedPayment {
     claimedAt: string | null;
 }
 
-const COMMISSION_AMOUNT = 150; // KES 150 commission
-
 export default function PurchasePage() {
     const params = useParams();
     const planId = params.planId as string;
@@ -178,8 +176,7 @@ export default function PurchasePage() {
                 if (!userSnap.exists()) {
                     throw new Error("User data not found.");
                 }
-                const currentUserData = userSnap.data();
-
+                
                 // 1. Create a new license document
                 const licenseId = `${plan.id}-${userProfile.id}`;
                 const licenseRef = doc(firestore, 'users', userProfile.id, 'user_licenses', licenseId);
@@ -212,35 +209,6 @@ export default function PurchasePage() {
                     createdAt: serverTimestamp(),
                 };
                 transaction.set(transactionRef, transactionPayload);
-
-                // 3. Handle referral commission if applicable
-                const isFirstPurchase = !(currentUserData?.hasPurchased);
-                if (isFirstPurchase && currentUserData?.referredBy) {
-                     const referrerRef = doc(firestore, 'users', currentUserData.referredBy);
-                     const referrerSnap = await transaction.get(referrerRef);
-                    
-                    if(referrerSnap.exists()){
-                        const referrerData = referrerSnap.data();
-                        const newBalance = (referrerData.balance || 0) + COMMISSION_AMOUNT;
-                        transaction.update(referrerRef, { balance: newBalance });
-
-                        // Create commission transaction for the referrer
-                        const commissionTxnRef = doc(collection(firestore, 'users', currentUserData.referredBy, 'transactions'));
-                        const commissionPayload = {
-                            id: commissionTxnRef.id,
-                            userId: currentUserData.referredBy,
-                            type: 'commission',
-                            description: `Referral commission from ${userProfile.email}`,
-                            amount: COMMISSION_AMOUNT,
-                            currency: 'KES',
-                            status: 'completed',
-                            createdAt: serverTimestamp(),
-                        };
-                        transaction.set(commissionTxnRef, commissionPayload);
-                    }
-                    
-                    transaction.update(userRef, { hasPurchased: true });
-                }
             });
     }
 
@@ -329,5 +297,3 @@ export default function PurchasePage() {
         </div>
     )
 }
-
-    

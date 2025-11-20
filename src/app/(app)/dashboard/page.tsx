@@ -60,14 +60,10 @@ export default function DashboardPage() {
                 </div>
                 <Skeleton className="h-8 w-28" />
             </div>
-            <div className="grid gap-4 md:grid-cols-3">
+            <div className="grid gap-4 md:grid-cols-2">
                 <Card>
                     <CardHeader><Skeleton className="h-6 w-32 mb-2" /><Skeleton className="h-4 w-24" /></CardHeader>
                     <CardContent><Skeleton className="h-10 w-full" /></CardContent>
-                </Card>
-                <Card>
-                    <CardHeader><Skeleton className="h-6 w-32 mb-2" /><Skeleton className="h-4 w-40" /></CardHeader>
-                    <CardContent><Skeleton className="h-9 w-32" /></CardContent>
                 </Card>
                 <Card>
                     <CardHeader><Skeleton className="h-6 w-32 mb-2" /><Skeleton className="h-4 w-36" /></CardHeader>
@@ -111,8 +107,6 @@ export default function DashboardPage() {
   }
 
   const userName = userProfile.email?.split('@')[0] || "Player";
-  const walletBalance = userProfile.balance || 0;
-
   const hasActiveLicenses = activeLicenses && activeLicenses.length > 0;
   const userPlan = hasActiveLicenses ? 'Active' : 'No Plan';
 
@@ -132,7 +126,7 @@ export default function DashboardPage() {
         )}
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2">
         <Card className="bg-card/70 backdrop-blur-sm">
           <CardHeader>
             <CardTitle>Current Plan</CardTitle>
@@ -144,15 +138,6 @@ export default function DashboardPage() {
                 {hasActiveLicenses ? 'View Games' : 'Purchase a License'}
               </Button>
             </Link>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>Wallet Balance</CardTitle>
-            <CardDescription>Your current account balance.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-bold">{formatCurrency(walletBalance)}</p>
           </CardContent>
         </Card>
         <Card>
@@ -196,5 +181,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-
-    
