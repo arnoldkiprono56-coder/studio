@@ -4,7 +4,7 @@
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { useProfile } from '@/context/profile-context';
 import { useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy, where } from 'firebase/firestore';
+import { collection, query, where } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -12,6 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { formatCurrency } from '@/lib/utils';
 import { AlertCircle, Wallet, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useMemo } from 'react';
 
 interface Transaction {
     id: string;
@@ -39,12 +40,21 @@ export default function WalletPage() {
         if (!userProfile?.id || !firestore) return null;
         return query(
             collection(firestore, 'transactions'),
-            where('userId', '==', userProfile.id),
-            orderBy('createdAt', 'desc')
+            where('userId', '==', userProfile.id)
         );
     }, [userProfile?.id, firestore]);
 
     const { data: userTransactions, isLoading: isTransactionsLoading } = useCollection<Transaction>(transactionsQuery);
+
+    const sortedTransactions = useMemo(() => {
+        if (!userTransactions) return [];
+        return [...userTransactions].sort((a, b) => {
+            const dateA = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : 0;
+            const dateB = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : 0;
+            return dateB - dateA;
+        });
+    }, [userTransactions]);
+
 
     const isLoading = isProfileLoading || isTransactionsLoading;
 
@@ -99,8 +109,8 @@ export default function WalletPage() {
                                         <TableCell className="text-right"><Skeleton className="h-5 w-16 ml-auto" /></TableCell>
                                     </TableRow>
                                 ))
-                            ) : userTransactions && userTransactions.length > 0 ? (
-                                userTransactions.map(tx => (
+                            ) : sortedTransactions && sortedTransactions.length > 0 ? (
+                                sortedTransactions.map(tx => (
                                     <TableRow key={tx.id}>
                                         <TableCell>
                                             {tx.createdAt?.toDate ? tx.createdAt.toDate().toLocaleDateString() : 'N/A'}
@@ -112,7 +122,7 @@ export default function WalletPage() {
                                         <TableCell>
                                             <Badge variant={statusVariant[tx.status]} className="capitalize">{tx.status}</Badge>
                                         </TableCell>
-                                        <TableCell className={`text-right font-semibold ${tx.amount > 0 ? 'text-success' : 'text-destructive'}`}>
+                                        <TableCell className={`text-right font-semibold ${tx.amount >= 0 ? 'text-success' : 'text-destructive'}`}>
                                             {formatCurrency(tx.amount, tx.currency)}
                                         </TableCell>
                                     </TableRow>
