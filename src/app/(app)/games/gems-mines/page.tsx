@@ -209,7 +209,7 @@ export default function GemsAndMinesPage() {
                                 <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto" />
                                 <p className='font-semibold text-muted-foreground'>Connecting to 1xBet servers...</p>
                             </div>
-                        ): gemsMinesData ? (
+                        ) : gemsMinesData ? (
                             <div className='space-y-2 text-center'>
                                 <p className="text-muted-foreground font-semibold">💎 Mines &amp; Gems Prediction (1xBet)</p>
                                 <p>Safe Tiles (Gems): <span className='font-bold'>{gemsMinesData.safeTileIndices.length}</span></p>
@@ -257,13 +257,12 @@ export default function GemsAndMinesPage() {
                     <CardHeader>
                         <CardTitle>Prediction Grid</CardTitle>
                         <CardDescription>
-                             {gemsMinesData ? "Follow the path of gems and avoid the mines." : "Your prediction will appear here."}
+                             {gemsMinesData ? "Follow the path of gems." : "Your prediction will appear here."}
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
                          <div className="grid grid-cols-5 gap-2">
                             {Array.from({ length: GRID_SIZE }).map((_, index) => {
-                                const isMine = gemsMinesData?.mineTileIndices?.includes(index);
                                 const isSafe = gemsMinesData?.safeTileIndices?.includes(index);
                                 
                                 return (
@@ -271,11 +270,9 @@ export default function GemsAndMinesPage() {
                                         key={index}
                                         className={cn(
                                             "w-full aspect-square rounded-md flex items-center justify-center border",
-                                            isMine ? 'bg-destructive/20 border-destructive' : 'bg-muted/30',
-                                            isSafe && 'bg-green-500/20 border-green-500',
+                                            isSafe ? 'bg-green-500/20 border-green-500' : 'bg-muted/30',
                                         )}
                                     >
-                                        {isMine && <Bomb className="w-6 h-6 text-destructive" />}
                                         {isSafe && <Gem className="w-6 h-6 text-green-400" />}
                                     </div>
                                 );
