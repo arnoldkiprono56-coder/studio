@@ -17,7 +17,7 @@ import { useToast } from '@/hooks/use-toast';
 type CrashPredictionData = {
     targetCashout: string;
     riskLevel: string;
-    roundConfidence: number;
+    confidence: number;
 }
 
 export default function CrashPage() {
@@ -201,7 +201,7 @@ export default function CrashPage() {
                             <p className="text-muted-foreground mt-2">Target Cashout</p>
                             <p className="text-6xl font-bold text-primary">{crashData.targetCashout}</p>
                              <p className="text-sm text-muted-foreground mt-2">Risk Level: {crashData.riskLevel}</p>
-                            <p className="text-sm text-muted-foreground">Round Confidence: {crashData.roundConfidence}%</p>
+                            <p className="text-sm text-muted-foreground">Confidence: {crashData.confidence}%</p>
                         </div>
                     ) : (
                          <div className="text-center text-muted-foreground">
