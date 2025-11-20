@@ -9,7 +9,7 @@ import { generateVipSlip, GenerateVipSlipOutput } from '@/ai/flows/generate-vip-
 import Link from 'next/link';
 import { useProfile } from '@/context/profile-context';
 import { useFirestore, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
-import { collection, query, where, doc, updateDoc, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, where, doc, updateDoc, addDoc, serverTimestamp, getDocs, limit } from 'firebase/firestore';
 import type { License } from '@/lib/types';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { resolveVipSlipOutcome } from '@/ai/flows/adapt-predictions-based-on-feedback';
@@ -130,7 +130,7 @@ export default function VipSlipPage() {
     
     // This is now a simulation of the backend process that resolves game outcomes.
     const handleSimulateOutcome = async (outcome: 'won' | 'lost') => {
-        if (!prediction || !userProfile) return;
+        if (!prediction || !userProfile || !firestore) return;
 
         // Find the prediction document in Firestore to get its ID
         // Note: This is inefficient. In a real app, we'd store the prediction ID in the component state.
@@ -284,5 +284,3 @@ export default function VipSlipPage() {
         </div>
     );
 }
-
-    
