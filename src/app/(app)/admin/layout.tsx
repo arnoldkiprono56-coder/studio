@@ -8,9 +8,10 @@ import { Button } from "@/components/ui/button";
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
+import type { UserProfile } from '@/context/profile-context';
 
 
-const adminTabs = [
+const allAdminTabs = [
   { value: 'dashboard', label: 'Dashboard', href: '/admin' },
   { value: 'assistant', label: 'AI Assistant', href: '/admin/assistant' },
   { value: 'users', label: 'Users', href: '/admin/users' },
@@ -23,8 +24,18 @@ const adminTabs = [
   { value: 'settings', label: 'Settings', href: '/admin/settings' },
 ];
 
-function AdminNav() {
+function AdminNav({ userProfile }: { userProfile: UserProfile | null }) {
     const pathname = usePathname();
+
+    const getVisibleTabs = () => {
+        if (!userProfile) return [];
+        if (userProfile.role === 'Assistant') {
+            return allAdminTabs.filter(tab => tab.value !== 'users');
+        }
+        return allAdminTabs;
+    }
+
+    const adminTabs = getVisibleTabs();
 
     return (
         <div className="relative overflow-x-auto">
@@ -103,7 +114,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
             <h1 className="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
             <p className="text-muted-foreground">Platform overview and management tools.</p>
         </div>
-        {showTabs && <AdminNav />}
+        {showTabs && <AdminNav userProfile={userProfile} />}
         <div className="mt-6">{children}</div>
     </div>
   );
