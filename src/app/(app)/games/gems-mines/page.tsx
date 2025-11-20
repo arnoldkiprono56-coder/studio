@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { Loader2, ArrowLeft, Gem, ShieldAlert, AlertCircle, Bomb } from "lucide-react";
+import { Loader2, ArrowLeft, Gem, AlertCircle, Bomb } from "lucide-react";
 import { generateGamePredictions, GenerateGamePredictionsOutput } from '@/ai/flows/generate-game-predictions';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
@@ -120,7 +120,11 @@ export default function GemsAndMinesPage() {
 
         } catch (error) {
             console.error("Failed to get prediction:", error);
-            // Optionally, show an error message to the user
+            toast({
+                variant: 'destructive',
+                title: 'Prediction Failed',
+                description: 'Could not get a prediction from the AI. Please try again.',
+            });
         } finally {
             setIsLoading(false);
         }
@@ -200,7 +204,7 @@ export default function GemsAndMinesPage() {
                         <CardDescription>Click the button to get the latest prediction. This consumes one round.</CardDescription>
                     </CardHeader>
                     <CardContent className="flex flex-col items-center justify-center gap-6 min-h-[300px]">
-                        {isLoading || licensesLoading ? (
+                        {isLoading ? (
                              <div className='text-center space-y-2'>
                                 <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto" />
                                 <p className='font-semibold text-muted-foreground'>Connecting to 1xBet servers...</p>
@@ -259,8 +263,8 @@ export default function GemsAndMinesPage() {
                     <CardContent>
                          <div className="grid grid-cols-5 gap-2">
                             {Array.from({ length: GRID_SIZE }).map((_, index) => {
-                                const isMine = gemsMinesData?.mineTileIndices.includes(index);
-                                const isSafe = gemsMinesData?.safeTileIndices.includes(index);
+                                const isMine = gemsMinesData?.mineTileIndices?.includes(index);
+                                const isSafe = gemsMinesData?.safeTileIndices?.includes(index);
                                 
                                 return (
                                     <div

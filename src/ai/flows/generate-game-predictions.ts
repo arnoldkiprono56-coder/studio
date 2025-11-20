@@ -51,7 +51,6 @@ const generateGamePattern = ai.defineTool(
     name: 'generateGamePattern',
     description: 'Generates a random but plausible game pattern for a tile-based game, returning the indices of safe and mine tiles.',
     inputSchema: z.object({
-      seed: z.number().describe('A random number between 0 and 1 to ensure uniqueness.'),
       gridSize: z.number().default(25).describe('The total number of tiles in the grid.'),
       numMines: z.number().min(3).max(8).describe('The number of mines to place on the grid.'),
     }),
@@ -61,22 +60,20 @@ const generateGamePattern = ai.defineTool(
         risk: z.enum(['Low', 'Medium', 'High']),
     }),
   },
-  async ({seed, gridSize, numMines}) => {
+  async ({gridSize, numMines}) => {
     const indices = Array.from({ length: gridSize }, (_, i) => i);
     
-    // Pseudo-random shuffle based on seed for deterministic "randomness"
+    // Simple shuffle
     for (let i = indices.length - 1; i > 0; i--) {
-        const j = Math.floor(seed * (i + 1));
+        const j = Math.floor(Math.random() * (i + 1));
         [indices[i], indices[j]] = [indices[j], indices[i]];
-        // alter seed to get new pseudo-random sequence
-        seed = (seed * 9301 + 49297) % 233280;
     }
 
     const mineTileIndices = indices.slice(0, numMines);
     const safeTileIndices = indices.slice(numMines);
     
     const risks = ['Low', 'Medium', 'High'];
-    const risk = risks[Math.floor(seed * risks.length)];
+    const risk = risks[Math.floor(Math.random() * risks.length)];
     
     return {
         safeTileIndices,
@@ -105,9 +102,8 @@ Based on the game type provided, generate a prediction for the corresponding gam
 Game Type: {{{gameType}}}
 User ID: {{{userId}}}
 
-Provide the predictionData based on the game type, using realistic values for 1xBet.
-- For 'aviator', use the format: Target Cashout: {multiplier range from 1.10x to 12x}, Risk Level: {risk}, Round Confidence: {confidence}%.
-- For 'crash', use the format: Target Cashout: {cashout range from 1.10x to 12x}, Risk Level: {risk}, Round Confidence: {confidence}%.
+- For 'aviator' or 'crash', generate realistic values for the target cashout, risk level, and confidence.
+- For 'gems-mines', you MUST use the 'generateGamePattern' tool to get the safe and mine tile locations.
 
 The output must be a JSON object that strictly conforms to the output schema. Ensure you include the mandatory disclaimer: "⚠ Predictions are approximations and not guaranteed."
 `;
@@ -117,6 +113,7 @@ const gamePredictionPrompt = ai.definePrompt({
     input: {schema: GenerateGamePredictionsInputSchema},
     output: {schema: GenerateGamePredictionsOutputSchema},
     prompt: promptText,
+    tools: [generateGamePattern],
 });
 
 
@@ -127,17 +124,6 @@ const generateGamePredictionsFlow = ai.defineFlow(
     outputSchema: GenerateGamePredictionsOutputSchema,
   },
   async (input) => {
-    
-    if (input.gameType === 'gems-mines') {
-      const seed = Math.random();
-      const numMines = Math.floor(Math.random() * 6) + 3; // 3 to 8 mines
-      const patternData = await generateGamePattern({ seed, gridSize: 25, numMines });
-      return {
-        predictionData: patternData,
-        disclaimer: '⚠ Predictions are approximations and not guaranteed.',
-      };
-    }
-    
     const {output} = await gamePredictionPrompt(input);
     return output!;
   }
