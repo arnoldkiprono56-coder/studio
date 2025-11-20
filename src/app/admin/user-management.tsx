@@ -2,19 +2,21 @@
 
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { useFirestore, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
-import { collection, doc, updateDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, doc, updateDoc, setDoc, serverTimestamp, query, orderBy, limit, startAfter, getDocs, endBefore, limitToLast } from 'firebase/firestore';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { AlertCircle, Users, PlusCircle, Loader2 } from 'lucide-react';
+import { AlertCircle, Users, PlusCircle, Loader2, ArrowLeft, ArrowRight } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useProfile } from '@/context/profile-context';
 import { Button } from '@/components/ui/button';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
+import type { DocumentSnapshot, DocumentData } from 'firebase/firestore';
+
 
 interface UserProfile {
     id: string;
@@ -117,18 +119,54 @@ function ActivateLicenseDialog({ user, onOpenChange, open }: { user: UserProfile
     )
 }
 
+const PAGE_SIZE = 10;
+
 export function UserManagement() {
     const firestore = useFirestore();
     const { userProfile: adminProfile } = useProfile();
     const { toast } = useToast();
     const [dialogState, setDialogState] = useState<{ open: boolean, user: UserProfile | null }>({ open: false, user: null });
+    const [lastVisible, setLastVisible] = useState<DocumentSnapshot<DocumentData> | null>(null);
+    const [firstVisible, setFirstVisible] = useState<DocumentSnapshot<DocumentData> | null>(null);
+    const [page, setPage] = useState(1);
+    const [paginationHistory, setPaginationHistory] = useState<(DocumentSnapshot<DocumentData> | null)[]>([null]);
 
-    const usersCollection = useMemoFirebase(() => {
+
+    const usersQuery = useMemo(() => {
         if (!firestore) return null;
-        return collection(firestore, 'users');
-    }, [firestore]);
+        let q = query(collection(firestore, 'users'), orderBy('email'), limit(PAGE_SIZE));
+        const cursor = paginationHistory[page - 1];
+        if (cursor) {
+            q = query(q, startAfter(cursor));
+        }
+        return q;
+    }, [firestore, page, paginationHistory]);
 
-    const { data: users, isLoading, error } = useCollection<UserProfile>(usersCollection);
+    const { data: users, isLoading, error } = useCollection<UserProfile>(usersQuery);
+    
+     useEffect(() => {
+        if (!isLoading && users && users.length > 0) {
+            const newFirst = (usersQuery as any)?.__private_internal_snapshot?.docs[0];
+            const newLast = (usersQuery as any)?.__private_internal_snapshot?.docs[users.length - 1];
+            setFirstVisible(newFirst || null);
+            setLastVisible(newLast || null);
+        }
+    }, [users, isLoading, usersQuery]);
+
+
+    const goToNextPage = () => {
+        if (lastVisible) {
+            setPaginationHistory(prev => [...prev, lastVisible]);
+            setPage(prev => prev + 1);
+        }
+    };
+
+    const goToPreviousPage = () => {
+        if (page > 1) {
+            setPaginationHistory(prev => prev.slice(0, -1));
+            setPage(prev => prev - 1);
+        }
+    };
     
     if (error) {
         console.error("Firestore error in UserManagement:", error);
@@ -273,6 +311,24 @@ export function UserManagement() {
                         onOpenChange={(open) => setDialogState({ open, user: open ? dialogState.user : null })}
                     />
                 )}
+                 <div className="flex items-center justify-end space-x-2 py-4">
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={goToPreviousPage}
+                        disabled={page <= 1}
+                    >
+                        Previous
+                    </Button>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={goToNextPage}
+                        disabled={!users || users.length < PAGE_SIZE}
+                    >
+                        Next
+                    </Button>
+                </div>
             </CardContent>
         </Card>
     );

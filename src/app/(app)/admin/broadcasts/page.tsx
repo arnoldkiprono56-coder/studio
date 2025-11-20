@@ -3,12 +3,14 @@
 
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy } from 'firebase/firestore';
+import { collection, query, orderBy, limit, startAfter, DocumentSnapshot, DocumentData } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AlertCircle, Megaphone } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import ReactMarkdown from 'react-markdown';
+import { Button } from '@/components/ui/button';
+import { useState, useMemo } from 'react';
 
 
 interface Notification {
@@ -19,18 +21,52 @@ interface Notification {
     createdAt: any;
 }
 
+const PAGE_SIZE = 5;
+
 export default function BroadcastLogPage() {
     const firestore = useFirestore();
+    const [lastVisible, setLastVisible] = useState<DocumentSnapshot<DocumentData> | null>(null);
+    const [page, setPage] = useState(1);
+    const [paginationHistory, setPaginationHistory] = useState<(DocumentSnapshot<DocumentData> | null)[]>([null]);
+
 
     const notificationsQuery = useMemoFirebase(() => {
         if (!firestore) return null;
-        return query(
+        let q = query(
             collection(firestore, 'notifications'),
-            orderBy('createdAt', 'desc')
+            orderBy('createdAt', 'desc'),
+            limit(PAGE_SIZE)
         );
-    }, [firestore]);
+        const cursor = paginationHistory[page - 1];
+        if (cursor) {
+            q = query(q, startAfter(cursor));
+        }
+        return q;
+    }, [firestore, page, paginationHistory]);
 
     const { data: notifications, isLoading } = useCollection<Notification>(notificationsQuery);
+    
+    useState(() => {
+        if (!isLoading && notifications && notifications.length > 0) {
+            const newLast = (notificationsQuery as any)?.__private_internal_snapshot?.docs[notifications.length - 1];
+            setLastVisible(newLast || null);
+        }
+    });
+
+    const goToNextPage = () => {
+        if (lastVisible) {
+            setPaginationHistory(prev => [...prev, lastVisible]);
+            setPage(prev => prev + 1);
+        }
+    };
+
+    const goToPreviousPage = () => {
+        if (page > 1) {
+            setPaginationHistory(prev => prev.slice(0, -1));
+            setPage(prev => prev - 1);
+        }
+    };
+
 
     return (
         <Card>
@@ -75,6 +111,24 @@ export default function BroadcastLogPage() {
                             <p className="text-sm">No messages have been sent yet.</p>
                         </div>
                     )}
+                </div>
+                <div className="flex items-center justify-end space-x-2 pt-4">
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={goToPreviousPage}
+                        disabled={page <= 1}
+                    >
+                        Previous
+                    </Button>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={goToNextPage}
+                        disabled={!notifications || notifications.length < PAGE_SIZE}
+                    >
+                        Next
+                    </Button>
                 </div>
             </CardContent>
         </Card>

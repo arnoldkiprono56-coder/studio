@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { useFirestore, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
-import { collection, doc, runTransaction, serverTimestamp, query } from 'firebase/firestore';
+import { collection, doc, runTransaction, serverTimestamp, query, where } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from '@/components/ui/button';
@@ -151,13 +151,11 @@ export default function PaymentsAdminPage() {
     
     const pendingTransactionsQuery = useMemoFirebase(() => {
         if (!firestore) return null;
-        return query(collection(firestore, 'transactions')); // We will filter locally for this MVP
+        return query(collection(firestore, 'transactions'), where('status', '==', 'pending'));
     }, [firestore]);
 
-    const { data: allTransactions, isLoading, forceRefetch } = useCollection<Transaction>(pendingTransactionsQuery);
+    const { data: pendingTransactions, isLoading, forceRefetch } = useCollection<Transaction>(pendingTransactionsQuery);
     
-    const pendingTransactions = allTransactions?.filter(t => t.status === 'pending');
-
     return (
         <Card>
             <CardHeader>
