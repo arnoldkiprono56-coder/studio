@@ -49,7 +49,8 @@ export default function PurchasePage() {
             return;
         }
 
-        if (!transactionId.trim()) {
+        const upperCaseTxId = transactionId.trim().toUpperCase();
+        if (!upperCaseTxId) {
             toast({ variant: 'destructive', title: 'Error', description: 'Please enter your transaction ID.' });
             return;
         }
@@ -57,52 +58,34 @@ export default function PurchasePage() {
         setIsProcessing(true);
 
         try {
-            await runTransaction(firestore, async (t) => {
-                const userRef = doc(firestore, 'users', userProfile.id);
-                const userSnap = await t.get(userRef);
-                if (!userSnap.exists()) {
-                    throw new Error("User data not found.");
+            // 1. Check for a pre-verified payment first
+            const preVerifiedRef = doc(firestore, 'preVerifiedPayments', upperCaseTxId);
+            const preVerifiedSnap = await getDoc(preVerifiedRef);
+
+            if (preVerifiedSnap.exists() && preVerifiedSnap.data()?.status === 'available') {
+                const credit = preVerifiedSnap.data();
+                // 2. If credit exists and is sufficient, process auto-approval
+                if (credit.amount >= plan.price) {
+                    await processAutoApprovedPurchase(plan, upperCaseTxId, credit.amount);
+                    toast({ title: 'Success!', description: 'Your payment was instantly verified and your license is active.' });
+                    router.push('/purchase/success');
+                } else {
+                    // If credit is insufficient, proceed to manual verification
+                    await processNormalPurchase(plan, upperCaseTxId);
+                    toast({ title: 'Processing', description: 'Your order has been placed and is pending verification.' });
+                    router.push('/purchase/success');
                 }
-                
-                const licenseId = `${plan.id}-${userProfile.id}`;
-                const licenseRef = doc(firestore, 'users', userProfile.id, 'user_licenses', licenseId);
-                const licensePayload = {
-                    id: licenseId,
-                    userId: userProfile.id,
-                    gameType: plan.name,
-                    roundsRemaining: plan.rounds,
-                    paymentVerified: false,
-                    isActive: false,
-                    createdAt: serverTimestamp(),
-                };
-                t.set(licenseRef, licensePayload);
-
-                const transactionRef = doc(collection(firestore, 'users', userProfile.id, 'transactions'));
-                const transactionPayload = {
-                    id: transactionRef.id,
-                    userId: userProfile.id,
-                    licenseId: licenseId,
-                    userClaimedAmount: plan.price,
-                    finalAmount: null,
-                    currency: plan.currency,
-                    userSubmittedTxId: transactionId.trim().toUpperCase(),
-                    finalTxId: null,
-                    status: 'pending',
-                    type: 'purchase',
-                    description: `Purchase of ${plan.name} license`,
-                    rawMessage: `User submitted TX ID: ${transactionId.trim().toUpperCase()}`,
-                    createdAt: serverTimestamp(),
-                };
-                t.set(transactionRef, transactionPayload);
-            });
-
-            toast({ title: 'Processing', description: 'Your order has been placed and is pending verification.' });
-            router.push('/purchase/success');
+            } else {
+                // 3. If no pre-verified credit, proceed to manual verification
+                await processNormalPurchase(plan, upperCaseTxId);
+                toast({ title: 'Processing', description: 'Your order has been placed and is pending verification.' });
+                router.push('/purchase/success');
+            }
 
         } catch (error: any) {
              if (error.code === 'permission-denied' || error.name === 'FirebaseError') {
                 errorEmitter.emit('permission-error', new FirestorePermissionError({
-                    path: `users/${userProfile.id}/transactions`,
+                    path: `users/${userProfile.id}/transactions or preVerifiedPayments`,
                     operation: 'create',
                     requestResourceData: { planId, userId: userProfile.id }
                 }));
@@ -114,6 +97,91 @@ export default function PurchasePage() {
             setIsProcessing(false);
         }
     };
+
+    // This function is for purchases that need manual admin approval
+    const processNormalPurchase = async (plan: Plan, txId: string) => {
+        if (!firestore || !userProfile) return;
+        
+        await runTransaction(firestore, async (t) => {
+            const licenseId = `${plan.id}-${userProfile.id}`;
+            const licenseRef = doc(firestore, 'users', userProfile.id, 'user_licenses', licenseId);
+            const licensePayload = {
+                id: licenseId,
+                userId: userProfile.id,
+                gameType: plan.name,
+                roundsRemaining: plan.rounds,
+                paymentVerified: false,
+                isActive: false,
+                createdAt: serverTimestamp(),
+            };
+            t.set(licenseRef, licensePayload);
+
+            const transactionRef = doc(collection(firestore, 'users', userProfile.id, 'transactions'));
+            const transactionPayload = {
+                id: transactionRef.id,
+                userId: userProfile.id,
+                licenseId: licenseId,
+                userClaimedAmount: plan.price,
+                currency: plan.currency,
+                userSubmittedTxId: txId,
+                status: 'pending',
+                type: 'purchase',
+                description: `Purchase of ${plan.name} license`,
+                createdAt: serverTimestamp(),
+            };
+            t.set(transactionRef, transactionPayload);
+        });
+    };
+
+    // This function handles the instant activation for pre-verified payments
+    const processAutoApprovedPurchase = async (plan: Plan, txId: string, verifiedAmount: number) => {
+        if (!firestore || !userProfile) return;
+
+        const batch = writeBatch(firestore);
+
+        // 1. Create an active license
+        const licenseId = `${plan.id}-${userProfile.id}`;
+        const licenseRef = doc(firestore, 'users', userProfile.id, 'user_licenses', licenseId);
+        const licensePayload = {
+            id: licenseId,
+            userId: userProfile.id,
+            gameType: plan.name,
+            roundsRemaining: plan.rounds,
+            paymentVerified: true, // Auto-verified
+            isActive: true, // Auto-active
+            createdAt: serverTimestamp(),
+        };
+        batch.set(licenseRef, licensePayload);
+
+        // 2. Create a 'completed' transaction record
+        const transactionRef = doc(collection(firestore, 'users', userProfile.id, 'transactions'));
+        const transactionPayload = {
+            id: transactionRef.id,
+            userId: userProfile.id,
+            licenseId: licenseId,
+            userClaimedAmount: plan.price,
+            finalAmount: verifiedAmount,
+            currency: plan.currency,
+            userSubmittedTxId: txId,
+            finalTxId: txId,
+            status: 'completed', // Straight to completed
+            type: 'purchase',
+            description: `Auto-verified purchase of ${plan.name} license`,
+            createdAt: serverTimestamp(),
+        };
+        batch.set(transactionRef, transactionPayload);
+
+        // 3. Mark the pre-verified payment as 'claimed'
+        const preVerifiedRef = doc(firestore, 'preVerifiedPayments', txId);
+        batch.update(preVerifiedRef, {
+            status: 'claimed',
+            claimedBy: userProfile.id,
+            claimedAt: serverTimestamp(),
+        });
+        
+        await batch.commit();
+    };
+
 
     if (isLoading || !plan) {
         return (
@@ -180,7 +248,7 @@ export default function PurchasePage() {
                         disabled={isProcessing}
                     >
                         {isProcessing && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                        {isProcessing ? 'Submitting...' : 'Submit for Verification'}
+                        {isProcessing ? 'Verifying...' : 'Submit for Verification'}
                     </Button>
                     <p className="text-xs text-muted-foreground flex items-center gap-1.5"><ShieldCheck className="w-3.5 h-3.5" /> Your payment will be verified by our team.</p>
                 </CardFooter>

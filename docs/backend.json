@@ -220,7 +220,7 @@
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "PaymentTransaction",
       "type": "object",
-      "description": "Represents a payment transaction for a license or a commission.",
+      "description": "Represents a payment transaction for a license.",
       "properties": {
         "id": {
           "type": "string",
@@ -236,42 +236,48 @@
         },
         "type": {
           "type": "string",
-          "description": "The type of transaction (purchase, commission, withdrawal, reward).",
-          "enum": ["purchase", "commission", "withdrawal", "reward"]
+          "description": "The type of transaction (purchase).",
+          "enum": ["purchase"]
         },
         "description": {
           "type": "string",
-          "description": "A brief description of the transaction (e.g., 'Commission from user@test.com')."
+          "description": "A brief description of the transaction (e.g., 'Purchase of VIP Slip license')."
         },
-        "amount": {
+        "userClaimedAmount": {
           "type": "number",
-          "description": "Amount of the transaction (e.g., 1500 for purchase, -300 for withdrawal)."
+          "description": "The amount of the plan price the user is claiming to have paid."
+        },
+        "finalAmount": {
+          "type": "number",
+          "description": "The final amount confirmed by an admin or an auto-verification system."
         },
         "currency": {
           "type": "string",
           "description": "Currency of the transaction (KES)."
         },
-        "paymentMethod": {
+        "userSubmittedTxId": {
           "type": "string",
-          "description": "Payment method used (Mpesa STK, Mpesa virtual card, Card, Till number)."
+          "description": "The transaction ID submitted by the user for verification."
+        },
+        "finalTxId": {
+          "type": "string",
+          "description": "The final transaction ID confirmed by an admin."
         },
         "status": {
           "type": "string",
-          "description": "Status of the transaction (pending, verified, failed, completed)."
-        },
-        "webhookVerified": {
-          "type": "boolean",
-          "description": "Set to true by Firebase webhook upon successful payment verification."
+          "description": "Status of the transaction (pending, verified, failed, completed).",
+          "enum": ["pending", "verified", "failed", "completed"]
         }
       },
       "required": [
         "id",
         "userId",
-        "amount",
+        "userClaimedAmount",
         "currency",
         "status",
         "type",
-        "description"
+        "description",
+        "userSubmittedTxId"
       ]
     },
     "Plan": {
