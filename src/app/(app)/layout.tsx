@@ -5,6 +5,7 @@ import { SidebarProvider } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/app-sidebar';
 import { Header } from '@/components/header';
 import { BroadcastListener } from '@/components/BroadcastListener';
+import { AdminWelcomeToast } from '@/components/admin-welcome-toast';
 
 export default function AppLayout({
     children,
@@ -21,6 +22,7 @@ export default function AppLayout({
                 </div>
             </div>
             <BroadcastListener />
+            <AdminWelcomeToast />
         </SidebarProvider>
     );
 }
