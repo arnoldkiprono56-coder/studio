@@ -43,10 +43,11 @@ export default function AssistantOnboardingPage() {
                 ipAddress: 'not_collected',
             };
             
-            addDoc(collection(firestore, 'auditlogs'), auditLogData)
+            const auditLogsCollection = collection(firestore, 'auditlogs');
+            addDoc(auditLogsCollection, auditLogData)
                 .catch(error => {
                      errorEmitter.emit('permission-error', new FirestorePermissionError({
-                        path: 'auditlogs',
+                        path: auditLogsCollection.path,
                         operation: 'create',
                         requestResourceData: auditLogData
                     }));
@@ -60,7 +61,11 @@ export default function AssistantOnboardingPage() {
             router.push('/admin');
         } catch (error) {
             console.error('Failed to accept assistant role:', error);
-            toast({ variant: 'destructive', title: 'Update Failed', description: 'Could not update your profile. Please try again.' });
+            // The updateUserProfile function already emits the contextual error.
+            // We only show a generic toast if it's not a permission error.
+            if (!(error instanceof FirestorePermissionError)) {
+                toast({ variant: 'destructive', title: 'Update Failed', description: 'Could not update your profile. Please try again.' });
+            }
             setIsProcessing(false);
         }
     };
@@ -228,5 +233,3 @@ export default function AssistantOnboardingPage() {
         </div>
     );
 }
-
-    
