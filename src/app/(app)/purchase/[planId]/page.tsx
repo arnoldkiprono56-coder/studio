@@ -47,10 +47,10 @@ export default function PurchasePage() {
 
     const extractDetails = (message: string): { txId: string | null; amount: number | null } => {
         // Regex for M-PESA: e.g., "SAI... Confirmed. Ksh... sent to..."
-        const mpesaRegex = /([A-Z0-9]{10})\sConfirmed\.\sKsh([\d,]+\.\d{2})\ssent/i;
+        const mpesaRegex = /([A-Z0-9]{10})\sConfirmed\.\sKsh([\d,]+\.\d{2})/;
         const mpesaMatch = message.match(mpesaRegex);
     
-        if (mpesaMatch) {
+        if (mpesaMatch && mpesaMatch[1] && mpesaMatch[2]) {
             return {
                 txId: mpesaMatch[1],
                 amount: parseFloat(mpesaMatch[2].replace(/,/g, ''))
@@ -58,20 +58,20 @@ export default function PurchasePage() {
         }
     
         // Regex for Airtel Money: Look for a pattern like "tran ID: ... Amount: KES ..."
-        const airtelRegex = /tran\sID:\s*([a-zA-Z0-9]+)\..*?Amount:\s*KES\s*([\d,]+\.\d{2})/i;
+        const airtelRegex = /Transaction\s*ID\s*([A-Za-z0-9]+)\s*is\s*successful.*?Amount\s*KES\s*([\d,]+\.\d{2})/;
         const airtelMatch = message.match(airtelRegex);
     
-        if (airtelMatch) {
+        if (airtelMatch && airtelMatch[1] && airtelMatch[2]) {
             return {
                 txId: airtelMatch[1],
                 amount: parseFloat(airtelMatch[2].replace(/,/g, ''))
             };
         }
     
-        // Fallback for cases where only the ID is present, which was part of the original logic
+        // Fallback for cases where only the ID is present
         const genericIdRegex = /([A-Z0-9]{10,})\sConfirmed/i;
         const genericMatch = message.match(genericIdRegex);
-        if (genericMatch) {
+        if (genericMatch && genericMatch[1]) {
             return { txId: genericMatch[1], amount: null };
         }
     
