@@ -64,7 +64,7 @@ Game Type: {{{gameType}}}
 User ID: {{{userId}}}
 
 - For 'aviator' or 'crash', generate realistic values for the target cashout, risk level, and confidence.
-- For 'gems-mines', you must act as an expert analyst. Based on your (simulated) analysis of historical data, provide a list of 1 to 5 of the SAFEST tile indices. These should represent the highest probability of being gems. Do not just pick random numbers.
+- For 'gems-mines', you must act as an expert analyst. Based on your (simulated) analysis of historical data, provide a list of 1 to 5 of the SAFEST tile indices. Do not just pick random numbers; the output must be the result of your analysis.
 
 The output must be a JSON object that strictly conforms to the output schema. Ensure you include the mandatory disclaimer: "⚠️ AI predictions are based on pattern analysis and are not guaranteed. Play responsibly."
 `;
