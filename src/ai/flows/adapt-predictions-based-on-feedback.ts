@@ -50,6 +50,7 @@ const adaptPredictionsBasedOnFeedbackFlow = ai.defineFlow(
       input: {schema: AdaptPredictionsBasedOnFeedbackInputSchema},
       output: {schema: AdaptPredictionsBasedOnFeedbackOutputSchema},
       prompt: promptText,
+      model: 'googleai/gemini-2.5-flash',
     });
 
     const {output} = await prompt(input);

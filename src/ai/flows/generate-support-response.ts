@@ -76,6 +76,7 @@ const generateSupportResponseFlow = ai.defineFlow(
       output: {schema: GenerateSupportResponseOutputSchema},
       prompt: promptText,
       tools: [getAllUsers, getAuditLogs, sendBroadcastMessage],
+      model: 'googleai/gemini-2.5-flash',
     });
 
     const {output} = await prompt(input);

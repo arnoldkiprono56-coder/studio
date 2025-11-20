@@ -65,6 +65,7 @@ const generateVipSlipFlow = ai.defineFlow(
       input: { schema: GenerateVipSlipInputSchema },
       output: { schema: GenerateVipSlipOutputSchema },
       prompt: promptText,
+      model: 'googleai/gemini-2.5-flash',
     });
 
     const { output } = await prompt(input);
