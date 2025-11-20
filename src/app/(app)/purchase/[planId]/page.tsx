@@ -46,37 +46,27 @@ export default function PurchasePage() {
     const { data: plan, isLoading } = useDoc<Plan>(planDocRef);
 
     const extractDetails = (message: string): { txId: string | null; amount: number | null } => {
-        // Regex for M-PESA: e.g., "SAI... Confirmed. Ksh... sent to..."
-        const mpesaRegex = /([A-Z0-9]{10})\sConfirmed\.\sKsh([\d,]+\.\d{2})/;
-        const mpesaMatch = message.match(mpesaRegex);
-    
-        if (mpesaMatch && mpesaMatch[1] && mpesaMatch[2]) {
-            return {
-                txId: mpesaMatch[1],
-                amount: parseFloat(mpesaMatch[2].replace(/,/g, ''))
-            };
+        // M-PESA: Look for a 10-character uppercase alphanumeric code.
+        let mpesaMatch = message.match(/([A-Z0-9]{10})\sConfirmed/);
+        if (mpesaMatch) {
+            const txId = mpesaMatch[1];
+            // Then, look for the amount.
+            let amountMatch = message.match(/Ksh([\d,]+\.\d{2})/);
+            const amount = amountMatch ? parseFloat(amountMatch[1].replace(/,/g, '')) : null;
+            return { txId, amount };
         }
     
-        // Regex for Airtel Money: Look for a pattern like "tran ID: ... Amount: KES ..."
-        const airtelRegex = /Transaction\s*ID\s*([A-Za-z0-9]+)\s*is\s*successful.*?Amount\s*KES\s*([\d,]+\.\d{2})/;
-        const airtelMatch = message.match(airtelRegex);
-    
-        if (airtelMatch && airtelMatch[1] && airtelMatch[2]) {
-            return {
-                txId: airtelMatch[1],
-                amount: parseFloat(airtelMatch[2].replace(/,/g, ''))
-            };
-        }
-    
-        // Fallback for cases where only the ID is present
-        const genericIdRegex = /([A-Z0-9]{10,})\sConfirmed/i;
-        const genericMatch = message.match(genericIdRegex);
-        if (genericMatch && genericMatch[1]) {
-            return { txId: genericMatch[1], amount: null };
+        // Airtel Money: Look for a specific pattern.
+        let airtelMatch = message.match(/Transaction ID\s*([A-Za-z0-9]+)/);
+        if (airtelMatch) {
+            const txId = airtelMatch[1];
+            let amountMatch = message.match(/Amount\s*KES\s*([\d,]+\.\d{2})/);
+            const amount = amountMatch ? parseFloat(amountMatch[1].replace(/,/g, '')) : null;
+            return { txId, amount };
         }
     
         return { txId: null, amount: null };
-    }
+    };
 
     const handlePurchase = async () => {
         if (!firestore || !userProfile || !plan) {
