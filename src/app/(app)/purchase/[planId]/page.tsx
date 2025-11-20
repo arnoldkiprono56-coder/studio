@@ -59,17 +59,16 @@ export default function PurchasePage() {
 
     const extractDetails = (message: string): { txId: string | null; amount: number | null } => {
         if (!message) return { txId: null, amount: null };
-    
+        
         const cleanedMessage = message.replace(/\s+/g, ' ').trim().toUpperCase();
-    
-        // Universal regex for 10-character uppercase alphanumeric code (M-Pesa)
+        
+        // Match 10-character uppercase alphanumeric codes (M-Pesa format)
         const txIdMatch = cleanedMessage.match(/\b([A-Z0-9]{10})\b/);
         const txId = txIdMatch ? txIdMatch[0] : null;
-    
-        // Universal regex for amount (handles KES, Ksh, with/without commas)
+
         const amountMatch = cleanedMessage.match(/(?:KES|KSH)\s?([\d,]+\.?\d*)/i);
         const amount = amountMatch ? parseFloat(amountMatch[1].replace(/,/g, '')) : null;
-    
+
         return { txId, amount };
     };
 
@@ -84,7 +83,7 @@ export default function PurchasePage() {
             return;
         }
         
-        setIsProcessing(true); // Start loading animation
+        setIsProcessing(true);
 
         const { txId, amount: messageAmount } = extractDetails(transactionMessage);
 
@@ -94,35 +93,30 @@ export default function PurchasePage() {
                 title: 'Invalid Message',
                 description: 'Could not extract a valid Transaction ID from the message. Please paste the full, original message.'
             });
-            setIsProcessing(false); // Stop loading
+            setIsProcessing(false);
             return;
         }
 
         try {
-            // Check for pre-verified payment first
             const creditRef = doc(firestore, 'preVerifiedPayments', txId);
             const creditSnap = await getDoc(creditRef);
 
             if (creditSnap.exists() && creditSnap.data()?.status === 'available') {
-                // Credit exists, apply it
                 const creditData = creditSnap.data() as PreVerifiedPayment;
                 const price = remainingAmount !== null ? remainingAmount : plan.price;
                 const newRemaining = price - creditData.amount;
                 
                 if (newRemaining <= 0) {
-                    // Credit covers the whole price, activate license directly
                     await activateLicenseWithCredit(txId, creditData.amount);
                     toast({ title: 'Success!', description: 'Your credit covered the full amount. License activated!' });
                     router.push('/purchase/success');
                 } else {
-                    // Credit partially covers the price, update UI
                     setRemainingAmount(newRemaining);
                     setCreditApplied(creditData.amount);
-                    setTransactionMessage(''); // Clear message for next payment
+                    setTransactionMessage('');
                     toast({ title: 'Credit Applied!', description: `A credit of ${formatCurrency(creditData.amount)} was applied. Please pay the remaining balance.` });
                 }
             } else {
-                 // No credit, proceed with normal transaction
                 await processNormalPurchase(txId, messageAmount);
                 toast({ title: 'Processing', description: 'Your order has been placed and is pending verification.' });
                 router.push('/purchase/success');
@@ -130,7 +124,7 @@ export default function PurchasePage() {
         } catch (error: any) {
              if (error.code === 'permission-denied' || error.name === 'FirebaseError') {
                 errorEmitter.emit('permission-error', new FirestorePermissionError({
-                    path: `users/${userProfile.id}/transactions`, // Simplified path for the error
+                    path: `users/${userProfile.id}/transactions`,
                     operation: 'create',
                     requestResourceData: { planId, userId: userProfile.id }
                 }));
@@ -139,7 +133,7 @@ export default function PurchasePage() {
                 toast({ variant: 'destructive', title: 'Purchase Failed', description: error.message || 'An unexpected error occurred.' });
             }
         } finally {
-            setIsProcessing(false); // Stop loading animation
+            setIsProcessing(false);
         }
     };
     
@@ -171,47 +165,44 @@ export default function PurchasePage() {
         if (!firestore || !userProfile || !plan) throw new Error("Missing dependencies for purchase.");
 
         await runTransaction(firestore, async (transaction) => {
-                const userRef = doc(firestore, 'users', userProfile.id);
-                const userSnap = await transaction.get(userRef);
-                if (!userSnap.exists()) {
-                    throw new Error("User data not found.");
-                }
-                
-                // 1. Create a new license document
-                const licenseId = `${plan.id}-${userProfile.id}`;
-                const licenseRef = doc(firestore, 'users', userProfile.id, 'user_licenses', licenseId);
-                const licensePayload = {
-                    id: licenseId,
-                    userId: userProfile.id,
-                    gameType: plan.name,
-                    roundsRemaining: plan.rounds,
-                    paymentVerified: false,
-                    isActive: false,
-                    createdAt: serverTimestamp(),
-                };
-                transaction.set(licenseRef, licensePayload);
+            const userRef = doc(firestore, 'users', userProfile.id);
+            const userSnap = await transaction.get(userRef);
+            if (!userSnap.exists()) {
+                throw new Error("User data not found.");
+            }
+            
+            const licenseId = `${plan.id}-${userProfile.id}`;
+            const licenseRef = doc(firestore, 'users', userProfile.id, 'user_licenses', licenseId);
+            const licensePayload = {
+                id: licenseId,
+                userId: userProfile.id,
+                gameType: plan.name,
+                roundsRemaining: plan.rounds,
+                paymentVerified: false,
+                isActive: false,
+                createdAt: serverTimestamp(),
+            };
+            transaction.set(licenseRef, licensePayload);
 
-                // 2. Create a new payment transaction document in the user's subcollection
-                const transactionRef = doc(collection(firestore, 'users', userProfile.id, 'transactions'));
-                const transactionPayload = {
-                    id: transactionRef.id,
-                    userId: userProfile.id,
-                    licenseId: licenseId,
-                    userClaimedAmount: messageAmount ?? (remainingAmount !== null ? remainingAmount : plan.price),
-                    finalAmount: null,
-                    currency: plan.currency,
-                    userSubmittedTxId: txId,
-                    finalTxId: null,
-                    status: 'pending',
-                    type: 'purchase',
-                    description: `Purchase of ${plan.name} license`,
-                    rawMessage: transactionMessage,
-                    createdAt: serverTimestamp(),
-                };
-                transaction.set(transactionRef, transactionPayload);
-            });
+            const transactionRef = doc(collection(firestore, 'users', userProfile.id, 'transactions'));
+            const transactionPayload = {
+                id: transactionRef.id,
+                userId: userProfile.id,
+                licenseId: licenseId,
+                userClaimedAmount: messageAmount ?? (remainingAmount !== null ? remainingAmount : plan.price),
+                finalAmount: null,
+                currency: plan.currency,
+                userSubmittedTxId: txId,
+                finalTxId: null,
+                status: 'pending',
+                type: 'purchase',
+                description: `Purchase of ${plan.name} license`,
+                rawMessage: transactionMessage,
+                createdAt: serverTimestamp(),
+            };
+            transaction.set(transactionRef, transactionPayload);
+        });
     }
-
 
     if (isLoading || !plan) {
         return (
