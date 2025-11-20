@@ -46,19 +46,35 @@ export default function PurchasePage() {
     const { data: plan, isLoading } = useDoc<Plan>(planDocRef);
 
     const extractDetails = (message: string): { txId: string | null; amount: number | null } => {
-        // Regex for M-PESA: e.g., "SAI... Confirmed. Ksh... sent to..." or "SAI... Confirmed. You have received..."
-        const mpesaRegex = /(?:([A-Z0-9]{10})\sConfirmed\.)(?:\s.*Ksh([\d,]+\.\d{2}))?/i;
+        // Regex for M-PESA: e.g., "SAI... Confirmed. Ksh... sent to..."
+        const mpesaRegex = /([A-Z0-9]{10})\sConfirmed\.\sKsh([\d,]+\.\d{2})\ssent/i;
         const mpesaMatch = message.match(mpesaRegex);
-
+    
         if (mpesaMatch) {
             return {
                 txId: mpesaMatch[1],
-                amount: mpesaMatch[2] ? parseFloat(mpesaMatch[2].replace(/,/g, '')) : null
+                amount: parseFloat(mpesaMatch[2].replace(/,/g, ''))
             };
         }
-        
-        // Add other regex for Airtel if the format is known
-        
+    
+        // Regex for Airtel Money: Look for a pattern like "tran ID: ... Amount: KES ..."
+        const airtelRegex = /tran\sID:\s*([a-zA-Z0-9]+)\..*?Amount:\s*KES\s*([\d,]+\.\d{2})/i;
+        const airtelMatch = message.match(airtelRegex);
+    
+        if (airtelMatch) {
+            return {
+                txId: airtelMatch[1],
+                amount: parseFloat(airtelMatch[2].replace(/,/g, ''))
+            };
+        }
+    
+        // Fallback for cases where only the ID is present, which was part of the original logic
+        const genericIdRegex = /([A-Z0-9]{10,})\sConfirmed/i;
+        const genericMatch = message.match(genericIdRegex);
+        if (genericMatch) {
+            return { txId: genericMatch[1], amount: null };
+        }
+    
         return { txId: null, amount: null };
     }
 
@@ -253,5 +269,3 @@ export default function PurchasePage() {
         </div>
     )
 }
-
-    
