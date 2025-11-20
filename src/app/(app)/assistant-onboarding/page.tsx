@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -27,59 +28,48 @@ export default function AssistantOnboardingPage() {
             return;
         }
         setIsProcessing(true);
-        try {
-            // Update user role and payment number
-            await updateUserProfile({
-                assistantPaymentNumber: paymentNumber,
-                assistantAgreementAccepted: true,
+
+        // This function will now throw a FirestorePermissionError if it fails,
+        // which will be caught by the global error boundary.
+        await updateUserProfile({
+            assistantPaymentNumber: paymentNumber,
+            assistantAgreementAccepted: true,
+        });
+
+        // Create an audit log for this action
+        const auditLogData = {
+            userId: userProfile.id,
+            action: 'assistant_onboarding_accepted',
+            details: `User ${userProfile.email} accepted the assistant agreement.`,
+            timestamp: serverTimestamp(),
+            ipAddress: 'not_collected',
+        };
+        
+        const auditLogsCollection = collection(firestore, 'auditlogs');
+        addDoc(auditLogsCollection, auditLogData)
+            .catch(error => {
+                    errorEmitter.emit('permission-error', new FirestorePermissionError({
+                    path: auditLogsCollection.path,
+                    operation: 'create',
+                    requestResourceData: auditLogData
+                }));
             });
 
-            // Create an audit log for this action
-            const auditLogData = {
-                userId: userProfile.id,
-                action: 'assistant_onboarding_accepted',
-                details: `User ${userProfile.email} accepted the assistant agreement.`,
-                timestamp: serverTimestamp(),
-                ipAddress: 'not_collected',
-            };
-            
-            const auditLogsCollection = collection(firestore, 'auditlogs');
-            addDoc(auditLogsCollection, auditLogData)
-                .catch(error => {
-                     errorEmitter.emit('permission-error', new FirestorePermissionError({
-                        path: auditLogsCollection.path,
-                        operation: 'create',
-                        requestResourceData: auditLogData
-                    }));
-                });
+        toast({
+            title: 'Welcome, Assistant!',
+            description: 'Your account has been upgraded. Redirecting you to the dashboard.',
+        });
+        router.push('/admin');
 
-
-            toast({
-                title: 'Welcome, Assistant!',
-                description: 'Your account has been upgraded. Redirecting you to the dashboard.',
-            });
-            router.push('/admin');
-        } catch (error) {
-            console.error('Failed to accept assistant role:', error);
-            // The updateUserProfile function already emits the contextual error.
-            // We only show a generic toast if it's not a permission error.
-            if (!(error instanceof FirestorePermissionError)) {
-                toast({ variant: 'destructive', title: 'Update Failed', description: 'Could not update your profile. Please try again.' });
-            }
-            setIsProcessing(false);
-        }
+        // Note: No .catch or .finally here, as errors are handled globally
     };
 
     const handleDecline = async () => {
         if (!userProfile) return;
-        // Revert role to 'User'
-        try {
-            await updateUserProfile({ role: 'User' });
-            router.push('/dashboard');
-        } catch (error) {
-            console.error('Failed to decline assistant role:', error);
-            toast({ variant: 'destructive', title: 'Error', description: 'Could not process your request. Please contact support.' });
-        }
+         // Revert role to 'User'
+        // This will also now throw a global error if it fails
+        await updateUserProfile({ role: 'User' });
+        router.push('/dashboard');
     };
 
     return (
@@ -233,3 +223,5 @@ export default function AssistantOnboardingPage() {
         </div>
     );
 }
+
+    
