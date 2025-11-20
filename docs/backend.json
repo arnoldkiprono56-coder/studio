@@ -51,6 +51,11 @@
         "assistantPaymentNumber": {
           "type": "string",
           "description": "The payment number provided by an assistant during onboarding."
+        },
+        "companyAgreementAccepted": {
+            "type": "boolean",
+            "description": "Indicates if the user has accepted the general company agreement.",
+            "default": false
         }
       },
       "required": [

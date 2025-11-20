@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
@@ -22,6 +23,7 @@ interface UserProfile {
   hasPurchased?: boolean;
   isSuspended?: boolean;
   assistantAgreementAccepted?: boolean;
+  companyAgreementAccepted?: boolean;
   [key: string]: any;
 }
 
@@ -76,16 +78,28 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!isProfileLoading && userProfile) {
+      // 1. Check for suspension first
       if (userProfile.isSuspended && pathname !== '/suspended' && !pathname.startsWith('/support')) {
         router.replace('/suspended');
         return;
       }
       
-      const isAssistant = userProfile.role === 'Assistant';
-      const hasAccepted = userProfile.assistantAgreementAccepted === true;
+      const publicPaths = ['/company-agreement', '/assistant-onboarding', '/login', '/register', '/suspended'];
+      const currentIsPublic = publicPaths.some(p => pathname === p);
       
-      if (isAssistant && !hasAccepted && pathname !== '/assistant-onboarding') {
+      // 2. Check for Company Agreement
+      if (!userProfile.companyAgreementAccepted && !currentIsPublic) {
+          router.replace('/company-agreement');
+          return;
+      }
+
+      // 3. Check for Assistant Onboarding
+      const isAssistant = userProfile.role === 'Assistant';
+      const hasAcceptedAssistantAgreement = userProfile.assistantAgreementAccepted === true;
+      
+      if (isAssistant && !hasAcceptedAssistantAgreement && pathname !== '/assistant-onboarding') {
           router.replace('/assistant-onboarding');
+          return;
       }
     }
   }, [userProfile, isProfileLoading, pathname, router]);
