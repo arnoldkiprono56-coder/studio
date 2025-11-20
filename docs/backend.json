@@ -132,12 +132,22 @@
           "description": "Type of game the prediction is for."
         },
         "predictionData": {
-          "type": "string",
+          "type": "object",
           "description": "JSON data containing the prediction details, formatted as a VIP Slip or game-specific data for 1xBet."
         },
         "disclaimer": {
           "type": "string",
           "description": "The required legal disclaimer for predictions."
+        },
+        "status": {
+          "type": "string",
+          "description": "The outcome of the prediction.",
+          "enum": ["pending", "won", "lost"]
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp of when the prediction was created."
         }
       },
       "required": [
@@ -145,7 +155,9 @@
         "userId",
         "licenseId",
         "gameType",
-        "predictionData"
+        "predictionData",
+        "status",
+        "timestamp"
       ]
     },
     "AuditLog": {
@@ -358,7 +370,11 @@
         "targetAudience": {
           "type": "string",
           "description": "The target audience for the notification.",
-          "enum": ["all", "premium", "staff"]
+          "enum": ["all", "premium", "staff", "user"]
+        },
+        "userId": {
+          "type": "string",
+          "description": "The ID of the user this notification is for, if it's not a broadcast."
         },
         "senderId": {
           "type": "string",

@@ -16,6 +16,7 @@ import { useCollection } from "@/firebase/firestore/use-collection";
 import { useFirestore, useMemoFirebase } from "@/firebase";
 import { collection, query, where, limit, orderBy } from "firebase/firestore";
 import type { License, Prediction } from "@/lib/types";
+import { PredictionHistory } from "./prediction-history";
 
 
 const games = [
@@ -37,17 +38,7 @@ export default function DashboardPage() {
     );
   }, [userProfile?.id, firestore]);
 
-  const predictionsQuery = useMemoFirebase(() => {
-    if (!userProfile?.id || !firestore) return null;
-    return query(
-        collection(firestore, 'users', userProfile.id, 'predictions'),
-        orderBy('timestamp', 'desc'),
-        limit(5)
-    );
-  }, [userProfile?.id, firestore]);
-
   const { data: allLicenses, isLoading: licensesLoading } = useCollection<License>(licensesQuery);
-  const { data: recentPredictions, isLoading: predictionsLoading } = useCollection<Prediction>(predictionsQuery);
 
   const activeLicenses = allLicenses?.filter(l => l.isActive);
 
@@ -59,7 +50,7 @@ export default function DashboardPage() {
     }
   }, [userProfile, isProfileLoading, router]);
 
-  if (isProfileLoading || !userProfile || licensesLoading || predictionsLoading) {
+  if (isProfileLoading || !userProfile || licensesLoading) {
     return (
         <div className="space-y-8">
             <div className="flex justify-between items-center">
@@ -201,33 +192,9 @@ export default function DashboardPage() {
         </div>
       </div>
 
-       <div>
-        <h2 className="text-2xl font-semibold tracking-tight mb-4">Recent Predictions</h2>
-        <Card>
-            <CardContent className="pt-6">
-                {recentPredictions && recentPredictions.length > 0 ? (
-                    <ul className="space-y-4">
-                        {recentPredictions.map((p) => (
-                            <li key={p.id} className="flex justify-between items-center">
-                                <div className="flex items-center gap-3">
-                                    <Badge variant="secondary">{p.gameType}</Badge>
-                                    <span className="font-mono text-sm truncate max-w-xs" title={p.predictionData}>
-                                        {p.predictionData}
-                                    </span>
-                                </div>
-                                <span className="text-xs text-muted-foreground">
-                                    {p.timestamp ? new Date(p.timestamp).toLocaleDateString() : 'N/A'}
-                                </span>
-                            </li>
-                        ))}
-                    </ul>
-                ) : (
-                    <p className="text-center text-muted-foreground py-8">No predictions made yet.</p>
-                )}
-            </CardContent>
-        </Card>
-      </div>
-
+      <PredictionHistory />
     </div>
   );
 }
+
+    

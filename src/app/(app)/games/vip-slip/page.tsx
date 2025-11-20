@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -8,10 +9,10 @@ import { generateVipSlip, GenerateVipSlipOutput } from '@/ai/flows/generate-vip-
 import Link from 'next/link';
 import { useProfile } from '@/context/profile-context';
 import { useFirestore, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
-import { collection, query, where, doc, updateDoc, addDoc } from 'firebase/firestore';
+import { collection, query, where, doc, updateDoc, addDoc, serverTimestamp } from 'firebase/firestore';
 import type { License } from '@/lib/types';
 import { useCollection } from '@/firebase/firestore/use-collection';
-import { adaptPredictionsBasedOnFeedback } from '@/ai/flows/adapt-predictions-based-on-feedback';
+import { resolveVipSlipOutcome } from '@/ai/flows/adapt-predictions-based-on-feedback';
 import { useToast } from '@/hooks/use-toast';
 
 export default function VipSlipPage() {
@@ -54,33 +55,41 @@ export default function VipSlipPage() {
         try {
             const result = await generateVipSlip({ userId: userProfile.id, licenseId: activeLicense.id });
             setPrediction(result);
-
-            const timestamp = new Date().toISOString();
-
+            
             const predictionData = {
                 userId: userProfile.id,
                 licenseId: activeLicense.id,
                 gameType: 'VIP Slip',
-                predictionData: JSON.stringify(result.matches.map(m => `${m.teams}: ${m.prediction} @${m.odd}`)),
+                predictionData: result.matches, // Store the structured object
                 disclaimer: result.disclaimer,
-                timestamp: timestamp,
+                status: 'pending', // Add the status
+                timestamp: serverTimestamp(),
             };
 
-            addDoc(collection(firestore, 'users', userProfile.id, 'predictions'), predictionData)
+            // This document is created with a generated ID by Firestore
+            const newPredictionRef = await addDoc(collection(firestore, 'users', userProfile.id, 'predictions'), predictionData)
                 .catch(error => {
                     errorEmitter.emit('permission-error', new FirestorePermissionError({
                         path: `users/${userProfile.id}/predictions`,
                         operation: 'create',
                         requestResourceData: predictionData
                     }));
+                    return null; // Return null on error
                 });
+            
+            if (!newPredictionRef) {
+                // If the prediction wasn't created, don't proceed.
+                throw new Error("Failed to save prediction to database.");
+            }
 
+            // In a real system, you'd trigger a cloud function to resolve the outcome later.
+            // For now, we'll manually simulate this with the feedback buttons.
 
             const auditLogData = {
                 userId: userProfile.id,
                 action: 'prediction_request',
-                details: `Game: VIP Slip, Prediction: ${JSON.stringify(result)}`,
-                timestamp: timestamp,
+                details: `Game: VIP Slip, Prediction ID: ${newPredictionRef.id}`,
+                timestamp: serverTimestamp(),
                 ipAddress: 'not_collected',
             };
             addDoc(collection(firestore, 'auditlogs'), auditLogData)
@@ -109,26 +118,48 @@ export default function VipSlipPage() {
 
         } catch (error) {
             console.error("Failed to get VIP slip:", error);
+            toast({
+                variant: 'destructive',
+                title: 'Error',
+                description: 'Could not generate VIP slip. Please try again.',
+            });
         } finally {
             setIsLoading(false);
         }
     };
     
-    const handleFeedback = async (feedback: 'won' | 'lost') => {
-        if (!prediction) return;
+    // This is now a simulation of the backend process that resolves game outcomes.
+    const handleSimulateOutcome = async (outcome: 'won' | 'lost') => {
+        if (!prediction || !userProfile) return;
+
+        // Find the prediction document in Firestore to get its ID
+        // Note: This is inefficient. In a real app, we'd store the prediction ID in the component state.
+        // For this prototype, we'll find it.
+        const predictionsRef = collection(firestore, 'users', userProfile.id, 'predictions');
+        const q = query(predictionsRef, where("predictionData", "==", prediction.matches), where("status", "==", "pending"), limit(1));
+        const predictionSnapshot = await getDocs(q);
+
+        if (predictionSnapshot.empty) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not find the original prediction to resolve.' });
+            return;
+        }
+
+        const predictionDoc = predictionSnapshot.docs[0];
+
         setFeedbackSent(true);
-        toast({ title: 'Thank you!', description: 'Your feedback helps us improve.' });
+        toast({ title: 'Resolving Slip...', description: `Marking slip as ${outcome}.` });
+        
         try {
-            await adaptPredictionsBasedOnFeedback({
-                gameType: 'vip-slip',
-                predictionData: JSON.stringify(prediction),
-                feedback: feedback,
+            await resolveVipSlipOutcome({
+                predictionId: predictionDoc.id,
+                userId: userProfile.id,
+                outcome: outcome,
             });
+            toast({ title: 'Success!', description: `The slip has been resolved as ${outcome}.` });
         } catch (error) {
-            console.error("Failed to send feedback:", error);
-            // Optionally, revert feedbackSent state and show an error toast
+            console.error("Failed to resolve outcome:", error);
             setFeedbackSent(false);
-            toast({ variant: 'destructive', title: 'Error', description: 'Could not submit feedback.' });
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not resolve the slip outcome.' });
         }
     };
 
@@ -233,17 +264,17 @@ export default function VipSlipPage() {
                         </Button>
                     </div>
                     {prediction && (
-                        <div className="w-full text-center space-y-3 pt-4">
+                        <div className="w-full text-center space-y-3 pt-4 border-t mt-4">
                             {!feedbackSent ? (
                                 <div className="animate-in fade-in-50 space-y-2">
-                                    <p className="text-sm font-semibold">Did you win?</p>
+                                    <p className="text-sm font-semibold">[Admin Simulation: Resolve Slip Outcome]</p>
                                     <div className="flex justify-center gap-2">
-                                        <Button variant="outline" size="sm" onClick={() => handleFeedback('won')}>Yes</Button>
-                                        <Button variant="outline" size="sm" onClick={() => handleFeedback('lost')}>No</Button>
+                                        <Button variant="outline" size="sm" onClick={() => handleSimulateOutcome('won')}>Simulate WIN</Button>
+                                        <Button variant="outline" size="sm" onClick={() => handleSimulateOutcome('lost')}>Simulate LOSS (Refund Round)</Button>
                                     </div>
                                 </div>
                             ) : (
-                                 <p className="text-sm text-success font-semibold animate-in fade-in-50">Thanks for your feedback!</p>
+                                 <p className="text-sm text-success font-semibold animate-in fade-in-50">Slip has been resolved!</p>
                             )}
                             <p className="text-xs text-muted-foreground">{prediction.disclaimer}</p>
                         </div>
@@ -253,3 +284,5 @@ export default function VipSlipPage() {
         </div>
     );
 }
+
+    

@@ -1,59 +1,99 @@
+
 'use server';
 /**
- * @fileOverview A flow to adapt game prediction models based on user feedback for games on the 1xBet platform.
+ * @fileOverview This flow resolves the outcome of a VIP slip, updates its status, and refunds the user a round if the slip was lost.
  *
- * - adaptPredictionsBasedOnFeedback - A function that handles the adaptation of prediction models based on feedback.
- * - AdaptPredictionsBasedOnFeedbackInput - The input type for the adaptPredictionsBasedOnFeedback function.
- * - AdaptPredictionsBasedOnFeedbackOutput - The return type for the adaptPredictionsBasedOnFeedback function.
+ * - resolveVipSlipOutcome - The main function to resolve a VIP slip.
+ * - ResolveVipSlipOutcomeInput - The input type for the function.
+ * - ResolveVipSlipOutcomeOutput - The return type for the function.
  */
 
-import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
+import { ai } from '@/ai/genkit';
+import { z } from 'genkit';
+import { firestore } from '@/firebase/server-init';
+import { doc, getDoc, updateDoc, increment, serverTimestamp, addDoc, collection } from 'firebase/firestore';
 
-const promptText = `You are an AI model adaptation expert for PredictPro, and you are HARD-LOCKED to the 1xBet platform. You MUST NOT process feedback for any other platform.
-
-You will receive game prediction data and user feedback (won or lost). Based on this feedback, you will adapt the prediction model to improve future predictions for the specified game type on 1xBet.
-
-Game Type: {{{gameType}}}
-Prediction Data: {{{predictionData}}}
-Feedback: {{{feedback}}}
-
-Provide a confirmation message that the model has been updated for 1xBet.`;
-
-
-const AdaptPredictionsBasedOnFeedbackInputSchema = z.object({
-  gameType: z.enum(['aviator', 'crash', 'gems-mines', 'vip-slip']).describe('The type of game for which the prediction is made.'),
-  predictionData: z.string().describe('The prediction data that was provided to the user.'),
-  feedback: z.enum(['won', 'lost']).describe('The feedback provided by the user on the prediction.'),
+const ResolveVipSlipOutcomeInputSchema = z.object({
+  predictionId: z.string().describe('The ID of the prediction document to resolve.'),
+  userId: z.string().describe('The ID of the user who owns the prediction.'),
+  outcome: z.enum(['won', 'lost']).describe('The final outcome of the VIP slip.'),
 });
-export type AdaptPredictionsBasedOnFeedbackInput = z.infer<typeof AdaptPredictionsBasedOnFeedbackInputSchema>;
+export type ResolveVipSlipOutcomeInput = z.infer<typeof ResolveVipSlipOutcomeInputSchema>;
 
-const AdaptPredictionsBasedOnFeedbackOutputSchema = z.object({
-  modelUpdateConfirmation: z.string().describe('Confirmation that the model has been updated based on the feedback.'),
+const ResolveVipSlipOutcomeOutputSchema = z.object({
+  success: z.boolean(),
+  message: z.string(),
 });
-export type AdaptPredictionsBasedOnFeedbackOutput = z.infer<typeof AdaptPredictionsBasedOnFeedbackOutputSchema>;
+export type ResolveVipSlipOutcomeOutput = z.infer<typeof ResolveVipSlipOutcomeOutputSchema>;
 
-export async function adaptPredictionsBasedOnFeedback(input: AdaptPredictionsBasedOnFeedbackInput): Promise<AdaptPredictionsBasedOnFeedbackOutput> {
-  return adaptPredictionsBasedOnFeedbackFlow(input);
+export async function resolveVipSlipOutcome(input: ResolveVipSlipOutcomeInput): Promise<ResolveVipSlipOutcomeOutput> {
+  return resolveVipSlipOutcomeFlow(input);
 }
 
-const adaptPredictionsBasedOnFeedbackFlow = ai.defineFlow(
+const resolveVipSlipOutcomeFlow = ai.defineFlow(
   {
-    name: 'adaptPredictionsBasedOnFeedbackFlow',
-    inputSchema: AdaptPredictionsBasedOnFeedbackInputSchema,
-    outputSchema: AdaptPredictionsBasedOnFeedbackOutputSchema,
+    name: 'resolveVipSlipOutcomeFlow',
+    inputSchema: ResolveVipSlipOutcomeInputSchema,
+    outputSchema: ResolveVipSlipOutcomeOutputSchema,
   },
-  async input => {
-    
-    const prompt = ai.definePrompt({
-      name: 'adaptPredictionsBasedOnFeedbackPrompt',
-      input: {schema: AdaptPredictionsBasedOnFeedbackInputSchema},
-      output: {schema: AdaptPredictionsBasedOnFeedbackOutputSchema},
-      prompt: promptText,
-      model: 'googleai/gemini-2.5-flash',
-    });
+  async ({ predictionId, userId, outcome }) => {
+    try {
+      const predictionRef = doc(firestore, 'users', userId, 'predictions', predictionId);
+      const predictionSnap = await getDoc(predictionRef);
 
-    const {output} = await prompt(input);
-    return output!;
+      if (!predictionSnap.exists()) {
+        throw new Error('Prediction not found.');
+      }
+
+      const prediction = predictionSnap.data();
+
+      // 1. Update the prediction status
+      await updateDoc(predictionRef, {
+        status: outcome,
+        resolvedAt: serverTimestamp(),
+      });
+
+      // 2. If lost, refund the round and send a notification
+      if (outcome === 'lost' && prediction.licenseId) {
+        const licenseRef = doc(firestore, 'users', userId, 'user_licenses', prediction.licenseId);
+        
+        // Use increment to safely add a round back
+        await updateDoc(licenseRef, {
+          roundsRemaining: increment(1),
+          isActive: true, // Ensure license is active again if it expired due to this round
+        });
+
+        // 3. Create a notification for the user
+        const notificationMessage = `Yesterday's VIP slip was not successful. As a token of our commitment, we have refunded your used round.`;
+        const notificationsRef = collection(firestore, 'notifications');
+        await addDoc(notificationsRef, {
+            message: notificationMessage,
+            targetAudience: 'user', // Specific to one user
+            userId: userId,
+            senderId: 'SYSTEM',
+            senderEmail: 'support@predictpro.com',
+            createdAt: serverTimestamp(),
+        });
+
+        return {
+          success: true,
+          message: `Prediction ${predictionId} marked as 'lost'. User's round has been refunded and they have been notified.`,
+        };
+      }
+
+      return {
+        success: true,
+        message: `Prediction ${predictionId} marked as '${outcome}'. No refund necessary.`,
+      };
+
+    } catch (error: any) {
+      console.error("Error in resolveVipSlipOutcomeFlow: ", error);
+      return {
+        success: false,
+        message: error.message || 'An unexpected error occurred.',
+      };
+    }
   }
 );
+
+    
