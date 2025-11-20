@@ -93,25 +93,8 @@ export async function generateGamePredictions(
   return generateGamePredictionsFlow(input);
 }
 
-const generateGamePredictionsFlow = ai.defineFlow(
-  {
-    name: 'generateGamePredictionsFlow',
-    inputSchema: GenerateGamePredictionsInputSchema,
-    outputSchema: GenerateGamePredictionsOutputSchema,
-  },
-  async (input) => {
-    
-    if (input.gameType === 'gems-mines') {
-      const seed = Math.random();
-      const numMines = Math.floor(Math.random() * 6) + 3; // 3 to 8 mines
-      const patternData = await generateGamePattern({ seed, gridSize: 25, numMines });
-      return {
-        predictionData: patternData,
-        disclaimer: '⚠ Predictions are approximations and not guaranteed.',
-      };
-    }
 
-    const promptText = `You are the Prediction Engine for PredictPro, and you are HARD-LOCKED to the 1xBet platform. You MUST NOT generate predictions for any other platform. If asked about another platform, you MUST respond with: "This action is restricted. An alert has been sent to an administrator."
+const promptText = `You are the Prediction Engine for PredictPro, and you are HARD-LOCKED to the 1xBet platform. You MUST NOT generate predictions for any other platform. If asked about another platform, you MUST respond with: "This action is restricted. An alert has been sent to an administrator."
 
 ACCURACY POLICY: You MUST NEVER claim "guaranteed wins", "100% accuracy", "fixed matches", or "sure bets". All predictions are estimations based on pattern analysis and may not always be correct.
 
@@ -129,14 +112,33 @@ Provide the predictionData based on the game type, using realistic values for 1x
 The output must be a JSON object that strictly conforms to the output schema. Ensure you include the mandatory disclaimer: "⚠ Predictions are approximations and not guaranteed."
 `;
 
-    const prompt = ai.definePrompt({
-      name: 'generateGamePredictionsPrompt',
-      input: {schema: GenerateGamePredictionsInputSchema},
-      output: {schema: GenerateGamePredictionsOutputSchema},
-      prompt: promptText,
-    });
+const gamePredictionPrompt = ai.definePrompt({
+    name: 'generateGamePredictionsPrompt',
+    input: {schema: GenerateGamePredictionsInputSchema},
+    output: {schema: GenerateGamePredictionsOutputSchema},
+    prompt: promptText,
+});
+
+
+const generateGamePredictionsFlow = ai.defineFlow(
+  {
+    name: 'generateGamePredictionsFlow',
+    inputSchema: GenerateGamePredictionsInputSchema,
+    outputSchema: GenerateGamePredictionsOutputSchema,
+  },
+  async (input) => {
     
-    const {output} = await prompt(input);
+    if (input.gameType === 'gems-mines') {
+      const seed = Math.random();
+      const numMines = Math.floor(Math.random() * 6) + 3; // 3 to 8 mines
+      const patternData = await generateGamePattern({ seed, gridSize: 25, numMines });
+      return {
+        predictionData: patternData,
+        disclaimer: '⚠ Predictions are approximations and not guaranteed.',
+      };
+    }
+    
+    const {output} = await gamePredictionPrompt(input);
     return output!;
   }
 );
