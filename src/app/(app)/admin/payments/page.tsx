@@ -1,9 +1,10 @@
+
 'use client';
 
 import { useState } from 'react';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { useFirestore, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
-import { collection, doc, runTransaction, serverTimestamp, query, where } from 'firebase/firestore';
+import { collection, doc, runTransaction, serverTimestamp, query, where, collectionGroup } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from '@/components/ui/button';
@@ -49,7 +50,8 @@ function VerificationCard({ transaction, onUpdate }: { transaction: Transaction,
         setIsProcessing(true);
 
         const transactionLogic = async (t: any) => {
-            const transactionRef = doc(firestore, 'transactions', transaction.id);
+            // Note: The transaction is in a sub-collection now.
+            const transactionRef = doc(firestore, 'users', transaction.userId, 'transactions', transaction.id);
             const licenseRef = doc(firestore, 'users', transaction.userId, 'user_licenses', transaction.licenseId);
             const auditLogRef = doc(collection(firestore, 'auditlogs'));
 
@@ -93,7 +95,7 @@ function VerificationCard({ transaction, onUpdate }: { transaction: Transaction,
             })
             .catch((error: any) => {
                 errorEmitter.emit('permission-error', new FirestorePermissionError({
-                    path: `transactions/${transaction.id} and subcollection documents`,
+                    path: `users/${transaction.userId}/transactions/${transaction.id}`,
                     operation: 'write',
                     requestResourceData: { transactionId: transaction.id, action }
                 }));
@@ -149,9 +151,10 @@ function VerificationCard({ transaction, onUpdate }: { transaction: Transaction,
 export default function PaymentsAdminPage() {
     const firestore = useFirestore();
     
+    // Use a collection group query to find pending transactions across all users.
     const pendingTransactionsQuery = useMemoFirebase(() => {
         if (!firestore) return null;
-        return query(collection(firestore, 'transactions'), where('status', '==', 'pending'));
+        return query(collectionGroup(firestore, 'transactions'), where('status', '==', 'pending'));
     }, [firestore]);
 
     const { data: pendingTransactions, isLoading, forceRefetch } = useCollection<Transaction>(pendingTransactionsQuery);
@@ -205,3 +208,5 @@ export default function PaymentsAdminPage() {
         </Card>
     );
 }
+
+    

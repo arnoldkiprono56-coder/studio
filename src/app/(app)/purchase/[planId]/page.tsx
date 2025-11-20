@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -9,7 +10,7 @@ import { doc, collection, writeBatch, serverTimestamp, runTransaction } from 'fi
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, CreditCard, ShieldCheck, Tag, CircleCheck, Loader2 } from 'lucide-react';
+import { ArrowLeft, ShieldCheck, Tag, Loader2 } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { Textarea } from '@/components/ui/textarea';
@@ -86,8 +87,6 @@ export default function PurchasePage() {
         setIsProcessing(true);
 
         try {
-            const transactionId = `txn_purchase_${Date.now()}`;
-
             await runTransaction(firestore, async (transaction) => {
                 const userRef = doc(firestore, 'users', userProfile.id);
                 const userSnap = await transaction.get(userRef);
@@ -110,8 +109,9 @@ export default function PurchasePage() {
                 };
                 transaction.set(licenseRef, licensePayload);
 
-                // 2. Create a new payment transaction document
-                const transactionRef = doc(firestore, 'transactions', transactionId);
+                // 2. Create a new payment transaction document in the user's subcollection
+                const transactionId = `txn_purchase_${Date.now()}`;
+                const transactionRef = doc(firestore, 'users', userProfile.id, 'transactions', transactionId);
                 const transactionPayload = {
                     id: transactionId,
                     userId: userProfile.id,
@@ -133,28 +133,27 @@ export default function PurchasePage() {
                 const isFirstPurchase = !(currentUserData?.hasPurchased);
                 if (isFirstPurchase && currentUserData?.referredBy) {
                      const referrerRef = doc(firestore, 'users', currentUserData.referredBy);
-                    // No need to get and check existence inside a transaction, it's optimistic
-                    // Just queue up the updates.
-                    const commissionTxnId = `txn_commission_${Date.now()}`;
-                    const commissionTxnRef = doc(firestore, 'transactions', commissionTxnId);
-                    const commissionPayload = {
-                        id: commissionTxnId,
-                        userId: currentUserData.referredBy,
-                        type: 'commission',
-                        description: `Referral commission from ${userProfile.email}`,
-                        amount: COMMISSION_AMOUNT,
-                        currency: 'KES',
-                        status: 'completed',
-                        createdAt: serverTimestamp(),
-                    };
-                    transaction.set(commissionTxnRef, commissionPayload);
-
-                    // Update referrer's balance by getting current and adding to it
-                    const referrerSnap = await transaction.get(referrerRef);
+                     const referrerSnap = await transaction.get(referrerRef);
+                    
                     if(referrerSnap.exists()){
                         const referrerData = referrerSnap.data();
                         const newBalance = (referrerData.balance || 0) + COMMISSION_AMOUNT;
                         transaction.update(referrerRef, { balance: newBalance });
+
+                        // Create commission transaction for the referrer
+                        const commissionTxnId = `txn_commission_${Date.now()}`;
+                        const commissionTxnRef = doc(firestore, 'users', currentUserData.referredBy, 'transactions', commissionTxnId);
+                        const commissionPayload = {
+                            id: commissionTxnId,
+                            userId: currentUserData.referredBy,
+                            type: 'commission',
+                            description: `Referral commission from ${userProfile.email}`,
+                            amount: COMMISSION_AMOUNT,
+                            currency: 'KES',
+                            status: 'completed',
+                            createdAt: serverTimestamp(),
+                        };
+                        transaction.set(commissionTxnRef, commissionPayload);
                     }
                     
                     transaction.update(userRef, { hasPurchased: true });
@@ -167,7 +166,7 @@ export default function PurchasePage() {
         } catch (error: any) {
              if (error.code === 'permission-denied') {
                 errorEmitter.emit('permission-error', new FirestorePermissionError({
-                    path: 'transactions', // This is a transaction, path is complex.
+                    path: `users/${userProfile.id}/transactions`, // Simplified path for the error
                     operation: 'write',
                     requestResourceData: { planId, userId: userProfile.id }
                 }));
@@ -254,3 +253,5 @@ export default function PurchasePage() {
         </div>
     )
 }
+
+    

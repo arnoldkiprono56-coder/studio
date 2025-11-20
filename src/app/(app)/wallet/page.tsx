@@ -4,7 +4,7 @@
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { useProfile } from '@/context/profile-context';
 import { useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, query, where } from 'firebase/firestore';
+import { collection, query } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -38,9 +38,9 @@ export default function WalletPage() {
 
     const transactionsQuery = useMemoFirebase(() => {
         if (!userProfile?.id || !firestore) return null;
+        // Query the user's sub-collection for transactions
         return query(
-            collection(firestore, 'transactions'),
-            where('userId', '==', userProfile.id)
+            collection(firestore, 'users', userProfile.id, 'transactions')
         );
     }, [userProfile?.id, firestore]);
 
@@ -144,3 +144,5 @@ export default function WalletPage() {
         </div>
     );
 }
+
+    

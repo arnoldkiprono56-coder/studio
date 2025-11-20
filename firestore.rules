@@ -30,6 +30,10 @@ service cloud.firestore {
     match /{path=**}/predictions/{predictionId} {
       allow list: if isActualAdmin();
     }
+    match /{path=**}/transactions/{transactionId} {
+      allow list: if isActualAdmin();
+    }
+
 
     // User profiles can be read by their owner or an admin.
     // They can be listed only by admins.
@@ -53,6 +57,10 @@ service cloud.firestore {
       match /predictions/{predictionId} {
           allow read, write: if isOwner(userId) || isActualAdmin();
       }
+      
+      match /transactions/{transactionId} {
+          allow read, write: if isOwner(userId) || isActualAdmin();
+      }
     }
     
     // The /admins collection is no longer used for checking admin status.
@@ -65,10 +73,7 @@ service cloud.firestore {
     // Admins can list all transactions. Regular users can only get their own.
     // Transactions cannot be updated or deleted by clients directly.
     match /transactions/{transactionId} {
-      allow get: if isUser() && (isOwner(get(/databases/$(database)/documents/transactions/$(transactionId)).data.userId) || isActualAdmin());
-      allow list: if isActualAdmin();
-      allow create: if isUser();
-      allow update, delete: if false; // Should be updated by backend webhook or trusted server process only
+      allow get, list, create, update, delete: if false; // This collection is no longer used.
     }
 
     // Audit logs can be created by any authenticated user.
@@ -105,3 +110,5 @@ service cloud.firestore {
     }
   }
 }
+
+    
