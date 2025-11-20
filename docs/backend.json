@@ -280,6 +280,59 @@
         "userSubmittedTxId"
       ]
     },
+    "PendingPayment": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "PendingPayment",
+      "type": "object",
+      "description": "A copy of a transaction document, placed in a global queue for admin verification.",
+      "properties": {
+         "id": {
+          "type": "string",
+          "description": "The ID of the original transaction document."
+        },
+        "userId": {
+          "type": "string"
+        },
+         "userEmail": {
+          "type": "string"
+        },
+        "licenseId": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "userClaimedAmount": {
+          "type": "number"
+        },
+        "currency": {
+          "type": "string"
+        },
+        "userSubmittedTxId": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["pending"]
+        },
+         "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "userEmail",
+        "licenseId",
+        "userClaimedAmount",
+        "currency",
+        "status",
+        "description",
+        "userSubmittedTxId",
+        "createdAt"
+      ]
+    },
     "Plan": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Plan",
@@ -497,6 +550,15 @@
               "description": "Unique identifier for the transaction."
             }
           ]
+        }
+      },
+       {
+        "path": "/pending_payments/{paymentId}",
+        "definition": {
+          "entityName": "PendingPayment",
+          "schema": { "$ref": "#/backend/entities/PendingPayment" },
+          "description": "A global queue for pending payment verifications. Admins read from this collection.",
+          "params": [{ "name": "paymentId", "description": "The ID of the pending payment, same as the transaction ID." }]
         }
       },
       {

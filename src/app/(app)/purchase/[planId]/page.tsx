@@ -102,34 +102,53 @@ export default function PurchasePage() {
     const processNormalPurchase = async (plan: Plan, txId: string) => {
         if (!firestore || !userProfile) return;
         
-        await runTransaction(firestore, async (t) => {
-            const licenseId = `${plan.id}-${userProfile.id}`;
-            const licenseRef = doc(firestore, 'users', userProfile.id, 'user_licenses', licenseId);
-            const licensePayload = {
-                id: licenseId,
-                userId: userProfile.id,
-                gameType: plan.name,
-                roundsRemaining: plan.rounds,
-                paymentVerified: false,
-                isActive: false,
-                createdAt: serverTimestamp(),
-            };
-            t.set(licenseRef, licensePayload);
+        const batch = writeBatch(firestore);
 
-            const transactionRef = doc(collection(firestore, 'users', userProfile.id, 'transactions'));
-            const transactionPayload = {
-                id: transactionRef.id,
-                userId: userProfile.id,
-                licenseId: licenseId,
-                userClaimedAmount: plan.price,
-                currency: plan.currency,
-                userSubmittedTxId: txId,
-                status: 'pending',
-                type: 'purchase',
-                description: `Purchase of ${plan.name} license`,
-                createdAt: serverTimestamp(),
-            };
-            t.set(transactionRef, transactionPayload);
+        // Create a new license document (inactive)
+        const licenseId = `${plan.id}-${userProfile.id}`;
+        const licenseRef = doc(firestore, 'users', userProfile.id, 'user_licenses', licenseId);
+        const licensePayload = {
+            id: licenseId,
+            userId: userProfile.id,
+            gameType: plan.name,
+            roundsRemaining: plan.rounds,
+            paymentVerified: false,
+            isActive: false,
+            createdAt: serverTimestamp(),
+        };
+        batch.set(licenseRef, licensePayload);
+
+        // Create the user's transaction document
+        const transactionRef = doc(collection(firestore, 'users', userProfile.id, 'transactions'));
+        const transactionPayload = {
+            id: transactionRef.id,
+            userId: userProfile.id,
+            licenseId: licenseId,
+            userClaimedAmount: plan.price,
+            currency: plan.currency,
+            userSubmittedTxId: txId,
+            status: 'pending',
+            type: 'purchase',
+            description: `Purchase of ${plan.name} license`,
+            createdAt: serverTimestamp(),
+        };
+        batch.set(transactionRef, transactionPayload);
+        
+        // Create a document in the global 'pending_payments' queue for admins
+        const pendingPaymentRef = doc(firestore, 'pending_payments', transactionRef.id);
+        const pendingPaymentPayload = {
+            ...transactionPayload, // Copy all details
+            userEmail: userProfile.email,
+        };
+        batch.set(pendingPaymentRef, pendingPaymentPayload);
+
+        await batch.commit().catch(error => {
+            errorEmitter.emit('permission-error', new FirestorePermissionError({
+                path: 'pending_payments',
+                operation: 'create',
+                requestResourceData: pendingPaymentPayload,
+            }));
+            throw error; // Re-throw to be caught by the calling function
         });
     };
 

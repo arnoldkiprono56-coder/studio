@@ -4,7 +4,7 @@
 import { useState } from 'react';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { useFirestore, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
-import { collection, doc, runTransaction, serverTimestamp, query, where, collectionGroup } from 'firebase/firestore';
+import { collection, doc, runTransaction, serverTimestamp, query, deleteDoc, orderBy } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from '@/components/ui/button';
@@ -12,17 +12,17 @@ import { useToast } from '@/hooks/use-toast';
 import { AlertCircle, CreditCard, Check, X, Loader2 } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
 import { useProfile } from '@/context/profile-context';
 
-interface Transaction {
-    id: string;
+interface PendingPayment {
+    id: string; // This will be the ID of the transaction document
     userId: string;
+    userEmail: string;
     licenseId: string;
     userClaimedAmount?: number;
     currency: string;
     userSubmittedTxId: string;
-    status: 'pending' | 'verified' | 'failed' | 'completed';
+    status: 'pending';
     createdAt: any;
     description: string;
 }
@@ -33,29 +33,30 @@ export default function PaymentsAdminPage() {
     const { toast } = useToast();
     const [processingId, setProcessingId] = useState<string | null>(null);
     
-    // Use a collection group query to find pending transactions across all users.
-    const pendingTransactionsQuery = useMemoFirebase(() => {
+    // Query the new top-level 'pending_payments' collection
+    const pendingPaymentsQuery = useMemoFirebase(() => {
         if (!firestore) return null;
-        return query(collectionGroup(firestore, 'transactions'), where('status', '==', 'pending'));
+        return query(collection(firestore, 'pending_payments'), orderBy('createdAt', 'asc'));
     }, [firestore]);
 
-    const { data: pendingTransactions, isLoading, forceRefetch } = useCollection<Transaction>(pendingTransactionsQuery);
+    const { data: pendingPayments, isLoading, forceRefetch } = useCollection<PendingPayment>(pendingPaymentsQuery);
 
-    const handleVerification = async (transaction: Transaction, action: 'approve' | 'reject') => {
+    const handleVerification = async (payment: PendingPayment, action: 'approve' | 'reject') => {
         if (!firestore || !userProfile) return;
 
-        setProcessingId(transaction.id);
+        setProcessingId(payment.id);
 
         const transactionLogic = async (t: any) => {
-            const transactionRef = doc(firestore, 'users', transaction.userId, 'transactions', transaction.id);
-            const licenseRef = doc(firestore, 'users', transaction.userId, 'user_licenses', transaction.licenseId);
+            const userTransactionRef = doc(firestore, 'users', payment.userId, 'transactions', payment.id);
+            const pendingPaymentRef = doc(firestore, 'pending_payments', payment.id); // Ref to the doc in the queue
+            const licenseRef = doc(firestore, 'users', payment.userId, 'user_licenses', payment.licenseId);
             const auditLogRef = doc(collection(firestore, 'auditlogs'));
 
             if (action === 'approve') {
-                t.update(transactionRef, {
+                t.update(userTransactionRef, {
                     status: 'verified',
-                    finalAmount: transaction.userClaimedAmount,
-                    finalTxId: transaction.userSubmittedTxId,
+                    finalAmount: payment.userClaimedAmount,
+                    finalTxId: payment.userSubmittedTxId,
                 });
                 t.update(licenseRef, {
                     paymentVerified: true,
@@ -63,21 +64,24 @@ export default function PaymentsAdminPage() {
                 });
                 t.set(auditLogRef, {
                     action: 'payment_verified',
-                    userId: transaction.userId,
-                    details: `Admin ${userProfile.email} approved payment for transaction ${transaction.id}.`,
+                    userId: payment.userId,
+                    details: `Admin ${userProfile.email} approved payment for transaction ${payment.id}.`,
                     timestamp: serverTimestamp(),
                     ipAddress: 'not_collected',
                 });
             } else { // Reject
-                 t.update(transactionRef, { status: 'failed' });
+                 t.update(userTransactionRef, { status: 'failed' });
                  t.set(auditLogRef, {
                     action: 'payment_rejected',
-                    userId: transaction.userId,
-                    details: `Admin ${userProfile.email} rejected payment for transaction ${transaction.id}.`,
+                    userId: payment.userId,
+                    details: `Admin ${userProfile.email} rejected payment for transaction ${payment.id}.`,
                     timestamp: serverTimestamp(),
                     ipAddress: 'not_collected',
                 });
             }
+
+            // In all cases, delete the document from the pending queue
+            t.delete(pendingPaymentRef);
         };
 
         try {
@@ -86,9 +90,9 @@ export default function PaymentsAdminPage() {
             if (forceRefetch) forceRefetch();
         } catch (error: any) {
             errorEmitter.emit('permission-error', new FirestorePermissionError({
-                path: `users/${transaction.userId}/transactions/${transaction.id}`,
+                path: `pending_payments/${payment.id}`,
                 operation: 'write',
-                requestResourceData: { transactionId: transaction.id, action }
+                requestResourceData: { transactionId: payment.id, action }
             }));
             toast({ variant: 'destructive', title: 'Error', description: 'Could not update transaction.' });
         } finally {
@@ -101,10 +105,10 @@ export default function PaymentsAdminPage() {
             <CardHeader>
                 <div className="flex items-center gap-2">
                     <CreditCard className="h-6 w-6 text-muted-foreground" />
-                    <CardTitle>Payment Verification</CardTitle>
+                    <CardTitle>Payment Verification Queue</CardTitle>
                 </div>
                 <CardDescription>
-                    Review and approve or reject pending user payments submitted via Transaction ID.
+                    Review and approve or reject pending user payments.
                 </CardDescription>
             </CardHeader>
             <CardContent>
@@ -112,7 +116,7 @@ export default function PaymentsAdminPage() {
                     <TableHeader>
                         <TableRow>
                             <TableHead>Date</TableHead>
-                            <TableHead>User Email (ID)</TableHead>
+                            <TableHead>User Email</TableHead>
                             <TableHead>Product</TableHead>
                             <TableHead>Submitted TX ID</TableHead>
                             <TableHead>Amount</TableHead>
@@ -126,13 +130,13 @@ export default function PaymentsAdminPage() {
                                     <TableCell colSpan={6}><Skeleton className="h-8 w-full" /></TableCell>
                                 </TableRow>
                             ))
-                        ) : pendingTransactions && pendingTransactions.length > 0 ? (
-                            pendingTransactions.map(tx => {
+                        ) : pendingPayments && pendingPayments.length > 0 ? (
+                            pendingPayments.map(tx => {
                                 const isProcessing = processingId === tx.id;
                                 return (
                                     <TableRow key={tx.id}>
                                         <TableCell>{tx.createdAt?.toDate().toLocaleDateString()}</TableCell>
-                                        <TableCell className="font-mono text-xs">{tx.userId}</TableCell>
+                                        <TableCell>{tx.userEmail}</TableCell>
                                         <TableCell>{tx.description}</TableCell>
                                         <TableCell className="font-mono">{tx.userSubmittedTxId}</TableCell>
                                         <TableCell>{formatCurrency(tx.userClaimedAmount || 0, tx.currency)}</TableCell>

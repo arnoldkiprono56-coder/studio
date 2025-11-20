@@ -108,16 +108,20 @@ service cloud.firestore {
         allow create: if isActualAdmin();
         allow update, delete: if isActualAdmin();
     }
+    
+    // New collection for pending payments queue. Only Admins can access.
+    // Authenticated users can create new entries.
+    match /pending_payments/{paymentId} {
+      allow create: if isUser();
+      allow read, list, update, delete: if isActualAdmin();
+    }
 
     // Pre-verified payments can be created, updated, deleted, and listed by admins.
     // Individual documents can be read by any authenticated user.
     match /preVerifiedPayments/{transactionId} {
       allow get: if isUser();
       allow create, update, delete: if isActualAdmin();
-    }
-     // Temporarily allow any authenticated user to list to fix the UI error.
-    match /preVerifiedPayments {
-        allow list: if isUser();
+      allow list: if isActualAdmin();
     }
   }
 }
