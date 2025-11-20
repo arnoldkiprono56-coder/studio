@@ -60,13 +60,15 @@ export default function PurchasePage() {
     const extractDetails = (message: string): { txId: string | null; amount: number | null } => {
         if (!message) return { txId: null, amount: null };
         
+        // Normalize the message: uppercase and remove extra spaces
         const cleanedMessage = message.replace(/\s+/g, ' ').trim().toUpperCase();
-        
-        // Match 10-character uppercase alphanumeric codes (M-Pesa format like SAK234...)
+
+        // Regex to find a 10-character alphanumeric code (typical for M-Pesa)
         const txIdMatch = cleanedMessage.match(/\b([A-Z0-9]{10})\b/);
         const txId = txIdMatch ? txIdMatch[0] : null;
 
-        const amountMatch = cleanedMessage.match(/(?:KES|KSH)\s?([\d,]+\.?\d*)/i);
+        // Regex to find amount, supporting formats like KES1,500.00 or Ksh 1500
+        const amountMatch = cleanedMessage.match(/(?:KES|KSH)\s?([\d,]+\.?\d*)/);
         let amount: number | null = null;
         if (amountMatch && amountMatch[1]) {
             amount = parseFloat(amountMatch[1].replace(/,/g, ''));
@@ -167,9 +169,9 @@ export default function PurchasePage() {
     const processNormalPurchase = async (txId: string, messageAmount: number | null) => {
         if (!firestore || !userProfile || !plan) throw new Error("Missing dependencies for purchase.");
 
-        await runTransaction(firestore, async (transaction) => {
+        await runTransaction(firestore, async (t) => {
             const userRef = doc(firestore, 'users', userProfile.id);
-            const userSnap = await transaction.get(userRef);
+            const userSnap = await t.get(userRef);
             if (!userSnap.exists()) {
                 throw new Error("User data not found.");
             }
@@ -185,7 +187,7 @@ export default function PurchasePage() {
                 isActive: false,
                 createdAt: serverTimestamp(),
             };
-            transaction.set(licenseRef, licensePayload);
+            t.set(licenseRef, licensePayload);
 
             // Correctly create a reference to a new document in the subcollection
             const transactionRef = doc(collection(firestore, 'users', userProfile.id, 'transactions'));
@@ -204,7 +206,7 @@ export default function PurchasePage() {
                 rawMessage: transactionMessage,
                 createdAt: serverTimestamp(),
             };
-            transaction.set(transactionRef, transactionPayload);
+            t.set(transactionRef, transactionPayload);
         });
     }
 
