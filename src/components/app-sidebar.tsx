@@ -78,7 +78,6 @@ const userNav = [
     { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/games', label: 'Games', icon: Gamepad2 },
     { href: '/licenses', label: 'My Licenses', icon: Ticket },
-    { href: '/wallet', label: 'Wallet', icon: Wallet },
     { href: '/profile', label: 'Profile', icon: User },
     { href: '/support', label: 'Support', icon: LifeBuoy },
 ];
