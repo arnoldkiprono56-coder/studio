@@ -129,7 +129,7 @@ export default function PurchasePage() {
                 router.push('/purchase/success');
             }
         } catch (error: any) {
-             if (error.code === 'permission-denied') {
+             if (error.code === 'permission-denied' || error.name === 'FirebaseError') {
                 errorEmitter.emit('permission-error', new FirestorePermissionError({
                     path: `users/${userProfile.id}/transactions`, // Simplified path for the error
                     operation: 'create',
@@ -328,5 +328,3 @@ export default function PurchasePage() {
         </div>
     )
 }
-
-    
