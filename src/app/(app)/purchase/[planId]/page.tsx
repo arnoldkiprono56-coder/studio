@@ -60,27 +60,19 @@ export default function PurchasePage() {
     const { data: plan, isLoading } = useDoc<Plan>(planDocRef);
 
     const extractDetails = (message: string): { txId: string | null; amount: number | null } => {
-        const cleanedMessage = message.replace(/\s+/g, ' ').trim();
-
-        // M-Pesa: Look for a 10-character uppercase alphanumeric code.
-        let mpesaMatch = cleanedMessage.match(/([A-Z0-9]{10})\sConfirmed/);
-        if (mpesaMatch) {
-            const txId = mpesaMatch[1];
-            let amountMatch = cleanedMessage.match(/Ksh([\d,]+\.\d{2})/);
-            const amount = amountMatch ? parseFloat(amountMatch[1].replace(/,/g, '')) : null;
-            return { txId, amount };
-        }
+        // Normalize the message: remove newlines, multiple spaces, and convert to uppercase
+        const cleanedMessage = message.replace(/\s+/g, ' ').toUpperCase().trim();
     
-        // Airtel Money: Look for a specific pattern.
-        let airtelMatch = cleanedMessage.match(/Transaction ID\s*([A-Za-z0-9]+)/);
-        if (airtelMatch) {
-            const txId = airtelMatch[1];
-            let amountMatch = cleanedMessage.match(/Amount\s*KES\s*([\d,]+\.\d{2})/);
-            const amount = amountMatch ? parseFloat(amountMatch[1].replace(/,/g, '')) : null;
-            return { txId, amount };
-        }
+        // M-Pesa: Look for a 10-character uppercase alphanumeric code that is a word on its own.
+        // This is a common pattern for M-Pesa transaction IDs (e.g., SAK1A2B3C4).
+        const mpesaMatch = cleanedMessage.match(/\b([A-Z0-9]{10})\b/);
+        const txId = mpesaMatch ? mpesaMatch[1] : null;
     
-        return { txId: null, amount: null };
+        // Extract amount: Look for KES/Ksh followed by a number.
+        const amountMatch = cleanedMessage.match(/(?:KES|KSH)\s?([\d,]+\.?\d*)/);
+        const amount = amountMatch ? parseFloat(amountMatch[1].replace(/,/g, '')) : null;
+    
+        return { txId, amount };
     };
 
     const handlePurchase = async () => {
@@ -94,6 +86,8 @@ export default function PurchasePage() {
             return;
         }
         
+        setIsProcessing(true); // Start loading animation
+
         const { txId, amount: messageAmount } = extractDetails(transactionMessage);
 
         if (!txId) {
@@ -102,10 +96,9 @@ export default function PurchasePage() {
                 title: 'Invalid Message',
                 description: 'Could not extract a valid Transaction ID from the message. Please paste the full, original message.'
             });
+            setIsProcessing(false); // Stop loading
             return;
         }
-
-        setIsProcessing(true);
 
         try {
             // Check for pre-verified payment first
@@ -148,7 +141,7 @@ export default function PurchasePage() {
                 toast({ variant: 'destructive', title: 'Purchase Failed', description: error.message || 'An unexpected error occurred.' });
             }
         } finally {
-            setIsProcessing(false);
+            setIsProcessing(false); // Stop loading animation
         }
     };
     
@@ -338,3 +331,5 @@ export default function PurchasePage() {
         </div>
     )
 }
+
+    
