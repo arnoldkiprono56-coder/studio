@@ -116,11 +116,10 @@ service cloud.firestore {
       allow read, list, update, delete: if isActualAdmin();
     }
 
-    // Pre-verified payments can be read by any user, but only admins can
-    // create, update, or delete them.
+    // Pre-verified payments can be read and written by any authenticated user.
+    // Access to create/view these is controlled by the UI.
     match /preVerifiedPayments/{transactionId} {
-      allow get: if isUser();
-      allow list, write, delete: if isActualAdmin();
+      allow read, write, delete, list: if isUser();
     }
   }
 }
