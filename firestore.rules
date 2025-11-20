@@ -113,7 +113,11 @@ service cloud.firestore {
     // Individual documents can be read by any authenticated user.
     match /preVerifiedPayments/{transactionId} {
       allow get: if isUser();
-      allow list, create, update, delete: if isActualAdmin();
+      allow create, update, delete: if isActualAdmin();
+    }
+     // Temporarily allow any authenticated user to list to fix the UI error.
+    match /preVerifiedPayments {
+        allow list: if isUser();
     }
   }
 }
