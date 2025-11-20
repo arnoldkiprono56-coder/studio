@@ -74,7 +74,7 @@ const gamePredictionPrompt = ai.definePrompt({
     input: {schema: GenerateGamePredictionsInputSchema},
     output: {schema: GenerateGamePredictionsOutputSchema},
     prompt: promptText,
-    model: 'googleai/gemini-2.5-flash',
+    model: 'googleai/gemini-2.5-pro',
 });
 
 
