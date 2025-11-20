@@ -20,6 +20,8 @@ Generate a VIP slip containing 3 to 5 high-confidence matches.
 
 STRICT RULES FOR SLIP:
 - Predictions are exclusively for 1xBet.
+- All matches MUST be from major, real-world football leagues (e.g., English Premier League, La Liga, Serie A, Bundesliga, Ligue 1, UEFA Champions League). Do NOT invent leagues or teams.
+- All matches MUST be for games scheduled for today or tomorrow.
 - All markets and odds must be realistic and valid for 1xBet.
 - Do not use unsafe markets like exact scores. Use markets like "Total Over/Under", "1X2", "Double Chance", "Both Teams to Score".
 - Odds for each match must be between 1.20 and 3.00.
