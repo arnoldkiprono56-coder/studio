@@ -14,6 +14,7 @@ import type { UserProfile } from '@/context/profile-context';
 
 const allAdminTabs = [
   { value: 'dashboard', label: 'Dashboard', href: '/admin' },
+  { value: 'user-lookup', label: 'User Lookup', href: '/admin/user-lookup' },
   { value: 'assistant', label: 'AI Assistant', href: '/admin/assistant' },
   { value: 'users', label: 'Users', href: '/admin/users' },
   { value: 'licenses', label: 'Licenses', href: '/admin/licenses' },
@@ -32,7 +33,9 @@ function AdminNav({ userProfile }: { userProfile: UserProfile | null }) {
     const getVisibleTabs = () => {
         if (!userProfile) return [];
         if (userProfile.role === 'Assistant') {
-            return allAdminTabs.filter(tab => tab.value !== 'users' && tab.value !== 'pre-verified-payments');
+            return allAdminTabs.filter(tab => 
+                ['dashboard', 'user-lookup', 'assistant', 'licenses', 'payments', 'support'].includes(tab.value)
+            );
         }
         return allAdminTabs;
     }
@@ -43,16 +46,35 @@ function AdminNav({ userProfile }: { userProfile: UserProfile | null }) {
         <div className="relative overflow-x-auto">
             <div className="flex gap-4 border-b">
                 {adminTabs.map(tab => {
-                    const isActive = pathname === tab.href || (pathname.startsWith(tab.href) && tab.href !== '/admin' && !pathname.startsWith('/admin/broadcasts'));
-                    
-                    if(tab.href === '/admin/broadcast' && pathname === '/admin/broadcasts') return null;
-                    if(tab.href === '/admin/broadcasts' && pathname === '/admin/broadcast') return null;
+                    const isActive = pathname === tab.href;
 
+                    if(tab.value === 'broadcast' && pathname.startsWith('/admin/broadcast')) return (
+                       <Link href={tab.href} key={tab.value} className={cn(
+                            "pb-3 px-1 border-b-2 text-sm font-medium whitespace-nowrap",
+                            pathname === '/admin/broadcast'
+                                ? "border-primary text-primary" 
+                                : "border-transparent text-muted-foreground hover:text-foreground"
+                        )}>
+                            {tab.label}
+                        </Link>
+                    )
+                     if(tab.value === 'broadcasts' && pathname.startsWith('/admin/broadcast')) return (
+                       <Link href={tab.href} key={tab.value} className={cn(
+                            "pb-3 px-1 border-b-2 text-sm font-medium whitespace-nowrap",
+                             pathname === '/admin/broadcasts'
+                                ? "border-primary text-primary" 
+                                : "border-transparent text-muted-foreground hover:text-foreground"
+                        )}>
+                            {tab.label}
+                        </Link>
+                    )
+                    
+                    if(pathname.startsWith('/admin/broadcast') && (tab.value !== 'broadcast' && tab.value !== 'broadcasts')) return null;
 
                     return (
                         <Link href={tab.href} key={tab.value} className={cn(
                             "pb-3 px-1 border-b-2 text-sm font-medium whitespace-nowrap",
-                            (isActive || pathname === tab.href)
+                            isActive
                                 ? "border-primary text-primary" 
                                 : "border-transparent text-muted-foreground hover:text-foreground"
                         )}>

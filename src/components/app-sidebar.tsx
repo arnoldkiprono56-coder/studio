@@ -27,7 +27,7 @@ import {
   LayoutDashboard,
   Users,
   Wallet,
-  Gift,
+  Search,
   User,
   Megaphone,
   Bot,
@@ -36,6 +36,7 @@ import { Skeleton } from './ui/skeleton';
 
 const superAdminNav = [
   { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/admin/user-lookup', label: 'User Lookup', icon: Search },
   { href: '/admin/assistant', label: 'AI Assistant', icon: Bot },
   { href: '/admin/users', label: 'Users', icon: Users },
   { href: '/admin/licenses', label: 'Licenses', icon: Ticket },
@@ -52,6 +53,7 @@ const superAdminNav = [
 
 const adminNav = [
   { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/admin/user-lookup', label: 'User Lookup', icon: Search },
   { href: '/admin/assistant', label: 'AI Assistant', icon: Bot },
   { href: '/admin/users', label: 'Users', icon: Users },
   { href: '/admin/licenses', label: 'Licenses', icon: Ticket },
@@ -65,6 +67,7 @@ const adminNav = [
 
 const assistantNav = [
   { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/admin/user-lookup', label: 'User Lookup', icon: Search },
   { href: '/admin/assistant', label: 'AI Assistant', icon: Bot },
   { href: '/admin/licenses', label: 'Licenses (Read)', icon: Ticket },
   { href: '/admin/payments', label: 'Payments (Read)', icon: CreditCard },
@@ -126,13 +129,16 @@ export function AppSidebar() {
             {navItems.map((item) => {
                 const Icon = item.icon;
                 
-                const isActive = pathname === item.href || (pathname.startsWith(item.href) && item.href !== '/admin' && item.href !== '/dashboard');
+                const isActive = pathname === item.href || (pathname.startsWith(item.href) && item.href !== '/admin' && item.href !== '/dashboard' && item.href !== '/admin/user-lookup');
+                
+                // Special handling for user-lookup to avoid it being active for /admin/users etc.
+                const isUserLookupActive = item.href === '/admin/user-lookup' && pathname === '/admin/user-lookup';
 
                 return (
                 <SidebarMenuItem key={item.label}>
                     <Link href={item.href}>
                     <SidebarMenuButton
-                        isActive={isActive}
+                        isActive={isActive || isUserLookupActive}
                         tooltip={item.label}
                     >
                         <Icon />
