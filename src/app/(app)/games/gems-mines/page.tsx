@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { Loader2, ArrowLeft, Gem, AlertCircle, Bomb } from "lucide-react";
+import { Loader2, ArrowLeft, Gem, AlertCircle } from "lucide-react";
 import { generateGamePredictions, GenerateGamePredictionsOutput } from '@/ai/flows/generate-game-predictions';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
@@ -19,7 +19,6 @@ const GRID_SIZE = 25;
 
 type GemsMinesPredictionData = {
     safeTileIndices: number[];
-    mineTileIndices: number[];
     risk: string;
 }
 
@@ -213,7 +212,6 @@ export default function GemsAndMinesPage() {
                             <div className='space-y-2 text-center'>
                                 <p className="text-muted-foreground font-semibold">💎 Mines &amp; Gems Prediction (1xBet)</p>
                                 <p>Safe Tiles (Gems): <span className='font-bold'>{gemsMinesData.safeTileIndices.length}</span></p>
-                                <p>Mines to Avoid: <span className='font-bold'>{gemsMinesData.mineTileIndices.length}</span></p>
                                 <p>Risk: <span className='font-bold'>{gemsMinesData.risk}</span></p>
                             </div>
                         ) : (
@@ -284,3 +282,4 @@ export default function GemsAndMinesPage() {
         </div>
     );
 }
+```
