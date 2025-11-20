@@ -196,14 +196,17 @@ export default function AviatorPage() {
                 </CardHeader>
                 <CardContent className="flex flex-col items-center justify-center gap-6 min-h-[200px]">
                     {isLoading || licensesLoading ? (
-                        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+                        <div className='text-center space-y-2'>
+                           <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto" />
+                           <p className='font-semibold text-muted-foreground'>Connecting to 1xBet servers...</p>
+                        </div>
                     ) : aviatorData ? (
                         <div className="text-center">
                             <p className="text-muted-foreground font-semibold">🎮 Aviator Prediction (1xBet)</p>
                             <p className="text-muted-foreground mt-2">Target Cashout</p>
                             <p className="text-6xl font-bold text-primary">{aviatorData.targetMultiplier}</p>
                             <p className="text-sm text-muted-foreground mt-2">Risk Level: {aviatorData.riskLevel}</p>
-                            <p className="text-sm text-muted-foreground">Round Confidence: {aviatorData.confidence}%</p>
+                            <p className="text-sm text-muted-foreground">Confidence: {aviatorData.confidence}%</p>
                         </div>
                     ) : (
                          <div className="text-center text-muted-foreground">
