@@ -22,6 +22,7 @@ Your persona depends on the chat type.
 Payment Information: Payments are accepted via MPESA (to 0786254674) and Airtel Money only.
 
 Chat Type: {{{chatType}}}
+Admin ID: {{{adminId}}}
 
 Personas:
 - system: You are an automated AI assistant. Be concise, helpful, and stick to facts about the PredictPro platform.
@@ -42,7 +43,7 @@ User: {{{message}}}
 
 Based on the persona for the given chat type and the conversation history, provide a helpful and relevant response to the user's latest message.
 Use your available tools if necessary to answer the user's question. If you use a tool that returns a markdown table, render that table directly in your response.
-If asked to create a pre-verified payment, you MUST ask for the admin's user ID to attribute the action correctly.
+If asked to create a pre-verified payment, you must use the provided Admin ID to attribute the action correctly. Do NOT ask for it.
 `;
 
 const GenerateSupportResponseInputSchema = z.object({
@@ -52,6 +53,7 @@ const GenerateSupportResponseInputSchema = z.object({
     isUser: z.boolean(),
     text: z.string(),
   })).describe('The conversation history.'),
+   adminId: z.string().optional().describe('The ID of the admin performing the action.'),
 });
 export type GenerateSupportResponseInput = z.infer<typeof GenerateSupportResponseInputSchema>;
 
@@ -71,16 +73,47 @@ const generateSupportResponseFlow = ai.defineFlow(
     outputSchema: GenerateSupportResponseOutputSchema,
   },
   async input => {
-    const prompt = ai.definePrompt({
-      name: 'generateSupportResponsePrompt',
-      input: {schema: GenerateSupportResponseInputSchema},
-      output: {schema: GenerateSupportResponseOutputSchema},
-      prompt: promptText,
-      tools: [getAllUsers, getAuditLogs, sendBroadcastMessage, getPreVerifiedPayments, changeUserRole, suspendUserAccount, activateLicense, createPreVerifiedPayment],
-      model: 'googleai/gemini-2.5-flash',
+    const model = 'googleai/gemini-2.5-pro';
+    const tools = [getAllUsers, getAuditLogs, sendBroadcastMessage, getPreVerifiedPayments, changeUserRole, suspendUserAccount, activateLicense, createPreVerifiedPayment];
+
+    const {
+      output,
+      history: responseHistory,
+    } = await ai.generate({
+      model: model,
+      tools: tools,
+      prompt: {
+        text: promptText,
+        variables: input,
+      },
+      history: input.history.map(m => ({
+        role: m.isUser ? 'user' : 'model',
+        content: [{ text: m.text }],
+      })),
+      output: {
+        schema: GenerateSupportResponseOutputSchema,
+      }
     });
 
-    const {output} = await prompt(input);
-    return output!;
+    if (output) {
+      return output;
+    }
+
+    // If there is no text output, it means the model used a tool.
+    // We need to call it again with the tool output to get a natural language response.
+    const finalResponse = await ai.generate({
+      model: model,
+      tools: tools,
+      prompt: {
+        text: promptText,
+        variables: input,
+      },
+      history: responseHistory,
+      output: {
+        schema: GenerateSupportResponseOutputSchema,
+      }
+    });
+
+    return finalResponse.output!;
   }
 );

@@ -1,8 +1,20 @@
-
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import {
+  collection,
+  query,
+  orderBy,
+  addDoc,
+  serverTimestamp,
+} from 'firebase/firestore';
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardDescription,
+} from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -15,11 +27,20 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { formatCurrency } from '@/lib/utils';
 import Link from 'next/link';
 import { useProfile } from '@/context/profile-context';
+import {
+  useFirestore,
+  useMemoFirebase,
+  errorEmitter,
+  FirestorePermissionError,
+  useCollection,
+} from '@/firebase';
 
 type Message = {
-    id: number;
-    text: string;
-    sender: 'user' | 'model';
+  id: string;
+  text: string;
+  sender: 'user' | 'model';
+  isUser: boolean;
+  createdAt: any;
 };
 
 // Helper component to render table from Markdown
@@ -59,21 +80,43 @@ const MarkdownTable = ({ children }: { children: React.ReactNode }) => {
 
 export default function AdminAssistantPage() {
     const { userProfile } = useProfile();
+    const firestore = useFirestore();
     const chatType = 'manager'; // Hard-coded for the admin assistant
     const scrollAreaRef = useRef<HTMLDivElement>(null);
     const [isLoading, setIsLoading] = useState(false);
+    const [input, setInput] = useState('');
 
-    const [messages, setMessages] = useState<Message[]>([
-        { id: 1, text: `Welcome, Admin. I am your platform management AI.
+    const messagesCollection = useMemoFirebase(() => {
+        if (!firestore || !userProfile?.id) return null;
+        return collection(firestore, 'users', userProfile.id, 'admin_chat_messages');
+    }, [firestore, userProfile?.id]);
+
+    const messagesQuery = useMemoFirebase(() => {
+        if (!messagesCollection) return null;
+        return query(messagesCollection, orderBy('createdAt', 'asc'));
+    }, [messagesCollection]);
+
+    const { data: messages, isLoading: messagesLoading } = useCollection<Message>(messagesQuery);
+    
+    useEffect(() => {
+        if (messages && messages.length === 0 && firestore && userProfile?.id) {
+             const welcomeMessage = {
+                text: `Welcome, Admin. I am your platform management AI.
 
 You can ask me to perform tasks like:
 - "Show me all available pre-verified credits."
 - "Add a pre-verified credit for transaction ID SBB123ABCDE with amount 1500."
 - "List all users who joined in the last 72 hours."
 
-How can I help?`, sender: 'model' }
-    ]);
-    const [input, setInput] = useState('');
+How can I help?`,
+                sender: 'model',
+                isUser: false,
+                createdAt: serverTimestamp(),
+            };
+            addDoc(collection(firestore, 'users', userProfile.id, 'admin_chat_messages'), welcomeMessage);
+        }
+    }, [messages, firestore, userProfile?.id]);
+
 
     const scrollToBottom = () => {
         setTimeout(() => {
@@ -85,38 +128,51 @@ How can I help?`, sender: 'model' }
     };
 
     const handleSendMessage = async () => {
-        if (input.trim() && !isLoading) {
-            let currentInput = input;
-            const userMessage: Message = { id: Date.now(), text: currentInput, sender: 'user' };
+        if (input.trim() && !isLoading && messagesCollection && userProfile?.id) {
+            const currentInput = input;
+            const userMessageData = {
+                text: currentInput,
+                sender: 'user' as const,
+                isUser: true,
+                createdAt: serverTimestamp(),
+            };
             
-            const conversationHistory = messages.map(m => ({
-                isUser: m.sender === 'user',
-                text: m.text
-            }));
-
-            // Inject the adminId if the createPreVerifiedPayment tool is likely to be called
-            if ((currentInput.toLowerCase().includes('pre-verified credit') || currentInput.toLowerCase().includes('add a credit')) && userProfile?.id) {
-                currentInput += ` (Admin ID: ${userProfile.id})`;
-            }
-            
-            setMessages(prev => [...prev, userMessage]);
             setInput('');
             setIsLoading(true);
             scrollToBottom();
 
+            await addDoc(messagesCollection, userMessageData);
+            
+            const conversationHistory = (messages || []).map(m => ({
+                isUser: m.sender === 'user',
+                text: m.text
+            }));
+            
             try {
                 const result = await generateSupportResponse({
                     message: currentInput,
                     chatType: chatType,
                     history: conversationHistory,
+                    adminId: userProfile.id,
                 });
                 
-                const aiMessage: Message = { id: Date.now() + 1, text: result.response, sender: 'model' };
-                setMessages(prev => [...prev, aiMessage]);
+                const aiMessageData = {
+                    text: result.response,
+                    sender: 'model' as const,
+                    isUser: false,
+                    createdAt: serverTimestamp(),
+                };
+                await addDoc(messagesCollection, aiMessageData);
+
             } catch (error) {
                 console.error("Failed to get AI response:", error);
-                const errorMessage: Message = { id: Date.now() + 1, text: "Sorry, I'm having trouble connecting. Please try again later.", sender: 'model' };
-                setMessages(prev => [...prev, errorMessage]);
+                const errorMessageData = {
+                    text: "Sorry, I'm having trouble connecting. Please try again later.",
+                    sender: 'model' as const,
+                    isUser: false,
+                    createdAt: serverTimestamp(),
+                };
+                await addDoc(messagesCollection, errorMessageData);
             } finally {
                 setIsLoading(false);
                 scrollToBottom();
@@ -148,18 +204,18 @@ How can I help?`, sender: 'model' }
                 <CardContent className="flex-1 p-0">
                     <ScrollArea className="h-full p-6" ref={scrollAreaRef}>
                         <div className="space-y-6">
-                            {messages.map((message) => (
+                            {(messages || []).map((message) => (
                                 <div key={message.id} className={cn(
                                     "flex items-start gap-3 w-full",
                                     message.sender === 'user' ? 'justify-end' : 'justify-start'
                                 )}>
                                      {message.sender === 'model' && (
-                                        <Avatar className="h-8 w-8 border flex-shrink-0">
+                                        <Avatar className="h-8 w-8 border flex-shrink-0 bg-primary/10 text-primary">
                                             <AvatarFallback><Bot className="h-4 w-4" /></AvatarFallback>
                                         </Avatar>
                                      )}
                                     <div className={cn(
-                                        "rounded-lg px-4 py-2 max-w-[90%] whitespace-pre-wrap",
+                                        "rounded-lg px-4 py-3 max-w-[90%] whitespace-pre-wrap shadow-sm",
                                         message.sender === 'user' ? 'bg-secondary text-secondary-foreground' : 'bg-muted'
                                     )}>
                                         <div className="prose prose-sm prose-invert max-w-none">
@@ -183,6 +239,7 @@ How can I help?`, sender: 'model' }
                                     <div className="rounded-lg px-4 py-2 bg-muted flex items-center">
                                         <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
                                     </div>
+
                                 </div>
                             )}
                         </div>
