@@ -111,9 +111,13 @@ service cloud.firestore {
 
     // Pre-verified payments can be managed by admins and read by users.
     match /preVerifiedPayments/{transactionId} {
-      allow read: if isUser(); // Users need to check if their txId exists
+      allow get: if isUser() || isActualAdmin(); // Allow users to get a specific doc, and admins too
       allow create, update, delete: if isActualAdmin();
-      allow list: if isActualAdmin();
+    }
+    
+    // Allow admins to LIST the entire collection
+    match /preVerifiedPayments {
+        allow list: if isActualAdmin();
     }
   }
 }
