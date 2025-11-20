@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -12,7 +13,6 @@ import { useFirestore, useMemoFirebase, errorEmitter, FirestorePermissionError }
 import { addDoc, collection, doc, query, where, updateDoc } from 'firebase/firestore';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import type { License } from '@/lib/types';
-import { adaptPredictionsBasedOnFeedback } from '@/ai/flows/adapt-predictions-based-on-feedback';
 import { useToast } from '@/hooks/use-toast';
 
 const GRID_SIZE = 25;
@@ -72,6 +72,7 @@ export default function GemsAndMinesPage() {
                 gameType: 'Gems & Mines',
                 predictionData: JSON.stringify(result.predictionData),
                 disclaimer: result.disclaimer,
+                status: 'pending',
                 timestamp: timestamp,
             };
 
@@ -128,21 +129,11 @@ export default function GemsAndMinesPage() {
         }
     };
     
-    const handleFeedback = async (feedback: 'won' | 'lost') => {
+    const handleFeedback = (feedback: 'won' | 'lost') => {
         if (!prediction) return;
         setFeedbackSent(true);
         toast({ title: 'Thank you!', description: 'Your feedback helps us improve.' });
-        try {
-            await adaptPredictionsBasedOnFeedback({
-                gameType: 'gems-mines',
-                predictionData: JSON.stringify(prediction.predictionData),
-                feedback: feedback,
-            });
-        } catch (error) {
-            console.error("Failed to send feedback:", error);
-            setFeedbackSent(false);
-            toast({ variant: 'destructive', title: 'Error', description: 'Could not submit feedback.' });
-        }
+        // The backend flow for this was removed, so we just show the toast.
     };
 
     const gemsMinesData = prediction?.predictionData as GemsMinesPredictionData | undefined;
@@ -280,3 +271,5 @@ export default function GemsAndMinesPage() {
         </div>
     );
 }
+
+    
