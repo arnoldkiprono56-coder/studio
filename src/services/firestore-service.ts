@@ -101,6 +101,27 @@ export async function fetchPreVerifiedPayments() {
     ].join('\n');
 }
 
+export async function addPreVerifiedPayment({ transactionId, amount, adminId }: { transactionId: string; amount: number; adminId: string; }) {
+    try {
+        const upperCaseTxId = transactionId.trim().toUpperCase();
+        const docRef = doc(firestore, 'preVerifiedPayments', upperCaseTxId);
+
+        const payload = {
+            transactionId: upperCaseTxId,
+            amount: amount,
+            currency: 'KES',
+            status: 'available',
+            adminId: adminId,
+            createdAt: serverTimestamp(),
+        };
+        
+        await setDoc(docRef, payload);
+        return { success: true, message: `Successfully created pre-verified credit for ${upperCaseTxId}.` };
+    } catch (error: any) {
+        return { success: false, message: `Failed to create pre-verified credit: ${error.message}` };
+    }
+}
+
 
 export async function createBroadcast({ message, audience }: { message: string; audience: string; }) {
     try {

@@ -2,7 +2,7 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
-import { fetchUsers, fetchAuditLogs, createBroadcast, fetchPreVerifiedPayments, updateUserRole, suspendUser, activateLicenseForUser } from '@/services/firestore-service';
+import { fetchUsers, fetchAuditLogs, createBroadcast, fetchPreVerifiedPayments, updateUserRole, suspendUser, activateLicenseForUser, addPreVerifiedPayment } from '@/services/firestore-service';
 
 // Tool to get all users
 export const getAllUsers = ai.defineTool(
@@ -46,6 +46,26 @@ export const getPreVerifiedPayments = ai.defineTool(
   async () => {
     return fetchPreVerifiedPayments();
   }
+);
+
+// Tool to create a pre-verified payment
+export const createPreVerifiedPayment = ai.defineTool(
+    {
+        name: 'createPreVerifiedPayment',
+        description: 'Adds a new pre-verified payment credit to the system. This allows a user to have their purchase automatically approved if they use the matching transaction ID.',
+        inputSchema: z.object({
+            transactionId: z.string().describe('The transaction ID to pre-verify (e.g., an M-Pesa code).'),
+            amount: z.number().describe('The amount that was paid.'),
+            adminId: z.string().describe('The ID of the admin creating this credit.'),
+        }),
+        outputSchema: z.object({
+            success: z.boolean(),
+            message: z.string(),
+        }),
+    },
+    async (input) => {
+        return addPreVerifiedPayment(input);
+    }
 );
 
 

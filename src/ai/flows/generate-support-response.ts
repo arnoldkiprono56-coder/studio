@@ -9,7 +9,7 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
-import { getAllUsers, getAuditLogs, sendBroadcastMessage, getPreVerifiedPayments, changeUserRole, suspendUserAccount, activateLicense } from '@/ai/tools/admin-tools';
+import { getAllUsers, getAuditLogs, sendBroadcastMessage, getPreVerifiedPayments, changeUserRole, suspendUserAccount, activateLicense, createPreVerifiedPayment } from '@/ai/tools/admin-tools';
 
 const promptText = `You are a support agent for PredictPro. PredictPro provides game predictions EXCLUSIVELY for the 1xBet platform. 
 
@@ -42,6 +42,7 @@ User: {{{message}}}
 
 Based on the persona for the given chat type and the conversation history, provide a helpful and relevant response to the user's latest message.
 Use your available tools if necessary to answer the user's question. If you use a tool that returns a markdown table, render that table directly in your response.
+If asked to create a pre-verified payment, you MUST ask for the admin's user ID to attribute the action correctly.
 `;
 
 const GenerateSupportResponseInputSchema = z.object({
@@ -75,7 +76,7 @@ const generateSupportResponseFlow = ai.defineFlow(
       input: {schema: GenerateSupportResponseInputSchema},
       output: {schema: GenerateSupportResponseOutputSchema},
       prompt: promptText,
-      tools: [getAllUsers, getAuditLogs, sendBroadcastMessage, getPreVerifiedPayments, changeUserRole, suspendUserAccount, activateLicense],
+      tools: [getAllUsers, getAuditLogs, sendBroadcastMessage, getPreVerifiedPayments, changeUserRole, suspendUserAccount, activateLicense, createPreVerifiedPayment],
       model: 'googleai/gemini-2.5-flash',
     });
 

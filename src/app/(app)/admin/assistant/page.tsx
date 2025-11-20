@@ -13,6 +13,7 @@ import ReactMarkdown from 'react-markdown';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { formatCurrency } from '@/lib/utils';
 import Link from 'next/link';
+import { useProfile } from '@/context/profile-context';
 
 type Message = {
     id: number;
@@ -56,6 +57,7 @@ const MarkdownTable = ({ children }: { children: React.ReactNode }) => {
 
 
 export default function AdminAssistantPage() {
+    const { userProfile } = useProfile();
     const chatType = 'manager'; // Hard-coded for the admin assistant
     const scrollAreaRef = useRef<HTMLDivElement>(null);
     const [isLoading, setIsLoading] = useState(false);
@@ -65,8 +67,8 @@ export default function AdminAssistantPage() {
 
 You can ask me to perform tasks like:
 - "Show me all available pre-verified credits."
+- "Add a pre-verified credit for transaction ID SBB123ABCDE with amount 1500."
 - "List all users who joined in the last 72 hours."
-- "Send a broadcast to all users announcing server maintenance at midnight."
 
 How can I help?`, sender: 'model' }
     ]);
@@ -83,13 +85,18 @@ How can I help?`, sender: 'model' }
 
     const handleSendMessage = async () => {
         if (input.trim() && !isLoading) {
-            const currentInput = input;
+            let currentInput = input;
             const userMessage: Message = { id: Date.now(), text: currentInput, sender: 'user' };
             
             const conversationHistory = messages.map(m => ({
                 isUser: m.sender === 'user',
                 text: m.text
             }));
+
+            // Inject the adminId if the createPreVerifiedPayment tool is likely to be called
+            if (currentInput.toLowerCase().includes('pre-verified credit') || currentInput.toLowerCase().includes('add a credit')) {
+                currentInput += ` (Admin ID: ${userProfile?.id})`
+            }
             
             setMessages(prev => [...prev, userMessage]);
             setInput('');
