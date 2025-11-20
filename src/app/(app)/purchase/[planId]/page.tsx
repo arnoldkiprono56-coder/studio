@@ -62,12 +62,15 @@ export default function PurchasePage() {
         
         const cleanedMessage = message.replace(/\s+/g, ' ').trim().toUpperCase();
         
-        // Match 10-character uppercase alphanumeric codes (M-Pesa format)
+        // Match 10-character uppercase alphanumeric codes (M-Pesa format like SAK234...)
         const txIdMatch = cleanedMessage.match(/\b([A-Z0-9]{10})\b/);
         const txId = txIdMatch ? txIdMatch[0] : null;
 
         const amountMatch = cleanedMessage.match(/(?:KES|KSH)\s?([\d,]+\.?\d*)/i);
-        const amount = amountMatch ? parseFloat(amountMatch[1].replace(/,/g, '')) : null;
+        let amount: number | null = null;
+        if (amountMatch && amountMatch[1]) {
+            amount = parseFloat(amountMatch[1].replace(/,/g, ''));
+        }
 
         return { txId, amount };
     };
@@ -184,6 +187,7 @@ export default function PurchasePage() {
             };
             transaction.set(licenseRef, licensePayload);
 
+            // Correctly create a reference to a new document in the subcollection
             const transactionRef = doc(collection(firestore, 'users', userProfile.id, 'transactions'));
             const transactionPayload = {
                 id: transactionRef.id,
