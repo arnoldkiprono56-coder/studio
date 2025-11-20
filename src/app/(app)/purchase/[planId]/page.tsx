@@ -60,13 +60,11 @@ export default function PurchasePage() {
     const { data: plan, isLoading } = useDoc<Plan>(planDocRef);
 
     const extractDetails = (message: string): { txId: string | null; amount: number | null } => {
-        // Normalize the message: remove newlines, multiple spaces, and convert to uppercase
         const cleanedMessage = message.replace(/\s+/g, ' ').toUpperCase().trim();
     
-        // M-Pesa: Look for a 10-character uppercase alphanumeric code that is a word on its own.
-        // This is a common pattern for M-Pesa transaction IDs (e.g., SAK1A2B3C4).
+        // M-Pesa: Look for a 10-character uppercase alphanumeric code.
         const mpesaMatch = cleanedMessage.match(/\b([A-Z0-9]{10})\b/);
-        const txId = mpesaMatch ? mpesaMatch[1] : null;
+        const txId = mpesaMatch ? mpesaMatch[0] : null;
     
         // Extract amount: Look for KES/Ksh followed by a number.
         const amountMatch = cleanedMessage.match(/(?:KES|KSH)\s?([\d,]+\.?\d*)/);
@@ -133,7 +131,7 @@ export default function PurchasePage() {
              if (error.code === 'permission-denied') {
                 errorEmitter.emit('permission-error', new FirestorePermissionError({
                     path: `users/${userProfile.id}/transactions`, // Simplified path for the error
-                    operation: 'write',
+                    operation: 'create',
                     requestResourceData: { planId, userId: userProfile.id }
                 }));
             } else {
@@ -329,3 +327,5 @@ export default function PurchasePage() {
         </div>
     )
 }
+
+    
