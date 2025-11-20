@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -203,7 +204,8 @@ export default function CrashPage() {
                             <p className="text-muted-foreground font-semibold">🎮 Crash Prediction (1xBet)</p>
                             <p className="text-muted-foreground mt-2">Target Cashout</p>
                             <p className="text-6xl font-bold text-primary">{crashData.targetCashout}</p>
-                             <p className="text-sm text-muted-foreground mt-2">Risk Level: {crashData.riskLevel}</p>
+                            <p className="text-sm font-semibold text-muted-foreground mt-2">Cashout on or before this multiplier.</p>
+                             <p className="text-sm text-muted-foreground mt-4">Risk Level: {crashData.riskLevel}</p>
                             <p className="text-sm text-muted-foreground">Confidence: {crashData.confidence}%</p>
                         </div>
                     ) : (

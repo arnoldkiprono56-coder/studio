@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -205,7 +206,8 @@ export default function AviatorPage() {
                             <p className="text-muted-foreground font-semibold">🎮 Aviator Prediction (1xBet)</p>
                             <p className="text-muted-foreground mt-2">Target Cashout</p>
                             <p className="text-6xl font-bold text-primary">{aviatorData.targetMultiplier}</p>
-                            <p className="text-sm text-muted-foreground mt-2">Risk Level: {aviatorData.riskLevel}</p>
+                            <p className="text-sm font-semibold text-muted-foreground mt-2">Cashout on or before this multiplier.</p>
+                            <p className="text-sm text-muted-foreground mt-4">Risk Level: {aviatorData.riskLevel}</p>
                             <p className="text-sm text-muted-foreground">Confidence: {aviatorData.confidence}%</p>
                         </div>
                     ) : (
