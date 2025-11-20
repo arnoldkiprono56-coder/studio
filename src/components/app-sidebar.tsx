@@ -15,7 +15,6 @@ import {
 import { Logo } from '@/components/icons';
 import { useProfile } from '@/context/profile-context';
 import {
-  Shield,
   Ticket,
   CreditCard,
   History,
@@ -25,8 +24,6 @@ import {
   Settings,
   Users2,
   LayoutDashboard,
-  Users,
-  Wallet,
   Search,
   User,
   Megaphone,
@@ -43,7 +40,7 @@ const superAdminNav = [
   { href: '/admin/predictions', label: 'Prediction Logs', icon: History },
   { href: '/admin/pricing', label: 'Plans & Pricing', icon: Tag },
   { href: '/admin/games', label: 'Games Control', icon: Gamepad2 },
-  { href: '/admin/broadcast', label: 'Broadcasts', icon: Megaphone },
+  { href: '/admin/broadcasts', label: 'Broadcasts', icon: Megaphone },
   { href: '/admin/support', label: 'Support Center', icon: LifeBuoy },
   { href: '/admin/settings', label: 'System Settings', icon: Settings },
   { href: '/admin/staff', label: 'Staff Management', icon: Users2 },
@@ -57,7 +54,7 @@ const adminNav = [
   { href: '/admin/payments', label: 'Payments', icon: CreditCard },
   { href: '/admin/predictions', label: 'Prediction Logs', icon: History },
   { href: '/admin/games', label: 'Games Control', icon: Gamepad2 },
-  { href: '/admin/broadcast', label: 'Broadcasts', icon: Megaphone },
+  { href: '/admin/broadcasts', label: 'Broadcasts', icon: Megaphone },
   { href: '/admin/support', label: 'Support Center', icon: LifeBuoy },
 ];
 
@@ -124,16 +121,13 @@ export function AppSidebar() {
             {navItems.map((item) => {
                 const Icon = item.icon;
                 
-                const isActive = pathname === item.href || (pathname.startsWith(item.href) && item.href !== '/admin' && item.href !== '/dashboard' && item.href !== '/admin/user-lookup');
-                
-                // Special handling for user-lookup to avoid it being active for /admin/users etc.
-                const isUserLookupActive = item.href === '/admin/user-lookup' && pathname === '/admin/user-lookup';
+                const isActive = pathname === item.href || (pathname.startsWith(item.href) && item.href !== '/admin' && item.href !== '/dashboard');
 
                 return (
                 <SidebarMenuItem key={item.label}>
                     <Link href={item.href}>
                     <SidebarMenuButton
-                        isActive={isActive || isUserLookupActive}
+                        isActive={isActive}
                         tooltip={item.label}
                     >
                         <Icon />
