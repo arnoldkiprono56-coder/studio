@@ -66,8 +66,8 @@ function UserDetails({ user }: { user: UserProfile }) {
                     <p><strong>Email:</strong> {user.email}</p>
                     <p><strong>User ID:</strong> <span className="font-mono text-sm">{user.id}</span></p>
                     <p><strong>1xBet ID:</strong> {user.oneXBetId || 'Not set'}</p>
-                    <p><strong>Role:</strong> <Badge>{user.role}</Badge></p>
-                    <p><strong>Status:</strong> <Badge variant={user.isSuspended ? 'destructive' : 'default'}>{user.isSuspended ? 'Suspended' : 'Active'}</Badge></p>
+                    <div className="flex items-center gap-2"><strong>Role:</strong> <Badge>{user.role}</Badge></div>
+                    <div className="flex items-center gap-2"><strong>Status:</strong> <Badge variant={user.isSuspended ? 'destructive' : 'default'}>{user.isSuspended ? 'Suspended' : 'Active'}</Badge></div>
                 </CardContent>
             </Card>
 
