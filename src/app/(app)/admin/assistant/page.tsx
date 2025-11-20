@@ -9,6 +9,9 @@ import { Send, Bot, User, Loader2 } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { generateSupportResponse } from '@/ai/flows/generate-support-response';
+import ReactMarkdown from 'react-markdown';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { formatCurrency } from '@/lib/utils';
 
 type Message = {
     id: number;
@@ -16,13 +19,55 @@ type Message = {
     sender: 'user' | 'model';
 };
 
+// Helper component to render table from Markdown
+const MarkdownTable = ({ children }: { children: React.ReactNode }) => {
+    const tableData = children?.toString().split('\n').map(row => row.split('|').map(cell => cell.trim())) || [];
+    if (tableData.length < 2) return <>{children}</> // Not a table
+
+    const headers = tableData[0];
+    const rows = tableData.slice(2); // Skip header and separator
+
+    return (
+        <div className="my-4 border rounded-lg">
+            <Table>
+                <TableHeader>
+                    <TableRow>
+                        {headers.map((header, i) => <TableHead key={i}>{header}</TableHead>)}
+                    </TableRow>
+                </TableHeader>
+                <TableBody>
+                    {rows.map((row, i) => (
+                        <TableRow key={i}>
+                            {row.map((cell, j) => {
+                                const header = headers[j]?.toLowerCase();
+                                if (header && (header.includes('amount') || header.includes('price'))) {
+                                    return <TableCell key={j}>{formatCurrency(parseFloat(cell))}</TableCell>
+                                }
+                                return <TableCell key={j}>{cell}</TableCell>
+                            })}
+                        </TableRow>
+                    ))}
+                </TableBody>
+            </Table>
+        </div>
+    );
+};
+
+
 export default function AdminAssistantPage() {
     const chatType = 'manager'; // Hard-coded for the admin assistant
     const scrollAreaRef = useRef<HTMLDivElement>(null);
     const [isLoading, setIsLoading] = useState(false);
 
     const [messages, setMessages] = useState<Message[]>([
-        { id: 1, text: `Welcome, Admin. I am the system manager AI. How can I assist you with platform operations, security analysis, or troubleshooting today?`, sender: 'model' }
+        { id: 1, text: `Welcome, Admin. I am your platform management AI.
+
+You can ask me to perform tasks like:
+- "Show me all available pre-verified credits."
+- "List all users who joined in the last 72 hours."
+- "Send a broadcast to all users announcing server maintenance at midnight."
+
+How can I help?`, sender: 'model' }
     ]);
     const [input, setInput] = useState('');
 
@@ -92,10 +137,14 @@ export default function AdminAssistantPage() {
                                         </Avatar>
                                      )}
                                     <div className={cn(
-                                        "rounded-lg px-4 py-2 max-w-[80%] whitespace-pre-wrap",
+                                        "rounded-lg px-4 py-2 max-w-[90%] whitespace-pre-wrap",
                                         message.sender === 'user' ? 'bg-secondary text-secondary-foreground' : 'bg-muted'
                                     )}>
-                                        <p className="text-sm">{message.text}</p>
+                                        <div className="prose prose-sm prose-invert max-w-none">
+                                            <ReactMarkdown components={{ table: MarkdownTable }}>
+                                                {message.text}
+                                            </ReactMarkdown>
+                                        </div>
                                     </div>
                                     {message.sender === 'user' && (
                                         <Avatar className="h-8 w-8 border flex-shrink-0">

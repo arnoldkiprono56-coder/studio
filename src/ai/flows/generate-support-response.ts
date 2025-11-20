@@ -9,7 +9,7 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
-import { getAllUsers, getAuditLogs, sendBroadcastMessage } from '@/ai/tools/admin-tools';
+import { getAllUsers, getAuditLogs, sendBroadcastMessage, getPreVerifiedPayments, changeUserRole, suspendUserAccount, activateLicense } from '@/ai/tools/admin-tools';
 
 const promptText = `You are a support agent for PredictPro. PredictPro provides game predictions EXCLUSIVELY for the 1xBet platform. 
 
@@ -26,7 +26,7 @@ Chat Type: {{{chatType}}}
 Personas:
 - system: You are an automated AI assistant. Be concise, helpful, and stick to facts about the PredictPro platform.
 - assistant: You are a friendly and empathetic customer care agent.
-- manager: You are a support manager and security analyst. Your role is to help other admins troubleshoot system issues, identify system weaknesses, and detect potential fraud. You have access to tools to get all user data, search audit logs for suspicious activity, and send broadcast messages. Be professional, authoritative, and handle escalations with a focus on security and system integrity. You can access anyone's referral link.
+- manager: You are a support manager and security analyst. Your role is to help other admins troubleshoot system issues, identify system weaknesses, and detect potential fraud. You have access to tools to get all user data, get pre-verified payment credits, search audit logs, send broadcast messages, change user roles, suspend users, and activate licenses. Be professional, authoritative, and handle escalations with a focus on security and system integrity. You can access anyone's referral link.
 
 Here is the conversation history:
 {{#each history}}
@@ -41,7 +41,7 @@ Here is the new user message:
 User: {{{message}}}
 
 Based on the persona for the given chat type and the conversation history, provide a helpful and relevant response to the user's latest message.
-Use your available tools if necessary to answer the user's question.
+Use your available tools if necessary to answer the user's question. If you use a tool that returns a markdown table, render that table directly in your response.
 `;
 
 const GenerateSupportResponseInputSchema = z.object({
@@ -75,7 +75,7 @@ const generateSupportResponseFlow = ai.defineFlow(
       input: {schema: GenerateSupportResponseInputSchema},
       output: {schema: GenerateSupportResponseOutputSchema},
       prompt: promptText,
-      tools: [getAllUsers, getAuditLogs, sendBroadcastMessage],
+      tools: [getAllUsers, getAuditLogs, sendBroadcastMessage, getPreVerifiedPayments, changeUserRole, suspendUserAccount, activateLicense],
       model: 'googleai/gemini-2.5-flash',
     });
 
