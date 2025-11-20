@@ -4,15 +4,16 @@
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { useProfile } from '@/context/profile-context';
 import { useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, query } from 'firebase/firestore';
+import { collection, query, orderBy } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { formatCurrency } from '@/lib/utils';
-import { AlertCircle, Wallet, Download } from 'lucide-react';
+import { AlertCircle, Wallet, Download, Tag, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useMemo } from 'react';
+import Link from 'next/link';
 
 interface Transaction {
     id: string;
@@ -23,6 +24,14 @@ interface Transaction {
     currency: string;
     status: 'pending' | 'verified' | 'failed' | 'completed';
     createdAt: any; 
+}
+
+interface Plan {
+    id: string;
+    name: string;
+    price: number;
+    currency: string;
+    rounds: number;
 }
 
 const statusVariant: Record<Transaction['status'], 'default' | 'secondary' | 'destructive' | 'outline'> = {
@@ -38,13 +47,20 @@ export default function WalletPage() {
 
     const transactionsQuery = useMemoFirebase(() => {
         if (!userProfile?.id || !firestore) return null;
-        // Query the user's sub-collection for transactions
         return query(
             collection(firestore, 'users', userProfile.id, 'transactions')
         );
     }, [userProfile?.id, firestore]);
+    
+    const plansQuery = useMemoFirebase(() => {
+        if (!firestore) return null;
+        return query(collection(firestore, 'plans'), orderBy('price', 'desc'));
+    }, [firestore]);
+
 
     const { data: userTransactions, isLoading: isTransactionsLoading } = useCollection<Transaction>(transactionsQuery);
+    const { data: plans, isLoading: isPlansLoading } = useCollection<Plan>(plansQuery);
+
 
     const sortedTransactions = useMemo(() => {
         if (!userTransactions) return [];
@@ -56,7 +72,7 @@ export default function WalletPage() {
     }, [userTransactions]);
 
 
-    const isLoading = isProfileLoading || isTransactionsLoading;
+    const isLoading = isProfileLoading || isTransactionsLoading || isPlansLoading;
 
     return (
         <div className="space-y-8">
@@ -68,7 +84,7 @@ export default function WalletPage() {
             <Card className="w-full max-w-md">
                 <CardHeader>
                     <CardDescription>Commission Balance</CardDescription>
-                    {isLoading ? (
+                    {isProfileLoading ? (
                         <Skeleton className="h-10 w-48" />
                     ) : (
                         <CardTitle className="text-4xl">{formatCurrency(userProfile?.balance || 0)}</CardTitle>
@@ -81,6 +97,35 @@ export default function WalletPage() {
                     </Button>
                 </CardContent>
             </Card>
+
+             <div>
+                <h2 className="text-2xl font-semibold tracking-tight mb-4">Purchase a New License</h2>
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                     {isLoading ? (
+                         Array.from({ length: 4 }).map((_, i) => (
+                             <Card key={i}><CardContent className="pt-6"><Skeleton className="h-24 w-full" /></CardContent></Card>
+                         ))
+                     ) : plans && plans.length > 0 ? (
+                        plans.map(plan => (
+                            <Card key={plan.id}>
+                                <CardHeader>
+                                    <CardTitle className="flex items-center gap-2"><Tag className="w-5 h-5 text-primary"/>{plan.name}</CardTitle>
+                                    <CardDescription>{formatCurrency(plan.price, plan.currency)} for {plan.rounds} rounds</CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    <Button asChild className="w-full">
+                                        <Link href={`/purchase/${plan.id}`}>
+                                            Purchase Now <ArrowRight className="w-4 h-4 ml-2" />
+                                        </Link>
+                                    </Button>
+                                </CardContent>
+                            </Card>
+                        ))
+                     ) : (
+                        <p className="text-muted-foreground col-span-full">No purchase plans available at the moment.</p>
+                     )}
+                </div>
+            </div>
 
             <Card>
                 <CardHeader>
@@ -99,7 +144,7 @@ export default function WalletPage() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {isLoading ? (
+                            {isTransactionsLoading ? (
                                 Array.from({ length: 5 }).map((_, i) => (
                                     <TableRow key={i}>
                                         <TableCell><Skeleton className="h-5 w-24" /></TableCell>
@@ -144,5 +189,3 @@ export default function WalletPage() {
         </div>
     );
 }
-
-    
