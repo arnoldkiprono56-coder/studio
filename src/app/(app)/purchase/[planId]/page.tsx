@@ -60,14 +60,11 @@ export default function PurchasePage() {
     const extractDetails = (message: string): { txId: string | null; amount: number | null } => {
         if (!message) return { txId: null, amount: null };
         
-        // Normalize the message: uppercase and remove extra spaces
         const cleanedMessage = message.replace(/\s+/g, ' ').trim().toUpperCase();
 
-        // Regex to find a 10-character alphanumeric code (typical for M-Pesa)
         const txIdMatch = cleanedMessage.match(/\b([A-Z0-9]{10})\b/);
         const txId = txIdMatch ? txIdMatch[0] : null;
 
-        // Regex to find amount, supporting formats like KES1,500.00 or Ksh 1500
         const amountMatch = cleanedMessage.match(/(?:KES|KSH)\s?([\d,]+\.?\d*)/);
         let amount: number | null = null;
         if (amountMatch && amountMatch[1]) {
