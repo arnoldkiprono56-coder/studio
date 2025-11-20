@@ -40,8 +40,10 @@ service cloud.firestore {
       allow get: if isOwner(userId) || isActualAdmin();
       allow list: if isActualAdmin();
       allow create: if isOwner(userId);
-      // Role updates are restricted to SuperAdmins. Other fields can be updated by the owner.
-      allow update: if (isOwner(userId) && !("role" in request.resource.data)) || isSuperAdmin();
+      // A user can update their own document as long as they are not changing their role.
+      // A SuperAdmin can update any field, including the role.
+      allow update: if (isOwner(userId) && !('role' in request.resource.data && request.resource.data.role != resource.data.role)) || isSuperAdmin();
+
 
       // Subcollections for a specific user
       match /user_licenses/{licenseId} {
