@@ -16,7 +16,7 @@ import { useFirestore, errorEmitter, FirestorePermissionError } from '@/firebase
 
 export default function AssistantOnboardingPage() {
     const router = useRouter();
-    const { userProfile, updateUserProfile } = useProfile();
+    const { userProfile, updateUserProfile, isProfileLoading } = useProfile();
     const firestore = useFirestore();
     const { toast } = useToast();
     const [paymentNumber, setPaymentNumber] = useState('');
@@ -24,53 +24,63 @@ export default function AssistantOnboardingPage() {
 
     const handleAccept = async () => {
         if (!userProfile || !firestore) {
-            toast({ variant: 'destructive', title: 'Error', description: 'User profile not loaded.' });
+            toast({ variant: 'destructive', title: 'Error', description: 'User profile not loaded. Please wait and try again.' });
             return;
         }
         setIsProcessing(true);
 
-        // This function will now throw a FirestorePermissionError if it fails,
-        // which will be caught by the global error boundary.
-        await updateUserProfile({
+        updateUserProfile({
             assistantPaymentNumber: paymentNumber,
             assistantAgreementAccepted: true,
-        });
+        }).then(() => {
+            // Create an audit log for this action
+            const auditLogData = {
+                userId: userProfile.id,
+                action: 'assistant_onboarding_accepted',
+                details: `User ${userProfile.email} accepted the assistant agreement.`,
+                timestamp: serverTimestamp(),
+                ipAddress: 'not_collected',
+            };
+            
+            const auditLogsCollection = collection(firestore, 'auditlogs');
+            addDoc(auditLogsCollection, auditLogData)
+                .catch(error => {
+                        errorEmitter.emit('permission-error', new FirestorePermissionError({
+                        path: auditLogsCollection.path,
+                        operation: 'create',
+                        requestResourceData: auditLogData
+                    }));
+                });
 
-        // Create an audit log for this action
-        const auditLogData = {
-            userId: userProfile.id,
-            action: 'assistant_onboarding_accepted',
-            details: `User ${userProfile.email} accepted the assistant agreement.`,
-            timestamp: serverTimestamp(),
-            ipAddress: 'not_collected',
-        };
-        
-        const auditLogsCollection = collection(firestore, 'auditlogs');
-        addDoc(auditLogsCollection, auditLogData)
-            .catch(error => {
-                    errorEmitter.emit('permission-error', new FirestorePermissionError({
-                    path: auditLogsCollection.path,
-                    operation: 'create',
-                    requestResourceData: auditLogData
-                }));
+            toast({
+                title: 'Welcome, Assistant!',
+                description: 'Your account has been upgraded. Redirecting you to the dashboard.',
             });
-
-        toast({
-            title: 'Welcome, Assistant!',
-            description: 'Your account has been upgraded. Redirecting you to the dashboard.',
+            router.push('/admin');
+        }).finally(() => {
+            // This will run whether the update succeeds or fails.
+            // If it fails, the global error handler will catch it, and we still want to stop the loading spinner.
+            setIsProcessing(false);
         });
-        router.push('/admin');
-
-        // Note: No .catch or .finally here, as errors are handled globally
     };
 
-    const handleDecline = async () => {
-        if (!userProfile) return;
+    const handleDecline = () => {
+        if (!userProfile) {
+            toast({ variant: 'destructive', title: 'Error', description: 'User profile not loaded. Please wait and try again.' });
+            return;
+        };
+        setIsProcessing(true);
          // Revert role to 'User'
-        // This will also now throw a global error if it fails
-        await updateUserProfile({ role: 'User' });
-        router.push('/dashboard');
+        updateUserProfile({ role: 'User' })
+            .then(() => {
+                router.push('/dashboard');
+            })
+            .finally(() => {
+                setIsProcessing(false);
+            });
     };
+    
+    const isLoading = isProfileLoading || isProcessing;
 
     return (
         <div className="flex justify-center items-center flex-1 py-8">
@@ -202,9 +212,9 @@ export default function AssistantOnboardingPage() {
                             size="lg"
                             className="w-full"
                             onClick={handleAccept}
-                            disabled={isProcessing}
+                            disabled={isLoading}
                         >
-                            {isProcessing ? <Loader2 className="animate-spin" /> : <Check />}
+                            {isLoading ? <Loader2 className="animate-spin" /> : <Check />}
                             ACCEPT — Begin as PredictPro Assistant
                         </Button>
                         <Button
@@ -212,9 +222,9 @@ export default function AssistantOnboardingPage() {
                             variant="destructive"
                             className="w-full"
                             onClick={handleDecline}
-                            disabled={isProcessing}
+                            disabled={isLoading}
                         >
-                            <X />
+                             {isLoading ? <Loader2 className="animate-spin" /> : <X />}
                             DECLINE — Exit onboarding
                         </Button>
                     </div>
@@ -223,5 +233,3 @@ export default function AssistantOnboardingPage() {
         </div>
     );
 }
-
-    
