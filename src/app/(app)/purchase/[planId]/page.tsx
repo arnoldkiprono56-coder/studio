@@ -6,16 +6,17 @@ import { useParams, useRouter } from 'next/navigation';
 import { useFirestore, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
 import { useProfile } from '@/context/profile-context';
 import { useDoc } from '@/firebase/firestore/use-doc';
-import { doc, collection, writeBatch, serverTimestamp, runTransaction } from 'firebase/firestore';
+import { doc, collection, writeBatch, serverTimestamp, runTransaction, getDoc } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, ShieldCheck, Tag, Loader2 } from 'lucide-react';
+import { ArrowLeft, ShieldCheck, Tag, Loader2, CircleCheck } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import Link from 'next/link';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 interface Plan {
     id: string;
@@ -23,6 +24,17 @@ interface Plan {
     price: number;
     currency: string;
     rounds: number;
+}
+
+interface PreVerifiedPayment {
+    transactionId: string;
+    amount: number;
+    currency: string;
+    status: 'available' | 'claimed';
+    adminId: string;
+    createdAt: string;
+    claimedBy: string | null;
+    claimedAt: string | null;
 }
 
 const COMMISSION_AMOUNT = 150; // KES 150 commission
@@ -37,6 +49,8 @@ export default function PurchasePage() {
 
     const [transactionMessage, setTransactionMessage] = useState('');
     const [isProcessing, setIsProcessing] = useState(false);
+    const [remainingAmount, setRemainingAmount] = useState<number | null>(null);
+    const [creditApplied, setCreditApplied] = useState<number | null>(null);
 
     const planDocRef = useMemoFirebase(() => {
         if (!firestore || !planId) return null;
@@ -46,21 +60,22 @@ export default function PurchasePage() {
     const { data: plan, isLoading } = useDoc<Plan>(planDocRef);
 
     const extractDetails = (message: string): { txId: string | null; amount: number | null } => {
-        // M-PESA: Look for a 10-character uppercase alphanumeric code.
-        let mpesaMatch = message.match(/([A-Z0-9]{10})\sConfirmed/);
+        const cleanedMessage = message.replace(/\s+/g, ' ').trim();
+
+        // M-Pesa: Look for a 10-character uppercase alphanumeric code.
+        let mpesaMatch = cleanedMessage.match(/([A-Z0-9]{10})\sConfirmed/);
         if (mpesaMatch) {
             const txId = mpesaMatch[1];
-            // Then, look for the amount.
-            let amountMatch = message.match(/Ksh([\d,]+\.\d{2})/);
+            let amountMatch = cleanedMessage.match(/Ksh([\d,]+\.\d{2})/);
             const amount = amountMatch ? parseFloat(amountMatch[1].replace(/,/g, '')) : null;
             return { txId, amount };
         }
     
         // Airtel Money: Look for a specific pattern.
-        let airtelMatch = message.match(/Transaction ID\s*([A-Za-z0-9]+)/);
+        let airtelMatch = cleanedMessage.match(/Transaction ID\s*([A-Za-z0-9]+)/);
         if (airtelMatch) {
             const txId = airtelMatch[1];
-            let amountMatch = message.match(/Amount\s*KES\s*([\d,]+\.\d{2})/);
+            let amountMatch = cleanedMessage.match(/Amount\s*KES\s*([\d,]+\.\d{2})/);
             const amount = amountMatch ? parseFloat(amountMatch[1].replace(/,/g, '')) : null;
             return { txId, amount };
         }
@@ -79,7 +94,7 @@ export default function PurchasePage() {
             return;
         }
         
-        const { txId, amount } = extractDetails(transactionMessage);
+        const { txId, amount: messageAmount } = extractDetails(transactionMessage);
 
         if (!txId) {
             toast({
@@ -93,7 +108,78 @@ export default function PurchasePage() {
         setIsProcessing(true);
 
         try {
-            await runTransaction(firestore, async (transaction) => {
+            // Check for pre-verified payment first
+            const creditRef = doc(firestore, 'preVerifiedPayments', txId);
+            const creditSnap = await getDoc(creditRef);
+
+            if (creditSnap.exists() && creditSnap.data()?.status === 'available') {
+                // Credit exists, apply it
+                const creditData = creditSnap.data() as PreVerifiedPayment;
+                const price = remainingAmount !== null ? remainingAmount : plan.price;
+                const newRemaining = price - creditData.amount;
+                
+                if (newRemaining <= 0) {
+                    // Credit covers the whole price, activate license directly
+                    await activateLicenseWithCredit(txId, creditData.amount);
+                    toast({ title: 'Success!', description: 'Your credit covered the full amount. License activated!' });
+                    router.push('/purchase/success');
+                } else {
+                    // Credit partially covers the price, update UI
+                    setRemainingAmount(newRemaining);
+                    setCreditApplied(creditData.amount);
+                    setTransactionMessage(''); // Clear message for next payment
+                    toast({ title: 'Credit Applied!', description: `A credit of ${formatCurrency(creditData.amount)} was applied. Please pay the remaining balance.` });
+                }
+            } else {
+                 // No credit, proceed with normal transaction
+                await processNormalPurchase(txId, messageAmount);
+                toast({ title: 'Processing', description: 'Your order has been placed and is pending verification.' });
+                router.push('/purchase/success');
+            }
+        } catch (error: any) {
+             if (error.code === 'permission-denied') {
+                errorEmitter.emit('permission-error', new FirestorePermissionError({
+                    path: `users/${userProfile.id}/transactions`, // Simplified path for the error
+                    operation: 'write',
+                    requestResourceData: { planId, userId: userProfile.id }
+                }));
+            } else {
+                console.error("Purchase failed:", error);
+                toast({ variant: 'destructive', title: 'Purchase Failed', description: error.message || 'An unexpected error occurred.' });
+            }
+        } finally {
+            setIsProcessing(false);
+        }
+    };
+    
+    const activateLicenseWithCredit = async (claimedTxId: string, claimedAmount: number) => {
+        if (!firestore || !userProfile || !plan) throw new Error("Missing dependencies for activation.");
+
+        return runTransaction(firestore, async (transaction) => {
+            const licenseId = `${plan.id}-${userProfile.id}`;
+            const licenseRef = doc(firestore, 'users', userProfile.id, 'user_licenses', licenseId);
+            transaction.set(licenseRef, {
+                id: licenseId, userId: userProfile.id, gameType: plan.name, roundsRemaining: plan.rounds,
+                paymentVerified: true, isActive: true, createdAt: serverTimestamp(),
+            });
+
+            const transactionRef = doc(firestore, 'users', userProfile.id, 'transactions', `txn_credit_${Date.now()}`);
+            transaction.set(transactionRef, {
+                id: transactionRef.id, userId: userProfile.id, licenseId,
+                finalAmount: plan.price, currency: plan.currency, finalTxId: claimedTxId,
+                status: 'verified', type: 'purchase', description: `Purchase of ${plan.name} with credit`,
+                createdAt: serverTimestamp(),
+            });
+
+            const creditRef = doc(firestore, 'preVerifiedPayments', claimedTxId);
+            transaction.update(creditRef, { status: 'claimed', claimedBy: userProfile.id, claimedAt: serverTimestamp() });
+        });
+    }
+
+    const processNormalPurchase = async (txId: string, messageAmount: number | null) => {
+        if (!firestore || !userProfile || !plan) throw new Error("Missing dependencies for purchase.");
+
+        await runTransaction(firestore, async (transaction) => {
                 const userRef = doc(firestore, 'users', userProfile.id);
                 const userSnap = await transaction.get(userRef);
                 if (!userSnap.exists()) {
@@ -122,7 +208,7 @@ export default function PurchasePage() {
                     id: transactionId,
                     userId: userProfile.id,
                     licenseId: licenseId,
-                    userClaimedAmount: amount ?? plan.price, // Use extracted amount if available
+                    userClaimedAmount: messageAmount ?? (remainingAmount !== null ? remainingAmount : plan.price),
                     finalAmount: null,
                     currency: plan.currency,
                     userSubmittedTxId: txId,
@@ -165,25 +251,7 @@ export default function PurchasePage() {
                     transaction.update(userRef, { hasPurchased: true });
                 }
             });
-
-            toast({ title: 'Processing', description: 'Your order has been placed and is pending verification.' });
-            router.push('/purchase/success');
-
-        } catch (error: any) {
-             if (error.code === 'permission-denied') {
-                errorEmitter.emit('permission-error', new FirestorePermissionError({
-                    path: `users/${userProfile.id}/transactions`, // Simplified path for the error
-                    operation: 'write',
-                    requestResourceData: { planId, userId: userProfile.id }
-                }));
-            } else {
-                console.error("Purchase failed:", error);
-                toast({ variant: 'destructive', title: 'Purchase Failed', description: error.message || 'An unexpected error occurred.' });
-            }
-        } finally {
-            setIsProcessing(false);
-        }
-    };
+    }
 
 
     if (isLoading || !plan) {
@@ -203,6 +271,8 @@ export default function PurchasePage() {
             </div>
         )
     }
+    
+    const priceToPay = remainingAmount !== null ? remainingAmount : plan.price;
 
     return (
         <div className="max-w-xl mx-auto space-y-6">
@@ -222,12 +292,21 @@ export default function PurchasePage() {
                 <CardHeader>
                     <div className="flex items-center justify-between">
                         <CardTitle className="flex items-center gap-2"><Tag className="w-5 h-5 text-primary"/>{plan.name} License</CardTitle>
-                        <p className="text-3xl font-bold text-primary">{formatCurrency(plan.price, plan.currency)}</p>
+                        <p className="text-3xl font-bold text-primary">{formatCurrency(priceToPay, plan.currency)}</p>
                     </div>
+                     {creditApplied && (
+                        <Alert variant="default" className="mt-4 bg-success/10 border-success/30">
+                            <CircleCheck className="h-4 w-4 text-success" />
+                            <AlertTitle className="text-success">Credit Applied</AlertTitle>
+                            <AlertDescription>
+                                A credit of {formatCurrency(creditApplied)} has been applied. The remaining amount is shown above.
+                            </AlertDescription>
+                        </Alert>
+                    )}
                 </CardHeader>
                 <CardContent className="space-y-6 border-t pt-6">
                      <div className="text-center p-4 bg-muted/50 rounded-lg text-sm">
-                        <p className="font-bold">1. Send Money: {formatCurrency(plan.price, plan.currency)} to <span className="text-primary font-code">0784667400</span></p>
+                        <p className="font-bold">1. Send Money: {formatCurrency(priceToPay, plan.currency)} to <span className="text-primary font-code">0784667400</span></p>
                         <p className="text-muted-foreground mt-1">Use M-Pesa or Airtel Money.</p>
                     </div>
 
@@ -240,7 +319,7 @@ export default function PurchasePage() {
                             placeholder="e.g., SAI... Confirmed. Ksh1,500.00 sent to..."
                             className="min-h-[120px] font-mono text-xs"
                         />
-                        <p className="text-xs text-muted-foreground">The system will automatically extract the transaction ID and amount.</p>
+                        <p className="text-xs text-muted-foreground">The system will automatically extract the transaction ID and amount. If you have a credit, paste the credit transaction message here.</p>
                     </div>
                 </CardContent>
                 <CardFooter className="flex-col gap-4 border-t pt-6">
@@ -251,9 +330,9 @@ export default function PurchasePage() {
                         disabled={isProcessing}
                     >
                         {isProcessing && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                        {isProcessing ? 'Submitting...' : 'Submit for Verification'}
+                        {isProcessing ? 'Verifying...' : 'Submit for Verification'}
                     </Button>
-                    <p className="text-xs text-muted-foreground flex items-center gap-1.5"><ShieldCheck className="w-3.5 h-3.5" /> Your payment will be manually verified by our team.</p>
+                    <p className="text-xs text-muted-foreground flex items-center gap-1.5"><ShieldCheck className="w-3.5 h-3.5" /> Your payment will be verified by our team.</p>
                 </CardFooter>
             </Card>
         </div>

@@ -17,6 +17,7 @@ const allAdminTabs = [
   { value: 'users', label: 'Users', href: '/admin/users' },
   { value: 'licenses', label: 'Licenses', href: '/admin/licenses' },
   { value: 'payments', label: 'Payments', href: '/admin/payments' },
+  { value: 'pre-verified-payments', label: 'Pre-verified Payments', href: '/admin/pre-verified-payments'},
   { value: 'pricing', label: 'Pricing', href: '/admin/pricing' },
   { value: 'games', label: 'Games', href: '/admin/games' },
   { value: 'broadcast', label: 'Send Broadcast', href: '/admin/broadcast' },
@@ -30,7 +31,7 @@ function AdminNav({ userProfile }: { userProfile: UserProfile | null }) {
     const getVisibleTabs = () => {
         if (!userProfile) return [];
         if (userProfile.role === 'Assistant') {
-            return allAdminTabs.filter(tab => tab.value !== 'users');
+            return allAdminTabs.filter(tab => tab.value !== 'users' && tab.value !== 'pre-verified-payments');
         }
         return allAdminTabs;
     }

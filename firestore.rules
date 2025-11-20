@@ -108,5 +108,12 @@ service cloud.firestore {
         allow create: if isActualAdmin();
         allow update, delete: if isActualAdmin();
     }
+
+    // Pre-verified payments can be managed by admins and read by users.
+    match /preVerifiedPayments/{transactionId} {
+      allow read: if isUser(); // Users need to check if their txId exists
+      allow create, update, delete: if isActualAdmin();
+      allow list: if isActualAdmin();
+    }
   }
 }
