@@ -9,10 +9,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { AlertCircle, CreditCard, Check, X, Loader2 } from 'lucide-react';
+import { AlertCircle, CreditCard, Check, X, Loader2, ArrowLeft } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useProfile } from '@/context/profile-context';
+import Link from 'next/link';
 
 interface PendingPayment {
     id: string; // This will be the ID of the transaction document
@@ -101,82 +102,92 @@ export default function PaymentsAdminPage() {
     };
     
     return (
-        <Card>
-            <CardHeader>
-                <div className="flex items-center gap-2">
-                    <CreditCard className="h-6 w-6 text-muted-foreground" />
-                    <CardTitle>Payment Verification Queue</CardTitle>
-                </div>
-                <CardDescription>
-                    Review and approve or reject pending user payments.
-                </CardDescription>
-            </CardHeader>
-            <CardContent>
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>Date</TableHead>
-                            <TableHead>User Email</TableHead>
-                            <TableHead>Product</TableHead>
-                            <TableHead>Submitted TX ID</TableHead>
-                            <TableHead>Amount</TableHead>
-                            <TableHead className="text-right">Actions</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {isLoading ? (
-                            Array.from({ length: 3 }).map((_, i) => (
-                                <TableRow key={i}>
-                                    <TableCell colSpan={6}><Skeleton className="h-8 w-full" /></TableCell>
-                                </TableRow>
-                            ))
-                        ) : pendingPayments && pendingPayments.length > 0 ? (
-                            pendingPayments.map(tx => {
-                                const isProcessing = processingId === tx.id;
-                                return (
-                                    <TableRow key={tx.id}>
-                                        <TableCell>{tx.createdAt?.toDate().toLocaleDateString()}</TableCell>
-                                        <TableCell>{tx.userEmail}</TableCell>
-                                        <TableCell>{tx.description}</TableCell>
-                                        <TableCell className="font-mono">{tx.userSubmittedTxId}</TableCell>
-                                        <TableCell>{formatCurrency(tx.userClaimedAmount || 0, tx.currency)}</TableCell>
-                                        <TableCell className="text-right space-x-2">
-                                            <Button 
-                                                variant="outline" 
-                                                size="sm" 
-                                                onClick={() => handleVerification(tx, 'reject')}
-                                                disabled={isProcessing}
-                                            >
-                                                {isProcessing ? <Loader2 className="animate-spin"/> : <X className="w-4 h-4"/>}
-                                                <span className="sr-only">Reject</span>
-                                            </Button>
-                                            <Button 
-                                                size="sm" 
-                                                onClick={() => handleVerification(tx, 'approve')}
-                                                disabled={isProcessing}
-                                                className="bg-success hover:bg-success/90"
-                                            >
-                                                {isProcessing ? <Loader2 className="animate-spin"/> : <Check className="w-4 h-4"/>}
-                                                 <span className="sr-only">Approve</span>
-                                            </Button>
-                                        </TableCell>
-                                    </TableRow>
-                                );
-                            })
-                        ) : (
-                             <TableRow>
-                                <TableCell colSpan={6} className="h-48 text-center">
-                                    <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground">
-                                        <AlertCircle className="h-8 w-8" />
-                                        <h3 className="font-semibold text-lg text-foreground">No Pending Payments</h3>
-                                        <p className="text-sm">All transactions are up to date.</p>
-                                    </div>
-                                </TableCell>
+        <div className="space-y-6">
+            <div className="flex items-center gap-4">
+                <Button variant="outline" size="icon" asChild>
+                    <Link href="/admin">
+                        <ArrowLeft />
+                    </Link>
+                </Button>
+                <h1 className="text-2xl font-bold tracking-tight md:text-3xl">Payment Verification</h1>
+            </div>
+            <Card>
+                <CardHeader>
+                    <div className="flex items-center gap-2">
+                        <CreditCard className="h-6 w-6 text-muted-foreground" />
+                        <CardTitle>Payment Verification Queue</CardTitle>
+                    </div>
+                    <CardDescription>
+                        Review and approve or reject pending user payments.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Date</TableHead>
+                                <TableHead>User Email</TableHead>
+                                <TableHead>Product</TableHead>
+                                <TableHead>Submitted TX ID</TableHead>
+                                <TableHead>Amount</TableHead>
+                                <TableHead className="text-right">Actions</TableHead>
                             </TableRow>
-                        )}
-                    </TableBody>
-                </Table>
-            </CardContent>
-        </Card>
+                        </TableHeader>
+                        <TableBody>
+                            {isLoading ? (
+                                Array.from({ length: 3 }).map((_, i) => (
+                                    <TableRow key={i}>
+                                        <TableCell colSpan={6}><Skeleton className="h-8 w-full" /></TableCell>
+                                    </TableRow>
+                                ))
+                            ) : pendingPayments && pendingPayments.length > 0 ? (
+                                pendingPayments.map(tx => {
+                                    const isProcessing = processingId === tx.id;
+                                    return (
+                                        <TableRow key={tx.id}>
+                                            <TableCell>{tx.createdAt?.toDate().toLocaleDateString()}</TableCell>
+                                            <TableCell>{tx.userEmail}</TableCell>
+                                            <TableCell>{tx.description}</TableCell>
+                                            <TableCell className="font-mono">{tx.userSubmittedTxId}</TableCell>
+                                            <TableCell>{formatCurrency(tx.userClaimedAmount || 0, tx.currency)}</TableCell>
+                                            <TableCell className="text-right space-x-2">
+                                                <Button 
+                                                    variant="outline" 
+                                                    size="sm" 
+                                                    onClick={() => handleVerification(tx, 'reject')}
+                                                    disabled={isProcessing}
+                                                >
+                                                    {isProcessing ? <Loader2 className="animate-spin"/> : <X className="w-4 h-4"/>}
+                                                    <span className="sr-only">Reject</span>
+                                                </Button>
+                                                <Button 
+                                                    size="sm" 
+                                                    onClick={() => handleVerification(tx, 'approve')}
+                                                    disabled={isProcessing}
+                                                    className="bg-success hover:bg-success/90"
+                                                >
+                                                    {isProcessing ? <Loader2 className="animate-spin"/> : <Check className="w-4 h-4"/>}
+                                                     <span className="sr-only">Approve</span>
+                                                </Button>
+                                            </TableCell>
+                                        </TableRow>
+                                    );
+                                })
+                            ) : (
+                                 <TableRow>
+                                    <TableCell colSpan={6} className="h-48 text-center">
+                                        <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground">
+                                            <AlertCircle className="h-8 w-8" />
+                                            <h3 className="font-semibold text-lg text-foreground">No Pending Payments</h3>
+                                            <p className="text-sm">All transactions are up to date.</p>
+                                        </div>
+                                    </TableCell>
+                                </TableRow>
+                            )}
+                        </TableBody>
+                    </Table>
+                </CardContent>
+            </Card>
+        </div>
     );
 }

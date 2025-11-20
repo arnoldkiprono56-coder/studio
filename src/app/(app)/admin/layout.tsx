@@ -46,12 +46,8 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   }
 
   return (
-    <div className="space-y-6">
-        <div className="space-y-0.5">
-            <h1 className="text-2xl font-bold tracking-tight md:text-3xl">Admin Dashboard</h1>
-            <p className="text-muted-foreground">Platform overview and management tools for PredictPro.</p>
-        </div>
-        <div className="mt-6">{children}</div>
+    <div className="w-full">
+        {children}
     </div>
   );
 }

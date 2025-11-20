@@ -8,13 +8,14 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Search, User, AlertCircle, Ticket, CreditCard, History } from 'lucide-react';
+import { Loader2, Search, User, AlertCircle, Ticket, CreditCard, History, ArrowLeft } from 'lucide-react';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { formatCurrency } from '@/lib/utils';
 import type { License, Prediction } from '@/lib/types';
+import Link from 'next/link';
 
 
 interface UserProfile {
@@ -66,8 +67,8 @@ function UserDetails({ user }: { user: UserProfile }) {
                     <p><strong>Email:</strong> {user.email}</p>
                     <p><strong>User ID:</strong> <span className="font-mono text-sm">{user.id}</span></p>
                     <p><strong>1xBet ID:</strong> {user.oneXBetId || 'Not set'}</p>
-                    <div className="flex items-center gap-2"><strong>Role:</strong> <Badge>{user.role}</Badge></div>
-                    <div className="flex items-center gap-2"><strong>Status:</strong> <Badge variant={user.isSuspended ? 'destructive' : 'default'}>{user.isSuspended ? 'Suspended' : 'Active'}</Badge></div>
+                    <div><strong>Role:</strong> <Badge>{user.role}</Badge></div>
+                    <div><strong>Status:</strong> <Badge variant={user.isSuspended ? 'destructive' : 'default'}>{user.isSuspended ? 'Suspended' : 'Active'}</Badge></div>
                 </CardContent>
             </Card>
 
@@ -169,40 +170,46 @@ export default function UserLookupPage() {
     };
     
     return (
-        <Card>
-            <CardHeader>
-                <div className="flex items-center gap-2">
-                    <Search className="h-6 w-6 text-muted-foreground" />
-                    <CardTitle>User Lookup</CardTitle>
-                </div>
-                <CardDescription>
-                    Enter a user's email to find their profile and activity history.
-                </CardDescription>
-            </CardHeader>
-            <CardContent>
-                <div className="flex w-full max-w-sm items-center space-x-2">
-                    <Input
-                        type="email"
-                        placeholder="user@example.com"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                    />
-                    <Button onClick={handleSearch} disabled={isSearching}>
-                        {isSearching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
-                        <span className="sr-only sm:not-sr-only sm:ml-2">Search</span>
-                    </Button>
-                </div>
-
-                {isSearching && (
-                    <div className="mt-6 space-y-4">
-                        <Skeleton className="h-24 w-full" />
-                        <Skeleton className="h-48 w-full" />
+        <div className="space-y-6">
+            <div className="flex items-center gap-4">
+                <Button variant="outline" size="icon" asChild>
+                    <Link href="/admin">
+                        <ArrowLeft />
+                    </Link>
+                </Button>
+                <h1 className="text-2xl font-bold tracking-tight md:text-3xl">User Lookup</h1>
+            </div>
+            <Card>
+                <CardHeader>
+                    <CardDescription>
+                        Enter a user's email to find their profile and activity history.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <div className="flex w-full max-w-sm items-center space-x-2">
+                        <Input
+                            type="email"
+                            placeholder="user@example.com"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                        />
+                        <Button onClick={handleSearch} disabled={isSearching}>
+                            {isSearching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                            <span className="sr-only sm:not-sr-only sm:ml-2">Search</span>
+                        </Button>
                     </div>
-                )}
-                
-                {foundUser && <UserDetails user={foundUser} />}
-            </CardContent>
-        </Card>
+
+                    {isSearching && (
+                        <div className="mt-6 space-y-4">
+                            <Skeleton className="h-24 w-full" />
+                            <Skeleton className="h-48 w-full" />
+                        </div>
+                    )}
+                    
+                    {foundUser && <UserDetails user={foundUser} />}
+                </CardContent>
+            </Card>
+        </div>
     );
 }

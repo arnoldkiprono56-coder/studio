@@ -1,17 +1,18 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Card, CardContent, CardFooter } from '@/components/ui/card';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Send, Bot, User, Loader2 } from 'lucide-react';
+import { Send, Bot, User, Loader2, ArrowLeft } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { generateSupportResponse } from '@/ai/flows/generate-support-response';
 import ReactMarkdown from 'react-markdown';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { formatCurrency } from '@/lib/utils';
+import Link from 'next/link';
 
 type Message = {
     id: number;
@@ -121,8 +122,21 @@ How can I help?`, sender: 'model' }
 
 
     return (
-        <div className="flex flex-col flex-1 h-full max-h-[calc(100vh-14rem)]">
+        <div className="flex flex-col flex-1 h-full max-h-[calc(100vh-8rem)]">
+             <div className="flex items-center gap-4 mb-6">
+                <Button variant="outline" size="icon" asChild>
+                    <Link href="/admin">
+                        <ArrowLeft />
+                    </Link>
+                </Button>
+                <h1 className="text-2xl font-bold tracking-tight md:text-3xl">AI Assistant</h1>
+            </div>
             <Card className="flex-1 flex flex-col">
+                 <CardHeader>
+                    <CardDescription>
+                        A conversational AI to help you manage the platform, query data, and perform administrative tasks.
+                    </CardDescription>
+                </CardHeader>
                 <CardContent className="flex-1 p-0">
                     <ScrollArea className="h-full p-6" ref={scrollAreaRef}>
                         <div className="space-y-6">

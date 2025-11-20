@@ -62,7 +62,7 @@ export function BroadcastForm() {
     };
 
     return (
-        <Card>
+        <Card className="max-w-3xl mx-auto">
             <CardHeader>
                 <div className="flex items-center gap-2">
                     <Megaphone className="h-6 w-6 text-muted-foreground" />
