@@ -13,7 +13,7 @@ import { AlertCircle, Users, PlusCircle, Loader2, ArrowLeft, ArrowRight } from '
 import { Badge } from '@/components/ui/badge';
 import { useProfile } from '@/context/profile-context';
 import { Button } from '@/components/ui/button';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import type { DocumentSnapshot, DocumentData } from 'firebase/firestore';
 
@@ -132,7 +132,7 @@ export function UserManagement() {
     const [paginationHistory, setPaginationHistory] = useState<(DocumentSnapshot<DocumentData> | null)[]>([null]);
 
 
-    const usersQuery = useMemo(() => {
+    const usersQuery = useMemoFirebase(() => {
         if (!firestore) return null;
         let q = query(collection(firestore, 'users'), orderBy('email'), limit(PAGE_SIZE));
         const cursor = paginationHistory[page - 1];
