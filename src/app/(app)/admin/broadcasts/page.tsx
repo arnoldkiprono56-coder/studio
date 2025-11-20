@@ -10,7 +10,7 @@ import { AlertCircle, Megaphone } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import ReactMarkdown from 'react-markdown';
 import { Button } from '@/components/ui/button';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 
 
 interface Notification {
@@ -46,12 +46,14 @@ export default function BroadcastLogPage() {
 
     const { data: notifications, isLoading } = useCollection<Notification>(notificationsQuery);
     
-    useState(() => {
+    useEffect(() => {
         if (!isLoading && notifications && notifications.length > 0) {
             const newLast = (notificationsQuery as any)?.__private_internal_snapshot?.docs[notifications.length - 1];
             setLastVisible(newLast || null);
+        } else if (!isLoading) {
+            setLastVisible(null);
         }
-    });
+    }, [isLoading, notifications, notificationsQuery]);
 
     const goToNextPage = () => {
         if (lastVisible) {
