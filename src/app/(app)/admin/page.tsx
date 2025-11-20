@@ -95,6 +95,13 @@ const adminFeatures = [
     roles: ['SuperAdmin', 'Admin', 'Assistant'],
   },
   {
+    href: '/admin/automation',
+    label: 'System Automation',
+    icon: Bot,
+    description: 'Add pre-verified payment credits.',
+    roles: ['SuperAdmin'],
+  },
+  {
     href: '/admin/settings',
     label: 'System Settings',
     icon: Settings,
