@@ -2,7 +2,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useFirestore } from '@/firebase';
+import { useFirestore, useMemoFirebase } from '@/firebase';
 import { doc, setDoc, serverTimestamp, getDocs, collection, query, where, writeBatch, orderBy } from 'firebase/firestore';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -33,7 +33,10 @@ interface PreVerifiedPayment {
 
 function PreVerifiedPaymentsList() {
     const firestore = useFirestore();
-    const paymentsQuery = query(collection(firestore, 'preVerifiedPayments'), where('status', '==', 'available'), orderBy('createdAt', 'desc'));
+    const paymentsQuery = useMemoFirebase(() => {
+        if (!firestore) return null;
+        return query(collection(firestore, 'preVerifiedPayments'), where('status', '==', 'available'), orderBy('createdAt', 'desc'));
+    }, [firestore]);
     const { data: availablePayments, isLoading } = useCollection<PreVerifiedPayment>(paymentsQuery);
     
     return (
