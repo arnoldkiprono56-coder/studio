@@ -156,7 +156,7 @@ export default function PurchasePage() {
                 paymentVerified: true, isActive: true, createdAt: serverTimestamp(),
             });
 
-            const transactionRef = doc(firestore, 'users', userProfile.id, 'transactions', `txn_credit_${Date.now()}`);
+            const transactionRef = doc(collection(firestore, 'users', userProfile.id, 'transactions'));
             transaction.set(transactionRef, {
                 id: transactionRef.id, userId: userProfile.id, licenseId,
                 finalAmount: plan.price, currency: plan.currency, finalTxId: claimedTxId,
@@ -195,10 +195,9 @@ export default function PurchasePage() {
                 transaction.set(licenseRef, licensePayload);
 
                 // 2. Create a new payment transaction document in the user's subcollection
-                const transactionId = `txn_purchase_${Date.now()}`;
-                const transactionRef = doc(firestore, 'users', userProfile.id, 'transactions', transactionId);
+                const transactionRef = doc(collection(firestore, 'users', userProfile.id, 'transactions'));
                 const transactionPayload = {
-                    id: transactionId,
+                    id: transactionRef.id,
                     userId: userProfile.id,
                     licenseId: licenseId,
                     userClaimedAmount: messageAmount ?? (remainingAmount !== null ? remainingAmount : plan.price),
@@ -226,10 +225,9 @@ export default function PurchasePage() {
                         transaction.update(referrerRef, { balance: newBalance });
 
                         // Create commission transaction for the referrer
-                        const commissionTxnId = `txn_commission_${Date.now()}`;
-                        const commissionTxnRef = doc(firestore, 'users', currentUserData.referredBy, 'transactions', commissionTxnId);
+                        const commissionTxnRef = doc(collection(firestore, 'users', currentUserData.referredBy, 'transactions'));
                         const commissionPayload = {
-                            id: commissionTxnId,
+                            id: commissionTxnRef.id,
                             userId: currentUserData.referredBy,
                             type: 'commission',
                             description: `Referral commission from ${userProfile.email}`,
@@ -299,7 +297,7 @@ export default function PurchasePage() {
                 </CardHeader>
                 <CardContent className="space-y-6 border-t pt-6">
                      <div className="text-center p-4 bg-muted/50 rounded-lg text-sm">
-                        <p className="font-bold">1. Send Money: {formatCurrency(priceToPay, plan.currency)} to <span className="text-primary font-code">0784667400</span></p>
+                        <p className="font-bold">1. Send Money: {formatCurrency(priceToPay, plan.currency)} to <span className="text-primary font-code">0786254674</span></p>
                         <p className="text-muted-foreground mt-1">Use M-Pesa or Airtel Money.</p>
                     </div>
 
@@ -309,7 +307,7 @@ export default function PurchasePage() {
                             id="transaction-message"
                             value={transactionMessage}
                             onChange={(e) => setTransactionMessage(e.target.value)}
-                            placeholder="e.g., SAI... Confirmed. Ksh1,500.00 sent to..."
+                            placeholder="e.g., SAK... Confirmed. Ksh1,500.00 sent to..."
                             className="min-h-[120px] font-mono text-xs"
                         />
                         <p className="text-xs text-muted-foreground">The system will automatically extract the transaction ID and amount. If you have a credit, paste the credit transaction message here.</p>
@@ -331,5 +329,3 @@ export default function PurchasePage() {
         </div>
     )
 }
-
-    
