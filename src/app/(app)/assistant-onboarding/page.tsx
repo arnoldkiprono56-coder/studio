@@ -30,8 +30,8 @@ export default function AssistantOnboardingPage() {
         try {
             // Update user role and payment number
             await updateUserProfile({
-                role: 'Assistant',
-                assistantPaymentNumber: paymentNumber, // Using a specific field
+                assistantPaymentNumber: paymentNumber,
+                assistantAgreementAccepted: true,
             });
 
             // Create an audit log for this action
@@ -60,13 +60,21 @@ export default function AssistantOnboardingPage() {
             router.push('/admin');
         } catch (error) {
             console.error('Failed to accept assistant role:', error);
-            toast({ variant: 'destructive', title: 'Update Failed', description: 'Could not update your role. Please try again.' });
+            toast({ variant: 'destructive', title: 'Update Failed', description: 'Could not update your profile. Please try again.' });
             setIsProcessing(false);
         }
     };
 
-    const handleDecline = () => {
-        router.push('/dashboard');
+    const handleDecline = async () => {
+        if (!userProfile) return;
+        // Revert role to 'User'
+        try {
+            await updateUserProfile({ role: 'User' });
+            router.push('/dashboard');
+        } catch (error) {
+            console.error('Failed to decline assistant role:', error);
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not process your request. Please contact support.' });
+        }
     };
 
     return (
@@ -220,3 +228,5 @@ export default function AssistantOnboardingPage() {
         </div>
     );
 }
+
+    

@@ -21,6 +21,7 @@ interface UserProfile {
   referredBy?: string;
   hasPurchased?: boolean;
   isSuspended?: boolean;
+  assistantAgreementAccepted?: boolean;
   [key: string]: any;
 }
 
@@ -74,10 +75,20 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
   }, [userDocRef, firestore, user]);
 
   useEffect(() => {
-    if (userProfile?.isSuspended && pathname !== '/suspended' && !pathname.startsWith('/support')) {
-      router.replace('/suspended');
+    if (!isProfileLoading && userProfile) {
+      if (userProfile.isSuspended && pathname !== '/suspended' && !pathname.startsWith('/support')) {
+        router.replace('/suspended');
+        return;
+      }
+      
+      const isAssistant = userProfile.role === 'Assistant';
+      const hasAccepted = userProfile.assistantAgreementAccepted === true;
+      
+      if (isAssistant && !hasAccepted && pathname !== '/assistant-onboarding') {
+          router.replace('/assistant-onboarding');
+      }
     }
-  }, [userProfile, pathname, router]);
+  }, [userProfile, isProfileLoading, pathname, router]);
   
   useEffect(() => {
     if(userProfile?.oneXBetId) {
@@ -160,3 +171,5 @@ export function useProfile() {
   }
   return context;
 }
+
+    

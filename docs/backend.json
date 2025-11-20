@@ -42,6 +42,11 @@
             "type": "number",
             "description": "The user's wallet balance from commissions.",
             "default": 0
+        },
+        "assistantAgreementAccepted": {
+            "type": "boolean",
+            "description": "Indicates if the assistant has accepted the onboarding agreement.",
+            "default": false
         }
       },
       "required": [
@@ -526,3 +531,5 @@
     "reasoning": "The Firestore structure is updated to align with the Master System Prompt. It defines user roles (User, Assistant, Admin, SuperAdmin) and sets the default to 'User' on registration. It maintains the core logic for Users, Licenses, Predictions, and Payments. User profiles are managed by Firebase Auth and user data is stored in Firestore. Licenses are tied to a user and expire based on 'roundsRemaining' and payment verification. Predictions are linked to both a user and a license. A top-level `transactions` collection tracks payments, with verification handled by a webhook. A global `auditlogs` collection is included for security monitoring. A `plans` collection is added to store pricing information. A new `prompts` collection is added to store editable AI prompts, manageable by admins."
   }
 }
+
+    
