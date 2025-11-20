@@ -60,6 +60,7 @@ export default function PurchasePage() {
     const { data: plan, isLoading } = useDoc<Plan>(planDocRef);
 
     const extractDetails = (message: string): { txId: string | null; amount: number | null } => {
+        if (!message) return { txId: null, amount: null };
         const cleanedMessage = message.replace(/\s+/g, ' ').trim();
         
         // Universal regex for 10-character uppercase alphanumeric code (M-Pesa)
@@ -67,7 +68,7 @@ export default function PurchasePage() {
         const txId = txIdMatch ? txIdMatch[0] : null;
     
         // Universal regex for amount (handles KES, Ksh, with/without commas)
-        const amountMatch = cleanedMessage.match(/(?:KES|KSH)\s?([\d,]+\.?\d*)/i);
+        const amountMatch = cleanedMessage.match(/(?:KES|Ksh)\s?([\d,]+\.?\d*)/i);
         const amount = amountMatch ? parseFloat(amountMatch[1].replace(/,/g, '')) : null;
     
         return { txId, amount };
@@ -327,3 +328,5 @@ export default function PurchasePage() {
         </div>
     )
 }
+
+    
