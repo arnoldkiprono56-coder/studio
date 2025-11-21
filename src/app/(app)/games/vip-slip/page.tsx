@@ -4,7 +4,9 @@
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { Loader2, ArrowLeft, Ticket, AlertCircle } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Loader2, ArrowLeft, Ticket, AlertCircle, BarChart } from "lucide-react";
 import { generateVipSlip, GenerateVipSlipOutput } from '@/ai/flows/generate-vip-slip';
 import Link from 'next/link';
 import { useProfile } from '@/context/profile-context';
@@ -12,13 +14,14 @@ import { useFirestore, useMemoFirebase, errorEmitter, FirestorePermissionError }
 import { collection, query, where, doc, updateDoc, addDoc, serverTimestamp, getDocs, limit } from 'firebase/firestore';
 import type { License } from '@/lib/types';
 import { useCollection } from '@/firebase/firestore/use-collection';
-import { resolveVipSlipOutcome } from '@/ai/flows/adapt-predictions-based-on-feedback';
 import { useToast } from '@/hooks/use-toast';
 
 export default function VipSlipPage() {
     const [prediction, setPrediction] = useState<GenerateVipSlipOutput | null>(null);
     const [isLoading, setIsLoading] = useState(false);
-    const [feedbackSent, setFeedbackSent] = useState(false);
+    const [team1, setTeam1] = useState('');
+    const [team2, setTeam2] = useState('');
+
     const { userProfile, openOneXBetDialog } = useProfile();
     const firestore = useFirestore();
     const { toast } = useToast();
@@ -38,6 +41,10 @@ export default function VipSlipPage() {
 
 
     const handleGetPrediction = async () => {
+        if (!team1.trim() || !team2.trim()) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Please enter both team names.' });
+            return;
+        }
         if (!userProfile?.oneXBetId) {
             openOneXBetDialog();
             return;
@@ -50,22 +57,28 @@ export default function VipSlipPage() {
 
         setIsLoading(true);
         setPrediction(null);
-        setFeedbackSent(false);
         try {
-            const result = await generateVipSlip({ userId: userProfile.id, licenseId: activeLicense.id });
+            const result = await generateVipSlip({
+                userId: userProfile.id,
+                licenseId: activeLicense.id,
+                team1: team1,
+                team2: team2,
+            });
             setPrediction(result);
             
             const predictionData = {
                 userId: userProfile.id,
                 licenseId: activeLicense.id,
                 gameType: 'VIP Slip',
-                predictionData: result.matches, // Store the structured object
+                predictionData: {
+                    teams: `${team1} vs ${team2}`,
+                    ...result
+                },
                 disclaimer: result.disclaimer,
-                status: 'pending', // Add the status
+                status: 'pending',
                 timestamp: serverTimestamp(),
             };
 
-            // This document is created with a generated ID by Firestore
             const newPredictionRef = await addDoc(collection(firestore, 'users', userProfile.id, 'predictions'), predictionData)
                 .catch(error => {
                     errorEmitter.emit('permission-error', new FirestorePermissionError({
@@ -73,23 +86,19 @@ export default function VipSlipPage() {
                         operation: 'create',
                         requestResourceData: predictionData
                     }));
-                    return null; // Return null on error
+                    return null;
                 });
             
             if (!newPredictionRef) {
-                // If the prediction wasn't created, don't proceed.
                 throw new Error("Failed to save prediction to database.");
             }
-
-            // In a real system, you'd trigger a cloud function to resolve the outcome later.
-            // For now, we'll manually simulate this with the feedback buttons.
 
             const auditLogData = {
                 userId: userProfile.id,
                 action: 'prediction_request',
-                details: `Game: VIP Slip, Prediction ID: ${newPredictionRef.id}`,
+                details: `Game: VIP Slip, Match: ${team1} vs ${team2}`,
                 timestamp: serverTimestamp(),
-                ipAddress: '127.0.0.1', // Placeholder IP
+                ipAddress: 'not_collected',
             };
             addDoc(collection(firestore, 'auditlogs'), auditLogData)
                 .catch(error => {
@@ -100,7 +109,6 @@ export default function VipSlipPage() {
                     }));
                 });
 
-            // Decrement rounds remaining
             const licenseRef = doc(firestore, 'users', userProfile.id, 'user_licenses', activeLicense.id);
             const licenseUpdateData = {
                 roundsRemaining: activeLicense.roundsRemaining - 1,
@@ -120,48 +128,13 @@ export default function VipSlipPage() {
             toast({
                 variant: 'destructive',
                 title: 'Error',
-                description: 'Could not generate VIP slip. Please try again.',
+                description: 'Could not generate prediction. Please try again.',
             });
         } finally {
             setIsLoading(false);
         }
     };
     
-    // This is now a simulation of the backend process that resolves game outcomes.
-    const handleSimulateOutcome = async (outcome: 'won' | 'lost') => {
-        if (!prediction || !userProfile || !firestore) return;
-
-        // Find the prediction document in Firestore to get its ID
-        // Note: This is inefficient. In a real app, we'd store the prediction ID in the component state.
-        // For this prototype, we'll find it.
-        const predictionsRef = collection(firestore, 'users', userProfile.id, 'predictions');
-        const q = query(predictionsRef, where("predictionData", "==", prediction.matches), where("status", "==", "pending"), limit(1));
-        const predictionSnapshot = await getDocs(q);
-
-        if (predictionSnapshot.empty) {
-            toast({ variant: 'destructive', title: 'Error', description: 'Could not find the original prediction to resolve.' });
-            return;
-        }
-
-        const predictionDoc = predictionSnapshot.docs[0];
-
-        setFeedbackSent(true);
-        toast({ title: 'Resolving Slip...', description: `Marking slip as ${outcome}.` });
-        
-        try {
-            await resolveVipSlipOutcome({
-                predictionId: predictionDoc.id,
-                userId: userProfile.id,
-                outcome: outcome,
-            });
-            toast({ title: 'Success!', description: `The slip has been resolved as ${outcome}.` });
-        } catch (error) {
-            console.error("Failed to resolve outcome:", error);
-            setFeedbackSent(false);
-            toast({ variant: 'destructive', title: 'Error', description: 'Could not resolve the slip outcome.' });
-        }
-    };
-
     const roundsRemaining = activeLicense?.roundsRemaining ?? 0;
     const canGenerate = !!activeLicense && !!userProfile?.oneXBetId && roundsRemaining > 0;
 
@@ -189,7 +162,7 @@ export default function VipSlipPage() {
              )
         }
         if (activeLicense) {
-            return <p>Ready to generate your VIP Slip.</p>
+            return <p className='text-sm text-muted-foreground'>Enter two teams to get a prediction.</p>
         }
         return <p>Contact an admin to get a license.</p>
     };
@@ -204,79 +177,83 @@ export default function VipSlipPage() {
                     </Link>
                 </Button>
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight">VIP Slip</h1>
-                    <p className="text-muted-foreground">Your premium AI-generated VIP slip for 1xBet.</p>
+                    <h1 className="text-3xl font-bold tracking-tight">VIP Match Analysis</h1>
+                    <p className="text-muted-foreground">Provide a match for our AI to analyze on 1xBet.</p>
                 </div>
             </div>
 
             <Card>
                 <CardHeader>
-                    <CardTitle>New VIP Slip</CardTitle>
-                    <CardDescription>Click the button to generate a new slip. This will consume one prediction round.</CardDescription>
+                    <CardTitle>Match Details</CardTitle>
+                    <CardDescription>Enter the two opposing teams you want the AI to analyze. This will consume one round.</CardDescription>
                 </CardHeader>
-                <CardContent className="flex flex-col items-center justify-center gap-6 min-h-[300px]">
-                    {isLoading || licensesLoading ? (
-                        <Loader2 className="h-12 w-12 animate-spin text-primary" />
-                    ) : prediction ? (
-                        <div className="w-full max-w-2xl space-y-4 bg-card p-6 rounded-xl border-2 border-primary/20 shadow-lg">
-                            <div className="text-center pb-4 border-b border-dashed">
-                                <h3 className="font-bold text-2xl flex items-center justify-center gap-2 text-primary">🎟️ VIP 1XBET SLIP</h3>
-                                <p className="text-sm text-muted-foreground mt-1">
-                                    <span className="font-semibold">Date:</span> {new Date().toLocaleDateString()} | <span className="font-semibold">Slip Type:</span> {prediction.slipType}
-                                </p>
-                            </div>
-                            <ul className="space-y-3 pt-4">
-                                {prediction.matches.map((match, index) => (
-                                    <li key={index} className="p-4 bg-muted/50 rounded-lg border">
-                                        <p className="font-bold text-lg">{index + 1}) {match.teams}</p>
-                                        <div className="flex justify-between items-center text-sm mt-1">
-                                            <span className="text-muted-foreground">
-                                                Market: <span className="font-medium text-foreground">{match.market}</span>
-                                                <span className="mx-2">|</span>
-                                                Prediction: <span className="font-medium text-foreground">{match.prediction}</span>
-                                            </span>
-                                            <span className="font-bold text-primary text-base bg-primary/10 px-2 py-1 rounded">{match.odd.toFixed(2)}</span>
-                                        </div>
-                                    </li>
-                                ))}
-                            </ul>
+                <CardContent className="space-y-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="team1">Team 1 (Home)</Label>
+                            <Input id="team1" placeholder="e.g., Liverpool" value={team1} onChange={(e) => setTeam1(e.target.value)} disabled={isLoading || !canGenerate} />
                         </div>
-                    ) : (
-                         <div className="text-center text-muted-foreground">
-                            <Ticket className="h-16 w-16 mx-auto mb-4" />
-                            {renderStatus()}
+                         <div className="space-y-2">
+                            <Label htmlFor="team2">Team 2 (Away)</Label>
+                            <Input id="team2" placeholder="e.g., Chelsea" value={team2} onChange={(e) => setTeam2(e.target.value)} disabled={isLoading || !canGenerate} />
                         </div>
-                    )}
+                    </div>
                 </CardContent>
                 <CardFooter className="flex-col gap-4 border-t pt-6">
                     <div className="flex w-full items-center justify-between">
                         <p className="text-sm">Rounds Remaining: <span className="font-bold">{roundsRemaining}</span></p>
                         <Button 
                             onClick={handleGetPrediction} 
-                            disabled={isLoading || licensesLoading || !canGenerate} 
+                            disabled={isLoading || licensesLoading || !canGenerate || !team1 || !team2} 
                             size="lg"
                         >
-                            {isLoading || licensesLoading ? 'Loading...' : 'Get New Slip'}
+                            {isLoading ? 'Analyzing...' : 'Analyze Match'}
                         </Button>
                     </div>
-                    {prediction && (
-                        <div className="w-full text-center space-y-3 pt-4 border-t mt-4">
-                            {!feedbackSent ? (
-                                <div className="animate-in fade-in-50 space-y-2">
-                                    <p className="text-sm font-semibold">[Admin Simulation: Resolve Slip Outcome]</p>
-                                    <div className="flex justify-center gap-2">
-                                        <Button variant="outline" size="sm" onClick={() => handleSimulateOutcome('won')}>Simulate WIN</Button>
-                                        <Button variant="outline" size="sm" onClick={() => handleSimulateOutcome('lost')}>Simulate LOSS (Refund Round)</Button>
-                                    </div>
-                                </div>
-                            ) : (
-                                 <p className="text-sm text-success font-semibold animate-in fade-in-50">Slip has been resolved!</p>
-                            )}
-                            <p className="text-xs text-muted-foreground">{prediction.disclaimer}</p>
-                        </div>
-                    )}
                 </CardFooter>
             </Card>
+
+            {isLoading && (
+                <Card>
+                    <CardContent className="flex flex-col items-center justify-center gap-4 min-h-[200px] pt-6">
+                        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+                        <p className='font-semibold text-muted-foreground'>Connecting to servers...</p>
+                        <p className='text-sm text-muted-foreground'>Game is being probably analysed...</p>
+                    </CardContent>
+                </Card>
+            )}
+
+            {prediction && (
+                 <Card className="animate-in fade-in-50">
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2 text-primary"><BarChart /> AI Analysis Complete</CardTitle>
+                        <CardDescription>{team1} vs {team2}</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <div className="text-center p-6 bg-muted/50 rounded-lg">
+                            <p className="text-muted-foreground">Prediction</p>
+                            <p className="text-3xl font-bold">{prediction.prediction}</p>
+                            <p className="text-sm text-muted-foreground mt-1">Market: {prediction.market}</p>
+                        </div>
+                        <div className="flex justify-between items-center text-sm">
+                            <span className="font-semibold">Confidence Score:</span>
+                            <span className="font-bold text-lg text-primary">{prediction.confidence}%</span>
+                        </div>
+                    </CardContent>
+                    <CardFooter className="text-xs text-muted-foreground pt-4 border-t">
+                        {prediction.disclaimer}
+                    </CardFooter>
+                 </Card>
+            )}
+            
+            {!isLoading && !prediction && (
+                 <Card>
+                    <CardContent className="flex flex-col items-center justify-center gap-2 min-h-[200px] pt-6 text-muted-foreground">
+                        <Ticket className="h-12 w-12" />
+                        {renderStatus()}
+                    </CardContent>
+                </Card>
+            )}
         </div>
     );
 }
