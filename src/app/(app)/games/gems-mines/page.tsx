@@ -57,19 +57,9 @@ export default function GemsAndMinesPage() {
         setFeedbackSent(false);
 
         try {
-            const historyQuery = query(
-                collection(firestore, 'users', userProfile.id, 'predictions'),
-                where('gameType', '==', 'Gems & Mines'),
-                orderBy('timestamp', 'desc'),
-                limit(10)
-            );
-            const historySnapshot = await getDocs(historyQuery);
-            const userHistory = historySnapshot.docs.map(d => d.data() as Prediction);
-
             const result = await generateGamePredictions({ 
                 gameType: 'gems-mines', 
                 userId: userProfile.id,
-                userHistory: userHistory.map(h => ({ predictionData: h.predictionData, status: h.status }))
             });
             setPrediction(result);
             
@@ -279,5 +269,3 @@ export default function GemsAndMinesPage() {
         </div>
     );
 }
-
-    

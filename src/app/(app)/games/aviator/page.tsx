@@ -57,20 +57,9 @@ export default function AviatorPage() {
         setPrediction(null);
         setFeedbackSent(false);
         try {
-            const historyQuery = query(
-                collection(firestore, 'users', userProfile.id, 'predictions'),
-                where('gameType', '==', 'Aviator'),
-                orderBy('timestamp', 'desc'),
-                limit(10)
-            );
-            const historySnapshot = await getDocs(historyQuery);
-            const userHistory = historySnapshot.docs.map(d => d.data() as Prediction);
-
-
             const result = await generateGamePredictions({
                  gameType: 'aviator', 
                  userId: userProfile.id,
-                 userHistory: userHistory.map(h => ({ predictionData: h.predictionData, status: h.status }))
             });
             setPrediction(result);
             
@@ -250,5 +239,3 @@ export default function AviatorPage() {
         </div>
     );
 }
-
-    
