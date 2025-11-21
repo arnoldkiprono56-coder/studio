@@ -218,7 +218,7 @@ export default function VipSlipPage() {
                     <CardContent className="flex flex-col items-center justify-center gap-4 min-h-[200px] pt-6">
                         <Loader2 className="h-12 w-12 animate-spin text-primary" />
                         <p className='font-semibold text-muted-foreground'>Connecting to servers...</p>
-                        <p className='text-sm text-muted-foreground'>Game is being probably analysed...</p>
+                        <p className='text-sm text-muted-foreground'>The match is being deeply analyzed...</p>
                     </CardContent>
                 </Card>
             )}
@@ -235,6 +235,12 @@ export default function VipSlipPage() {
                             <p className="text-3xl font-bold">{prediction.prediction}</p>
                             <p className="text-sm text-muted-foreground mt-1">Market: {prediction.market}</p>
                         </div>
+
+                         <div className="p-4 bg-muted/30 rounded-lg">
+                            <p className="text-sm font-semibold mb-2">Analysis Summary</p>
+                            <p className="text-sm text-muted-foreground">{prediction.analysisSummary}</p>
+                        </div>
+                        
                         <div className="flex justify-between items-center text-sm">
                             <span className="font-semibold">Confidence Score:</span>
                             <span className="font-bold text-lg text-primary">{prediction.confidence}%</span>
