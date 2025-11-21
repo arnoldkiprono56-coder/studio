@@ -2,27 +2,80 @@
 'use client';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { AlertCircle, Percent } from 'lucide-react';
+import { AlertCircle, Percent, Ticket, UserX, Loader2 } from 'lucide-react';
+import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { collection, query, where } from 'firebase/firestore';
+import type { License } from '@/lib/types';
 
-export function PredictionSuccessRate() {
-    // This component is temporarily disabled to prevent a Firestore internal SDK error
-    // related to complex collectionGroup queries. To re-enable it, a composite index
-    // would need to be created in the Firebase console for the 'predictions' collection group.
+
+export function ActiveLicensesCard() {
+    const firestore = useFirestore();
+
+    // Note: This is a collection group query which requires an index.
+    // In a real app, create a composite index on 'user_licenses' collection group: `isActive` ASC.
+    const licensesQuery = useMemoFirebase(() => {
+        if (!firestore) return null;
+        return query(
+            collection(firestore, 'user_licenses'), 
+            where('isActive', '==', true)
+        );
+    }, [firestore]);
+
+    // This query is likely to fail without an index. We will show a message.
+    // A more robust solution would be a cloud function to aggregate this data.
+    const { data: licenses, isLoading, error } = useCollection<License>(licensesQuery);
+
     return (
         <Card>
             <CardHeader>
                 <div className="flex items-center gap-2">
-                    <Percent className="h-6 w-6 text-muted-foreground" />
-                    <CardTitle>Prediction Success</CardTitle>
+                    <Ticket className="h-6 w-6 text-muted-foreground" />
+                    <CardTitle>Active Licenses</CardTitle>
                 </div>
-                <CardDescription>Win/loss ratio for all predictions in the last 30 days.</CardDescription>
             </CardHeader>
             <CardContent>
-                <div className="text-center h-[200px] flex flex-col items-center justify-center gap-2 text-muted-foreground bg-muted/30 rounded-lg">
-                    <AlertCircle className="h-8 w-8" />
-                    <h3 className="font-semibold text-lg text-foreground">Feature Temporarily Unavailable</h3>
-                    <p className="text-sm">This chart requires a database index. To enable it, please create a composite index on the 'predictions' collection group in your Firebase console.</p>
+                 {isLoading ? (
+                     <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                 ) : error ? (
+                     <div className="text-sm text-destructive flex items-center gap-2">
+                        <AlertCircle className="h-4 w-4" />
+                        <p>Query failed. Index required.</p>
+                     </div>
+                 ) : (
+                    <p className="text-4xl font-bold">{licenses?.length ?? 0}</p>
+                )}
+                <CardDescription>Total active game licenses.</CardDescription>
+            </CardContent>
+        </Card>
+    );
+}
+
+
+export function SuspendedAccountsCard() {
+    const firestore = useFirestore();
+
+    const suspendedUsersQuery = useMemoFirebase(() => {
+        if (!firestore) return null;
+        return query(collection(firestore, 'users'), where('isSuspended', '==', true));
+    }, [firestore]);
+
+    const { data: suspendedUsers, isLoading } = useCollection(suspendedUsersQuery);
+
+    return (
+        <Card>
+            <CardHeader>
+                <div className="flex items-center gap-2">
+                    <UserX className="h-6 w-6 text-muted-foreground" />
+                    <CardTitle>Suspended</CardTitle>
                 </div>
+            </CardHeader>
+            <CardContent>
+                {isLoading ? (
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                ) : (
+                    <p className="text-4xl font-bold">{suspendedUsers?.length ?? 0}</p>
+                )}
+                <CardDescription>Total suspended user accounts.</CardDescription>
             </CardContent>
         </Card>
     );

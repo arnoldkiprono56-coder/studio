@@ -4,9 +4,8 @@
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { ArrowLeft, BarChart } from 'lucide-react';
-import { PredictionsChart } from './predictions-chart';
 import { BannedUsers } from './banned-users';
-import { PredictionSuccessRate } from './prediction-success-rate';
+import { AnalyticsStats } from './analytics-stats';
 
 
 export default function AdminAnalyticsPage() {
@@ -24,14 +23,7 @@ export default function AdminAnalyticsPage() {
                 </h1>
             </div>
             
-            <div className="grid gap-8 lg:grid-cols-3">
-                <div className="lg:col-span-2">
-                    <PredictionsChart />
-                </div>
-                <div className="lg:col-span-1">
-                    <PredictionSuccessRate />
-                </div>
-            </div>
+            <AnalyticsStats />
 
             <div>
                 <BannedUsers />
