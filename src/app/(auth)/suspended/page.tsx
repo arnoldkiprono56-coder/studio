@@ -3,7 +3,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ShieldAlert, LifeBuoy } from "lucide-react";
+import { ShieldAlert, LifeBuoy, LogOut, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/firebase";
 import { signOut } from "firebase/auth";
@@ -43,11 +43,20 @@ export default function SuspendedPage() {
                                 Contact Support
                             </Link>
                         </Button>
-                        <Button variant="outline" onClick={handleLogout}>
+                    </div>
+                </CardContent>
+                 <CardFooter className="flex-col gap-4 border-t pt-6">
+                    <div className="flex w-full items-center justify-center gap-4">
+                        <Button variant="outline" onClick={() => router.back()}>
+                            <ArrowLeft className="mr-2 h-4 w-4" />
+                            Go Back
+                        </Button>
+                        <Button variant="destructive" onClick={handleLogout}>
+                            <LogOut className="mr-2 h-4 w-4" />
                             Logout
                         </Button>
                     </div>
-                </CardContent>
+                </CardFooter>
             </Card>
         </div>
     );
