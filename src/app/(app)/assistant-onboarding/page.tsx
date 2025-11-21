@@ -95,113 +95,73 @@ export default function AssistantOnboardingPage() {
                     <ScrollArea className="h-[50vh] pr-6">
                         <div className="space-y-6 prose prose-sm prose-invert max-w-none">
                             
-                            <h2 className="font-bold text-lg">1. Purpose of the Assistant Role</h2>
-                            <p>PredictPro Assistants help with:</p>
+                            <h2 className="font-bold text-lg">1. Core Responsibilities of an Assistant</h2>
+                            <p>As a PredictPro Assistant, you are a trusted member of the staff team. Your primary duties are to ensure a smooth and fair user experience. This includes:</p>
                             <ul className="list-disc pl-5 space-y-1">
-                                <li>Responding to users and offering guidance</li>
-                                <li>Managing support tickets</li>
-                                <li>Approving or reviewing payment confirmations (according to company rules)</li>
-                                <li>Helping users understand how to use the platform</li>
-                                <li>Working with the admin team to keep the system organized</li>
-                                <li>Reporting any system issues, suspicious activity, or rule violations</li>
-                            </ul>
-                            <p>Assistants <strong>do NOT</strong> have full administrative control, and cannot modify system-wide settings unless authorized.</p>
-
-                            <h2 className="font-bold text-lg">2. PredictPro Rules & Conduct Policy</h2>
-                            <p>As an Assistant, you agree to:</p>
-                            <h3 className="font-semibold">2.1 Professional Conduct</h3>
-                            <ul className="list-disc pl-5 space-y-1">
-                                <li>Be respectful, helpful, and honest when communicating with users</li>
-                                <li>Never harass, threaten, or misuse your authority</li>
-                                <li>Protect user privacy</li>
-                                <li>Follow instructions from Admins and Super Admins</li>
-                            </ul>
-                            <h3 className="font-semibold">2.2 System Integrity</h3>
-                            <p>You must not:</p>
-                            <ul className="list-disc pl-5 space-y-1">
-                                <li>Share internal information</li>
-                                <li>Leak system data</li>
-                                <li>Allow unauthorized users to access staff features</li>
-                                <li>Modify or delete information without permission</li>
-                                <li>Attempt to bypass security rules</li>
-                            </ul>
-                             <h3 className="font-semibold">2.3 Legal & Safety Requirements</h3>
-                            <ul className="list-disc pl-5 space-y-1">
-                                <li>You must follow all laws in your region</li>
-                                <li>You must not use your position to perform scams or unauthorized transactions</li>
-                                <li>Any suspicious activity must be reported immediately</li>
+                                <li><strong>Customer Support:</strong> Responding to user queries in the support channels promptly and professionally.</li>
+                                <li><strong>License Activation:</strong> Manually activating licenses for users after verifying their payment messages. This is a high-trust role.</li>
+                                <li><strong>Guidance:</strong> Helping users understand how to use the platform, from generating predictions to understanding game rules.</li>
+                                <li><strong>Monitoring:</strong> Reporting suspicious activity, rule violations, or system bugs to Admins immediately.</li>
                             </ul>
 
-                            <h2 className="font-bold text-lg">3. Payment Handling Responsibilities</h2>
-                             <p>PredictPro Assistants <strong>review</strong> payment confirmations submitted by users, following the steps defined by Admins.</p>
-                            <p>Assistants agree to:</p>
+                            <h2 className="font-bold text-lg">2. Code of Conduct & Professionalism</h2>
+                            <p>Your actions reflect on the entire platform. You are required to:</p>
+                            <h3 className="font-semibold">Do:</h3>
+                            <ul className="list-disc pl-5 space-y-1">
+                                <li>Act with integrity, honesty, and respect in all interactions.</li>
+                                <li>Protect user privacy at all times. Do not share user information (email, user ID, etc.) with anyone outside the admin team.</li>
+                                <li>Follow instructions from Admins and SuperAdmins without question.</li>
+                                <li>Use the "AI Assistant" tool for help with platform management tasks.</li>
+                            </ul>
+                            <h3 className="font-semibold">Do NOT:</h3>
+                            <ul className="list-disc pl-5 space-y-1">
+                                <li>Harass, threaten, or abuse any user or staff member.</li>
+                                <li>Abuse your powers. Do not activate licenses for friends or for yourself without valid payment. This will be tracked.</li>
+                                <li>Attempt to access parts of the system you are not authorized for (e.g., pricing controls, user role management).</li>
+                                <li>Share internal system information, operational procedures, or admin chat logs.</li>
+                            </ul>
+
+                             <h2 className="font-bold text-lg">3. Payment Verification & License Activation</h2>
+                             <p>One of your most critical tasks is activating user licenses. You agree to:</p>
                              <ul className="list-disc pl-5 space-y-1">
-                                <li>Verify payment evidence based on company guidelines</li>
-                                <li>Approve or reject submissions honestly</li>
-                                <li>Never request additional money from users</li>
-                                <li>Never handle user banking information directly</li>
-                                <li>Never promise results, guaranteed outcomes, or special privileges</li>
+                                <li>Follow the official company guidelines for verifying payment messages (e.g., checking transaction codes, amounts, and dates).</li>
+                                <li>Approve or reject activation requests honestly and based on the evidence provided.</li>
+                                <li>NEVER request additional money or direct payments from users to your personal accounts. All payments go to the official company number only.</li>
+                                <li>Use the "Activate License" button in the "User Lookup" or "Staff Management" sections to grant licenses.</li>
                             </ul>
-                            <p>Assistants <strong>do not</strong> handle money themselves — only the verification process.</p>
+                            <p>Remember: All license activations are logged and audited. Fraudulent activations will lead to immediate role termination and a permanent ban.</p>
 
-                             <h2 className="font-bold text-lg">4. Assistant Earnings (Template Policy)</h2>
-                             <p>If PredictPro offers earnings, they are issued <strong>only by Admins</strong> and according to internal schedules.</p>
-                            <p>Assistants understand:</p>
+                             <h2 className="font-bold text-lg">4. Assistant Earnings & Payment</h2>
+                             <p>If PredictPro offers compensation for the Assistant role, it will be issued exclusively by Admins or SuperAdmins according to an official schedule.</p>
                              <ul className="list-disc pl-5 space-y-1">
-                                <li>Payments are processed only by official company staff</li>
-                                <li>Assistants are paid only for approved work (according to the system’s rules)</li>
-                                <li>Your payment method must be officially recorded in the system</li>
-                                <li>You must not use someone else’s number or impersonate anyone</li>
+                                <li>To receive salary (if applicable), you must register an official mobile payment number below.</li>
+                                <li>This number must belong to you. Using someone else’s number or impersonating another individual is strictly forbidden.</li>
+                                <li>This number will be stored securely and used only for the purpose of sending your salary. It will not be shared with other users.</li>
                             </ul>
-                            
-                            <h2 className="font-bold text-lg">5. Registering a Payment Number</h2>
-                            <p>To receive your salary (if provided), you must enter your official mobile payment number below:</p>
                             <div className="space-y-2 max-w-sm">
                                 <Label htmlFor="payment-number">Payment Number (e.g., M-Pesa)</Label>
                                 <Input 
                                     id="payment-number" 
-                                    placeholder="Your payment number"
+                                    placeholder="Your official payment number"
                                     value={paymentNumber}
                                     onChange={(e) => setPaymentNumber(e.target.value)}
                                 />
                             </div>
-                             <p>By entering your number, you confirm:</p>
-                             <ul className="list-disc pl-5 space-y-1">
-                                <li>It belongs to you</li>
-                                <li>It is used only for receiving salary</li>
-                                <li>It will not be shared with users</li>
-                                <li>It will be protected by the system</li>
-                            </ul>
                             <p className="text-xs italic">(This is only a template. If you are a minor, you must consult a parent or guardian before using or submitting any financial details.)</p>
 
-                            <h2 className="font-bold text-lg">6. Privacy & Data Protection</h2>
-                            <p>You agree that:</p>
-                            <ul className="list-disc pl-5 space-y-1">
-                                <li>Your staff account will be monitored for security</li>
-                                <li>Your activity logs may be reviewed by Admins</li>
-                                <li>Violations may cause restriction or removal of your role</li>
-                            </ul>
-
-                             <h2 className="font-bold text-lg">7. If You Accept</h2>
-                            <p>If you tap <strong>ACCEPT</strong>, the system will automatically:</p>
+                            <h2 className="font-bold text-lg">5. System Access & Monitoring</h2>
+                            <p>As an Assistant, you will have access to specific admin tools:</p>
                              <ul className="list-disc pl-5 space-y-1">
-                                <li>Create or activate your Assistant account</li>
-                                <li>Save your payment number (if provided)</li>
-                                <li>Grant you Assistant-level permissions</li>
-                                <li>Display your dashboard and tools</li>
-                                <li>Allow Admins to monitor your progress</li>
-                                <li>Notify the Admin team that you have joined</li>
-                            </ul>
+                                <li><strong>Admin Dashboard:</strong> A limited view of platform statistics.</li>
+                                <li><strong>User Lookup:</strong> To find users and view their licenses and activity for support purposes.</li>
+                                <li><strong>AI Assistant:</strong> A powerful tool to help you manage the platform.</li>
+                                <li><strong>Licenses & Support:</strong> To view and manage user licenses and support tickets.</li>
+                             </ul>
+                             <p>You agree that your activity on these tools will be monitored by Admins to ensure security and proper use. Any attempt to bypass your permissions will be logged and will result in disciplinary action.</p>
 
-                             <h2 className="font-bold text-lg">8. If You Decline</h2>
-                            <p>If you tap <strong>DECLINE</strong>, the system will:</p>
-                             <ul className="list-disc pl-5 space-y-1">
-                                <li>Cancel the onboarding process</li>
-                                <li>Delete any entered information</li>
-                                <li>Not activate any permissions</li>
-                                <li>Return you to the main page</li>
-                                <li>Notify Admins that you denied the agreement</li>
-                            </ul>
+                             <h2 className="font-bold text-lg">6. Agreement Actions</h2>
+                             <p>If you tap <strong>ACCEPT</strong>, you confirm you have read and agree to all terms. The system will upgrade your account to "Assistant" and grant you access to the staff dashboard.</p>
+                             <p>If you tap <strong>DECLINE</strong>, your role will be reverted to "User," and you will be returned to the standard user dashboard.</p>
                         </div>
                     </ScrollArea>
                 </CardContent>

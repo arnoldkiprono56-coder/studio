@@ -72,23 +72,46 @@ export default function CompanyAgreementPage() {
 
                             <h2 className="font-bold text-lg">2. Definition of Roles & Responsibilities</h2>
                             <p>Access to features is determined by your assigned role. All roles are subject to monitoring and review by SuperAdmins.</p>
+                            <h3 className="font-semibold text-base mt-2">User</h3>
                             <ul className="list-disc pl-5 space-y-1">
-                                <li><strong>User:</strong> The standard role for all registered members. Users can purchase licenses, generate predictions, and access general support.</li>
-                                <li><strong>Assistant:</strong> A staff role with limited administrative permissions. Assistants are responsible for customer support, payment verification, and upholding community standards. They operate under the supervision of Admins.</li>
-                                <li><strong>Admin:</strong> A senior staff role with broad platform management capabilities, including user management, content control, and system configuration. Admins ensure the platform operates smoothly and securely.</li>
-                                <li><strong>SuperAdmin:</strong> The highest level of authority. SuperAdmins have complete control over the platform, including role assignments, security policies, and financial oversight.</li>
+                                <li>The standard role for all registered members.</li>
+                                <li>Can activate licenses (via admin approval) and generate predictions for games where they have an active license.</li>
+                                <li>Can access general support channels.</li>
+                                <li>Must not share prediction data with non-licensed users.</li>
                             </ul>
+                            <h3 className="font-semibold text-base mt-2">Assistant</h3>
+                             <ul className="list-disc pl-5 space-y-1">
+                                <li>A staff role with limited administrative permissions, focused on support and operations.</li>
+                                <li>Responsible for customer support, payment verification, and upholding community standards.</li>
+                                <li>Can look up user data to assist with support tickets but cannot modify user roles or balances.</li>
+                                <li>Operates under the strict supervision of Admins and SuperAdmins. Misuse of power will result in immediate role termination.</li>
+                            </ul>
+                             <h3 className="font-semibold text-base mt-2">Admin</h3>
+                             <ul className="list-disc pl-5 space-y-1">
+                                <li>A senior staff role with broad platform management capabilities.</li>
+                                <li>Can manage games (enable/disable), send platform-wide broadcasts, and manually activate licenses.</li>
+                                <li>Has access to most user data for management and security purposes but cannot change user roles.</li>
+                                <li>Ensures the platform operates smoothly and securely, and handles escalated issues from Assistants.</li>
+                            </ul>
+                            <h3 className="font-semibold text-base mt-2">SuperAdmin</h3>
+                             <ul className="list-disc pl-5 space-y-1">
+                                <li>The highest level of authority on the platform, responsible for overall system integrity.</li>
+                                <li>Has complete control over all platform settings, including role assignments, security policies, and financial oversight.</li>
+                                <li>Can promote or demote any user, including other Admins.</li>
+                                <li>The final authority on all platform-related decisions.</li>
+                            </ul>
+
 
                             <h2 className="font-bold text-lg">3. Platform Integrity & AI Usage</h2>
                             <p>Our predictions are for informational purposes and are not guaranteed. You acknowledge that:</p>
                             <ul className="list-disc pl-5 space-y-1">
                                 <li>Claiming "guaranteed wins" or "fixed matches" is strictly forbidden and grounds for immediate suspension.</li>
                                 <li>The AI models and prediction data are proprietary to PredictPro. Any attempt to scrape, copy, or resell this data is a violation of these terms.</li>
-                                <li>Feedback provided on predictions may be used to retrain and improve our AI models.</li>
+                                <li>Feedback provided on predictions may be used to retrain and improve our AI models. Your feedback is valuable for making the system smarter for everyone.</li>
                             </ul>
 
                             <h2 className="font-bold text-lg">4. Data Privacy and Security</h2>
-                            <p>We are committed to protecting your data. Your activities on the platform, including logins, prediction requests, and administrative actions, are logged for security and auditing purposes. Staff members (Assistants, Admins, SuperAdmins) have access to user data only as required to perform their duties. Misuse of this access is a serious offense.</p>
+                            <p>We are committed to protecting your data. Your activities on the platform, including logins, prediction requests, and administrative actions, are logged for security and auditing purposes. This helps us prevent fraud and ensure platform integrity. Staff members (Assistants, Admins, SuperAdmins) have access to user data only as required to perform their duties. Misuse of this access is a serious offense and will result in immediate disciplinary action.</p>
 
                             <h2 className="font-bold text-lg">5. Agreement Actions</h2>
                             <p>Your choice below is final for this session.</p>
@@ -127,5 +150,3 @@ export default function CompanyAgreementPage() {
         </div>
     );
 }
-
-    
