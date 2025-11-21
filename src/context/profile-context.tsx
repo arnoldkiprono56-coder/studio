@@ -21,6 +21,7 @@ interface UserProfile {
   isSuspended?: boolean;
   assistantAgreementAccepted?: boolean;
   companyAgreementAccepted?: boolean;
+  photoURL?: string;
   [key: string]: any;
 }
 

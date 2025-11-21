@@ -32,7 +32,8 @@ service cloud.firestore {
       allow get: if isOwner(userId) || isActualAdmin();
       allow list: if isActualAdmin(); // Allow admins to list users for management purposes
       allow create: if isOwner(userId);
-      // A user can update their own document as long as they are not changing their role.
+      // A user can update their own document as long as they are not changing their role or photoURL.
+      // A user can update their own photoURL.
       // A SuperAdmin can update any field, including the role.
       allow update: if (isOwner(userId) && !('role' in request.resource.data && request.resource.data.role != resource.data.role)) || isSuperAdmin();
 
@@ -49,6 +50,11 @@ service cloud.firestore {
       // Admins can read/write their own chat messages
       match /admin_chat_messages/{messageId} {
         allow read, write: if request.auth.uid == userId;
+      }
+      
+      // Users can read/write their own support messages
+      match /support_messages/{messageId} {
+        allow read, write: if isOwner(userId);
       }
     }
     
@@ -87,7 +93,7 @@ service cloud.firestore {
     // The AI running in a Genkit flow (server-side) can create these.
     // Admins can read/update/delete them.
     match /pending_activations/{activationId} {
-      allow create: if true;
+      allow write: if true;
       allow read, list, update, delete: if isActualAdmin();
     }
   }
