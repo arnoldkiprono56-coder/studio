@@ -23,7 +23,11 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'SuperAdmin';
     }
 
-    // Admins can list users.
+    // User profiles can be read by their owner or an admin.
+    // They can be listed only by admins.
+    // Users can create their own profile.
+    // Their role can only be changed by a SuperAdmin.
+    // Other fields can be written by their owner.
     match /users/{userId} {
       allow get: if isOwner(userId) || isActualAdmin();
       allow list: if isActualAdmin();
@@ -35,16 +39,16 @@ service cloud.firestore {
 
       // Subcollections for a specific user
       match /user_licenses/{licenseId} {
-        allow read, write: if isOwner(userId) || isActualAdmin();
+        allow read, write: if request.auth.uid == userId || isActualAdmin();
       }
 
       match /predictions/{predictionId} {
-          allow read, write: if isOwner(userId) || isActualAdmin();
+          allow read, write: if request.auth.uid == userId || isActualAdmin();
       }
       
       // Admins can read/write their own chat messages
       match /admin_chat_messages/{messageId} {
-        allow read, write: if isOwner(userId);
+        allow read, write: if request.auth.uid == userId;
       }
     }
     
