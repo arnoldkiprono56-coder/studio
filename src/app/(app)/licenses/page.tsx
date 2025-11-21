@@ -30,7 +30,6 @@ export default function LicensesPage() {
     const isLoading = isProfileLoading || isLicensesLoading;
 
     const getStatus = (license: License): { text: string; variant: 'default' | 'secondary' | 'outline' | 'destructive' } => {
-        if (!license.paymentVerified) return { text: 'Pending Payment', variant: 'outline' };
         if (license.roundsRemaining <= 0) return { text: 'Expired', variant: 'destructive' };
         if (license.isActive) return { text: 'Active', variant: 'default' };
         return { text: 'Inactive', variant: 'secondary' };
@@ -40,7 +39,7 @@ export default function LicensesPage() {
         <div className="space-y-8">
             <div>
                 <h1 className="text-3xl font-bold tracking-tight">My Licenses</h1>
-                <p className="text-muted-foreground">An overview of all your purchased game licenses.</p>
+                <p className="text-muted-foreground">An overview of all your game licenses.</p>
             </div>
 
             <Card>
@@ -93,7 +92,7 @@ export default function LicensesPage() {
                                     <TableCell colSpan={3} className="h-24 text-center">
                                         <div className="flex items-center justify-center gap-2 text-muted-foreground">
                                             <AlertCircle className="h-5 w-5" />
-                                            You haven't purchased any licenses yet.
+                                            No licenses found. Contact an admin to get one.
                                         </div>
                                     </TableCell>
                                 </TableRow>

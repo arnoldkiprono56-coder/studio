@@ -1,3 +1,4 @@
+
 'use server';
 
 import { firestore } from '@/firebase/server-init';
@@ -72,56 +73,6 @@ export async function fetchAuditLogs({ action, limit: queryLimit = 10 }: { actio
         ...rows.map(row => row.join(' | '))
     ].join('\n');
 }
-
-export async function fetchPreVerifiedPayments() {
-    const paymentsRef = collection(firestore, 'preVerifiedPayments');
-    const q = query(paymentsRef, where('status', '==', 'available'), orderBy('createdAt', 'desc'));
-
-    const snapshot = await getDocs(q);
-    if (snapshot.empty) {
-        return 'No available pre-verified credits found.';
-    }
-    const payments = snapshot.docs.map(doc => {
-        const data = doc.data();
-        return {
-            'Transaction ID': data.transactionId,
-            Amount: data.amount,
-            Currency: data.currency,
-            'Date Added': data.createdAt.toDate().toLocaleDateString(),
-        };
-    });
-
-    const headers = Object.keys(payments[0]);
-    const rows = payments.map(payment => headers.map(header => payment[header as keyof typeof payment]));
-
-    return [
-        headers.join(' | '),
-        headers.map(() => '---').join(' | '),
-        ...rows.map(row => row.join(' | '))
-    ].join('\n');
-}
-
-export async function addPreVerifiedPayment({ transactionId, amount, adminId }: { transactionId: string; amount: number; adminId: string; }) {
-    try {
-        const upperCaseTxId = transactionId.trim().toUpperCase();
-        const docRef = doc(firestore, 'preVerifiedPayments', upperCaseTxId);
-
-        const payload = {
-            transactionId: upperCaseTxId,
-            amount: amount,
-            currency: 'KES',
-            status: 'available',
-            adminId: adminId,
-            createdAt: serverTimestamp(),
-        };
-        
-        await setDoc(docRef, payload);
-        return { success: true, message: `Successfully created pre-verified credit for ${upperCaseTxId}.` };
-    } catch (error: any) {
-        return { success: false, message: `Failed to create pre-verified credit: ${error.message}` };
-    }
-}
-
 
 export async function createBroadcast({ message, audience }: { message: string; audience: string; }) {
     try {
@@ -214,7 +165,6 @@ export async function activateLicenseForUser({ email, gameId }: { email: string,
             userId: userId,
             gameType: gamePlan.name,
             roundsRemaining: gamePlan.rounds,
-            paymentVerified: true,
             isActive: true,
             createdAt: serverTimestamp(),
         };

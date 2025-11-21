@@ -4,7 +4,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useUser, useFirestore, useMemoFirebase, FirestorePermissionError, errorEmitter } from '@/firebase';
-import { doc, DocumentData, DocumentReference, setDoc, updateDoc, writeBatch, getDoc } from 'firebase/firestore';
+import { doc, updateDoc } from 'firebase/firestore';
 import { useDoc } from '@/firebase/firestore/use-doc';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
@@ -18,9 +18,6 @@ interface UserProfile {
   email: string | null;
   role: string;
   oneXBetId?: string;
-  balance?: number;
-  referredBy?: string;
-  hasPurchased?: boolean;
   isSuspended?: boolean;
   assistantAgreementAccepted?: boolean;
   companyAgreementAccepted?: boolean;
@@ -59,9 +56,6 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       throw new Error("User document reference or firestore is not available.");
     }
     
-    // In a production app, role changes should trigger a Firebase Function
-    // to set custom claims, not just update Firestore.
-    // For this prototype, we'll just update the document.
     try {
         await updateDoc(userDocRef, data);
     } catch (error) {

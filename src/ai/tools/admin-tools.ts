@@ -1,8 +1,9 @@
+
 'use server';
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
-import { fetchUsers, fetchAuditLogs, createBroadcast, fetchPreVerifiedPayments, updateUserRole, suspendUser, activateLicenseForUser, addPreVerifiedPayment } from '@/services/firestore-service';
+import { fetchUsers, fetchAuditLogs, createBroadcast, updateUserRole, suspendUser, activateLicenseForUser } from '@/services/firestore-service';
 
 // Tool to get all users
 export const getAllUsers = ai.defineTool(
@@ -25,7 +26,7 @@ export const getAuditLogs = ai.defineTool(
     name: 'getAuditLogs',
     description: 'Searches audit logs for specific actions. Used to identify suspicious activity or potential fraud. Returns data in a markdown table.',
     inputSchema: z.object({
-      action: z.enum(['prediction_request', 'bypass_attempt', 'license_expired', 'payment_verified', 'payment_rejected']).describe('The type of action to search for.'),
+      action: z.enum(['prediction_request', 'bypass_attempt', 'license_expired']).describe('The type of action to search for.'),
       limit: z.number().optional().default(10).describe('The maximum number of log entries to return.'),
     }),
     outputSchema: z.string().describe('A markdown table of logs with columns: UserID, Action, Details, Timestamp.'),
@@ -34,40 +35,6 @@ export const getAuditLogs = ai.defineTool(
     return fetchAuditLogs(input);
   }
 );
-
-// Tool to get pre-verified payments
-export const getPreVerifiedPayments = ai.defineTool(
-  {
-    name: 'getPreVerifiedPayments',
-    description: 'Fetches a list of all available (unclaimed) pre-verified payment credits. Returns data in a markdown table.',
-    inputSchema: z.object({}),
-    outputSchema: z.string().describe('A markdown table of available credits with columns: Transaction ID, Amount, Currency, Date Added.'),
-  },
-  async () => {
-    return fetchPreVerifiedPayments();
-  }
-);
-
-// Tool to create a pre-verified payment
-export const createPreVerifiedPayment = ai.defineTool(
-    {
-        name: 'createPreVerifiedPayment',
-        description: 'Adds a new pre-verified payment credit to the system. This allows a user to have their purchase automatically approved if they use the matching transaction ID.',
-        inputSchema: z.object({
-            transactionId: z.string().describe('The transaction ID to pre-verify (e.g., an M-Pesa code).'),
-            amount: z.number().describe('The amount that was paid.'),
-            adminId: z.string().describe('The ID of the admin creating this credit.'),
-        }),
-        outputSchema: z.object({
-            success: z.boolean(),
-            message: z.string(),
-        }),
-    },
-    async (input) => {
-        return addPreVerifiedPayment(input);
-    }
-);
-
 
 // Tool to send a broadcast message
 export const sendBroadcastMessage = ai.defineTool(
@@ -144,3 +111,5 @@ export const activateLicense = ai.defineTool(
         return activateLicenseForUser(input);
     }
 );
+
+    

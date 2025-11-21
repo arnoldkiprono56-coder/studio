@@ -58,9 +58,7 @@ service cloud.firestore {
           allow read, write: if isOwner(userId) || isActualAdmin();
       }
       
-      match /transactions/{transactionId} {
-          allow read, write: if isOwner(userId) || isActualAdmin();
-      }
+      // DELETED transactions subcollection
     }
     
     // The /admins collection is no longer used for checking admin status.
@@ -69,11 +67,15 @@ service cloud.firestore {
       allow read, write: if false; 
     }
     
-    // Transactions can be created by any authenticated user.
-    // Admins can list all transactions. Regular users can only get their own.
-    // Transactions cannot be updated or deleted by clients directly.
+    // DELETED top-level collections
     match /transactions/{transactionId} {
-      allow get, list, create, update, delete: if false; // This collection is no longer used.
+      allow get, list, create, update, delete: if false;
+    }
+    match /pending_payments/{paymentId} {
+      allow get, list, create, update, delete: if false;
+    }
+    match /preVerifiedPayments/{transactionId} {
+      allow get, list, create, update, delete: if false;
     }
 
     // Audit logs can be created by any authenticated user.
@@ -107,19 +109,6 @@ service cloud.firestore {
         allow read: if isUser();
         allow create: if isActualAdmin();
         allow update, delete: if isActualAdmin();
-    }
-    
-    // New collection for pending payments queue. Only Admins can access.
-    // Authenticated users can create new entries.
-    match /pending_payments/{paymentId} {
-      allow create: if isUser();
-      allow read, list, update, delete: if isActualAdmin();
-    }
-
-    // Pre-verified payments can be read and written by any authenticated user.
-    // Access to create/view these is controlled by the UI.
-    match /preVerifiedPayments/{transactionId} {
-      allow read, write, delete, list: if isUser();
     }
   }
 }

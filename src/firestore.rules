@@ -12,37 +12,19 @@ service cloud.firestore {
     function isUser() {
       return request.auth != null;
     }
-
-    // Checks if the user has an Admin or SuperAdmin role in their user document.
-    function isActualAdmin() {
-      // This requires that users can read their own user document.
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['Admin', 'SuperAdmin'];
-    }
     
     function isSuperAdmin() {
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'SuperAdmin';
     }
 
-    // This rule allows Admins to perform collection group queries on these subcollections.
-    match /{path=**}/user_licenses/{licenseId} {
-      allow list: if isActualAdmin();
-    }
-    match /{path=**}/predictions/{predictionId} {
-      allow list: if isActualAdmin();
-    }
-    match /{path=**}/transactions/{transactionId} {
-      allow list: if isActualAdmin();
-    }
-
-
-    // User profiles can be read by their owner or an admin.
-    // They can be listed only by admins.
+    // User profiles can be read by their owner.
+    // They can be listed only by SuperAdmins for now to prevent accidental exposure.
     // Users can create their own profile.
     // Their role can only be changed by a SuperAdmin.
     // Other fields can be written by their owner.
     match /users/{userId} {
-      allow get: if isOwner(userId) || isActualAdmin();
-      allow list: if isActualAdmin();
+      allow get: if isOwner(userId);
+      allow list: if isSuperAdmin();
       allow create: if isOwner(userId);
       // A user can update their own document as long as they are not changing their role.
       // A SuperAdmin can update any field, including the role.
@@ -51,77 +33,50 @@ service cloud.firestore {
 
       // Subcollections for a specific user
       match /user_licenses/{licenseId} {
-        allow read, write: if isOwner(userId) || isActualAdmin();
+        allow read, write: if isOwner(userId) || isSuperAdmin();
       }
 
       match /predictions/{predictionId} {
-          allow read, write: if isOwner(userId) || isActualAdmin();
+          allow read, write: if isOwner(userId) || isSuperAdmin();
       }
       
-      match /transactions/{transactionId} {
-          allow read, write: if isOwner(userId) || isActualAdmin();
+      // Admins can read/write their own chat messages
+      match /admin_chat_messages/{messageId} {
+        allow read, write: if request.auth.uid == userId;
       }
     }
     
     // The /admins collection is no longer used for checking admin status.
-    // Writes should be disabled from the client to prevent misuse.
     match /admins/{userId} {
       allow read, write: if false; 
     }
-    
-    // Transactions can be created by any authenticated user.
-    // Admins can list all transactions. Regular users can only get their own.
-    // Transactions cannot be updated or deleted by clients directly.
-    match /transactions/{transactionId} {
-      allow get, list, create, update, delete: if false; // This collection is no longer used.
-    }
 
     // Audit logs can be created by any authenticated user.
-    // Only admins can get or list audit logs.
+    // Only SuperAdmins can get or list audit logs.
     // No one can update or delete logs from the client.
     match /auditlogs/{auditLogId} {
       allow create: if isUser();
-      allow get, list: if isActualAdmin();
+      allow get, list: if isSuperAdmin();
       allow update, delete: if false;
     }
-
-    // Plans can be read by anyone, but only written by an admin.
-    match /plans/{planId} {
-      allow read: if true;
-      allow write: if isActualAdmin();
-    }
     
-    // Prompts can only be read and written by an admin.
+    // Prompts can only be read and written by a SuperAdmin.
     match /prompts/{promptId} {
-      allow read, write: if isActualAdmin();
+      allow read, write: if isSuperAdmin();
     }
 
-    // Game status can be read by anyone, but only written by an admin.
+    // Game status can be read by anyone, but only written by a SuperAdmin.
     match /game_status/{gameId} {
       allow read: if true;
-      allow write: if isActualAdmin();
+      allow write: if isSuperAdmin();
     }
     
-    // Notifications can be created by Admins and read by any authenticated user.
+    // Notifications can be created by SuperAdmins and read by any authenticated user.
     match /notifications/{notificationId} {
         allow read: if isUser();
-        allow create: if isActualAdmin();
-        allow update, delete: if isActualAdmin();
-    }
-    
-    // New collection for pending payments queue. Only Admins can access.
-    // Authenticated users can create new entries.
-    match /pending_payments/{paymentId} {
-      allow create: if isUser();
-      allow read, list, update, delete: if isActualAdmin();
-    }
-
-    // Pre-verified payments can be read and written by any authenticated user.
-    // This is now handled by a secure server-side tool, so client access is not strictly needed,
-    // but leaving it open for authenticated users simplifies development and doesn't pose
-    // a major risk in this context as the feature is admin-gated in the UI.
-    match /preVerifiedPayments/{transactionId} {
-      allow read, write, delete, list: if isUser();
+        allow create, update, delete: if isSuperAdmin();
     }
   }
 }
+
+    

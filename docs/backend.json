@@ -38,11 +38,6 @@
             "type": "string",
             "description": "The ID of the user who referred this user."
         },
-        "balance": {
-            "type": "number",
-            "description": "The user's wallet balance from commissions.",
-            "default": 0
-        },
         "assistantAgreementAccepted": {
             "type": "boolean",
             "description": "Indicates if the assistant has accepted the onboarding agreement.",
@@ -50,7 +45,7 @@
         },
         "assistantPaymentNumber": {
           "type": "string",
-          "description": "The payment number provided by an assistant during onboarding."
+          "description": "The payment number provided by an assistant during onboarding for their salary."
         },
         "companyAgreementAccepted": {
             "type": "boolean",
@@ -68,7 +63,7 @@
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "License",
       "type": "object",
-      "description": "Represents a game license for a user, valid for a set number of rounds.",
+      "description": "Represents a game license for a user, valid for a set number of rounds. Activated by an Admin.",
       "properties": {
         "id": {
           "type": "string",
@@ -90,17 +85,17 @@
         },
         "roundsRemaining": {
           "type": "number",
-          "description": "Number of prediction rounds remaining for the license. Expires after 100 rounds.",
+          "description": "Number of prediction rounds remaining for the license. Defaults to 100 on activation.",
           "default": 100
-        },
-        "paymentVerified": {
-          "type": "boolean",
-          "description": "Indicates if the payment for this license has been verified by the webhook.",
-          "default": false
         },
         "isActive": {
           "type": "boolean",
-          "description": "Indicates if the license is active. A license is active if paymentVerified is true and roundsRemaining > 0."
+          "description": "Indicates if the license is active. A license is active if roundsRemaining > 0."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp of when the license was activated."
         }
       },
       "required": [
@@ -108,23 +103,6 @@
         "userId",
         "gameType"
       ]
-    },
-    "PreVerifiedPayment": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "PreVerifiedPayment",
-      "type": "object",
-      "description": "A payment credit pre-approved by an admin.",
-      "properties": {
-        "transactionId": { "type": "string" },
-        "amount": { "type": "number" },
-        "currency": { "type": "string", "default": "KES" },
-        "status": { "type": "string", "enum": ["available", "claimed"] },
-        "adminId": { "type": "string" },
-        "createdAt": { "type": "string", "format": "date-time" },
-        "claimedBy": { "type": "string" },
-        "claimedAt": { "type": "string", "format": "date-time" }
-      },
-      "required": ["transactionId", "amount", "status", "adminId", "createdAt"]
     },
     "Prediction": {
       "$schema": "http://json-schema.org/draft-07/schema#",
@@ -214,159 +192,6 @@
         "userId",
         "action",
         "timestamp"
-      ]
-    },
-    "PaymentTransaction": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "PaymentTransaction",
-      "type": "object",
-      "description": "Represents a payment transaction for a license.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the Transaction entity."
-        },
-        "userId": {
-          "type": "string",
-          "description": "Reference to User. (Relationship: User 1:N Transaction)"
-        },
-        "licenseId": {
-          "type": "string",
-          "description": "The license being purchased (if applicable)."
-        },
-        "type": {
-          "type": "string",
-          "description": "The type of transaction (purchase).",
-          "enum": ["purchase"]
-        },
-        "description": {
-          "type": "string",
-          "description": "A brief description of the transaction (e.g., 'Purchase of VIP Slip license')."
-        },
-        "userClaimedAmount": {
-          "type": "number",
-          "description": "The amount of the plan price the user is claiming to have paid."
-        },
-        "finalAmount": {
-          "type": "number",
-          "description": "The final amount confirmed by an admin or an auto-verification system."
-        },
-        "currency": {
-          "type": "string",
-          "description": "Currency of the transaction (KES)."
-        },
-        "userSubmittedTxId": {
-          "type": "string",
-          "description": "The transaction ID submitted by the user for verification."
-        },
-        "finalTxId": {
-          "type": "string",
-          "description": "The final transaction ID confirmed by an admin."
-        },
-        "status": {
-          "type": "string",
-          "description": "Status of the transaction (pending, verified, failed, completed).",
-          "enum": ["pending", "verified", "failed", "completed"]
-        }
-      },
-      "required": [
-        "id",
-        "userId",
-        "userClaimedAmount",
-        "currency",
-        "status",
-        "type",
-        "description",
-        "userSubmittedTxId"
-      ]
-    },
-    "PendingPayment": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "PendingPayment",
-      "type": "object",
-      "description": "A copy of a transaction document, placed in a global queue for admin verification.",
-      "properties": {
-         "id": {
-          "type": "string",
-          "description": "The ID of the original transaction document."
-        },
-        "userId": {
-          "type": "string"
-        },
-         "userEmail": {
-          "type": "string"
-        },
-        "licenseId": {
-          "type": "string"
-        },
-        "description": {
-          "type": "string"
-        },
-        "userClaimedAmount": {
-          "type": "number"
-        },
-        "currency": {
-          "type": "string"
-        },
-        "userSubmittedTxId": {
-          "type": "string"
-        },
-        "status": {
-          "type": "string",
-          "enum": ["pending"]
-        },
-         "createdAt": {
-          "type": "string",
-          "format": "date-time"
-        }
-      },
-      "required": [
-        "id",
-        "userId",
-        "userEmail",
-        "licenseId",
-        "userClaimedAmount",
-        "currency",
-        "status",
-        "description",
-        "userSubmittedTxId",
-        "createdAt"
-      ]
-    },
-    "Plan": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Plan",
-      "type": "object",
-      "description": "Defines a pricing plan for a game license.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique ID for the plan (e.g., 'vip-slip')."
-        },
-        "name": {
-          "type": "string",
-          "description": "Display name of the plan (e.g., 'VIP Slip')."
-        },
-        "price": {
-          "type": "number",
-          "description": "The cost of the plan."
-        },
-        "currency": {
-          "type": "string",
-          "description": "The currency of the price (e.g., 'KES').",
-          "default": "KES"
-        },
-        "rounds": {
-          "type": "number",
-          "description": "The number of rounds included in the plan.",
-          "default": 100
-        }
-      },
-      "required": [
-        "id",
-        "name",
-        "price",
-        "rounds"
       ]
     },
     "Prompt": {
@@ -467,6 +292,37 @@
         }
       },
       "required": ["id", "message", "targetAudience", "createdAt"]
+    },
+    "AdminChatMessage": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Admin Chat Message",
+      "type": "object",
+      "description": "A single message in an admin's support chat with the AI assistant.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the message."
+        },
+        "text": {
+          "type": "string",
+          "description": "The content of the message."
+        },
+        "sender": {
+          "type": "string",
+          "enum": ["user", "model"],
+          "description": "Who sent the message ('user' for the admin, 'model' for the AI)."
+        },
+        "isUser": {
+            "type": "boolean",
+            "description": "True if the sender is the human admin."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp of when the message was sent."
+        }
+      },
+      "required": ["id", "text", "sender", "createdAt"]
     }
   },
   "auth": {
@@ -499,7 +355,7 @@
           "schema": {
             "$ref": "#/backend/entities/License"
           },
-          "description": "Stores game licenses for a user. Each license expires after 100 prediction rounds and must have a verified payment.",
+          "description": "Stores game licenses for a user. Each license expires after 100 prediction rounds.",
           "params": [
             {
               "name": "userId",
@@ -532,33 +388,16 @@
           ]
         }
       },
-      {
-        "path": "/users/{userId}/transactions/{transactionId}",
-        "definition": {
-          "entityName": "PaymentTransaction",
-          "schema": {
-            "$ref": "#/backend/entities/PaymentTransaction"
-          },
-          "description": "Stores all payment transactions for a specific user.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "Unique identifier for the user."
-            },
-            {
-              "name": "transactionId",
-              "description": "Unique identifier for the transaction."
-            }
-          ]
-        }
-      },
        {
-        "path": "/pending_payments/{paymentId}",
+        "path": "/users/{userId}/admin_chat_messages/{messageId}",
         "definition": {
-          "entityName": "PendingPayment",
-          "schema": { "$ref": "#/backend/entities/PendingPayment" },
-          "description": "A global queue for pending payment verifications. Admins read from this collection.",
-          "params": [{ "name": "paymentId", "description": "The ID of the pending payment, same as the transaction ID." }]
+          "entityName": "AdminChatMessage",
+          "schema": { "$ref": "#/backend/entities/AdminChatMessage" },
+          "description": "Stores the history of an admin's conversation with the AI assistant.",
+          "params": [
+            { "name": "userId", "description": "The admin's user ID." },
+            { "name": "messageId", "description": "Unique ID for the chat message." }
+          ]
         }
       },
       {
@@ -573,22 +412,6 @@
             {
               "name": "auditLogId",
               "description": "Unique identifier for the audit log entry."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/plans/{planId}",
-        "definition": {
-          "entityName": "Plan",
-          "schema": {
-            "$ref": "#/backend/entities/Plan"
-          },
-          "description": "Stores the pricing and configuration for each game license plan.",
-          "params": [
-            {
-              "name": "planId",
-              "description": "Unique identifier for the plan (e.g. 'vip-slip')."
             }
           ]
         }
@@ -640,24 +463,10 @@
             }
           ]
         }
-      },
-      {
-        "path": "/preVerifiedPayments/{transactionId}",
-        "definition": {
-          "entityName": "PreVerifiedPayment",
-          "schema": {
-            "$ref": "#/backend/entities/PreVerifiedPayment"
-          },
-          "description": "Stores payment credits pre-approved by an admin.",
-          "params": [
-            {
-              "name": "transactionId",
-              "description": "The M-Pesa or Airtel transaction ID."
-            }
-          ]
-        }
       }
     ],
-    "reasoning": "The Firestore structure is updated to align with the Master System Prompt. It defines user roles (User, Assistant, Admin, SuperAdmin) and sets the default to 'User' on registration. It maintains the core logic for Users, Licenses, Predictions, and Payments. User profiles are managed by Firebase Auth and user data is stored in Firestore. Licenses are tied to a user and expire based on 'roundsRemaining' and payment verification. Predictions are linked to both a user and a license. Transactions are now a subcollection of a user for improved security and querying. A global `auditlogs` collection is included for security monitoring. A `plans` collection is added to store pricing information. A new `prompts` collection is added to store editable AI prompts, manageable by admins."
+    "reasoning": "The Firestore structure is updated to remove all payment and pricing-related collections (`plans`, `pending_payments`, `preVerifiedPayments`, `transactions`). The User entity has been simplified by removing `balance`. The License entity no longer has a `paymentVerified` field. This aligns with the request to completely remove all financial transaction functionality from the app."
   }
 }
+
+    

@@ -4,8 +4,8 @@ export interface License {
     userId: string;
     gameType: string;
     roundsRemaining: number;
-    paymentVerified: boolean;
     isActive: boolean;
+    createdAt?: any;
 }
 
 export interface Prediction {
@@ -18,5 +18,3 @@ export interface Prediction {
     timestamp: any; // Can be Date or Firestore Timestamp
     status: 'pending' | 'won' | 'lost';
 }
-
-    

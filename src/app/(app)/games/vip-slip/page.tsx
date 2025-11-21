@@ -33,9 +33,8 @@ export default function VipSlipPage() {
 
     const { data: licenses, isLoading: licensesLoading } = useCollection<License>(licensesQuery);
     
-    const activeLicense = licenses?.find(l => l.isActive && l.paymentVerified && l.roundsRemaining > 0);
-    const pendingLicense = licenses?.find(l => !l.paymentVerified);
-    const expiredLicense = licenses?.find(l => l.paymentVerified && l.roundsRemaining <= 0);
+    const activeLicense = licenses?.find(l => l.isActive && l.roundsRemaining > 0);
+    const expiredLicense = licenses?.find(l => l.roundsRemaining <= 0);
 
 
     const handleGetPrediction = async () => {
@@ -177,25 +176,22 @@ export default function VipSlipPage() {
             return (
                 <div className='text-center'>
                     <p>No VIP Slip license found.</p>
-                    <Button asChild variant="link"><Link href="/purchase/vip-slip">Purchase a License</Link></Button>
+                    <p className="text-xs text-muted-foreground">Licenses must be activated by an admin.</p>
                 </div>
             )
-        }
-        if (pendingLicense) {
-            return <p className="font-semibold text-warning flex items-center gap-2"><AlertCircle size={16}/> Payment verification is pending. Please wait or contact support.</p>
         }
         if (expiredLicense) {
              return (
                 <div className='text-center'>
-                    <p className="font-semibold text-warning">Your license has expired. Please renew to continue.</p>
-                    <Button asChild variant="link"><Link href="/purchase/vip-slip">Renew License</Link></Button>
+                    <p className="font-semibold text-warning">Your license has expired.</p>
+                    <p className="text-xs text-muted-foreground">Contact an admin to reactivate your license.</p>
                 </div>
              )
         }
         if (activeLicense) {
             return <p>Ready to generate your VIP Slip.</p>
         }
-        return <p>Purchase a license to generate VIP slips.</p>
+        return <p>Contact an admin to get a license.</p>
     };
 
 

@@ -9,13 +9,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { ArrowRight, Star } from "lucide-react";
 import Link from "next/link";
-import { formatCurrency } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import OnboardingPage from "@/app/(app)/onboarding/page";
 import { useCollection } from "@/firebase/firestore/use-collection";
 import { useFirestore, useMemoFirebase } from "@/firebase";
-import { collection, query, where, limit, orderBy } from "firebase/firestore";
-import type { License, Prediction } from "@/lib/types";
+import { collection, query } from "firebase/firestore";
+import type { License } from "@/lib/types";
 import { PredictionHistory } from "./prediction-history";
 
 
@@ -108,7 +107,6 @@ export default function DashboardPage() {
 
   const userName = userProfile.email?.split('@')[0] || "Player";
   const hasActiveLicenses = activeLicenses && activeLicenses.length > 0;
-  const userPlan = hasActiveLicenses ? 'Active' : 'No Plan';
 
 
   return (
@@ -125,31 +123,6 @@ export default function DashboardPage() {
             </Badge>
         )}
       </div>
-
-      <div className="grid gap-4 md:grid-cols-2">
-        <Card className="bg-card/70 backdrop-blur-sm">
-          <CardHeader>
-            <CardTitle>Current Plan</CardTitle>
-            <CardDescription>{userPlan}</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Link href="/games">
-              <Button className="w-full">
-                {hasActiveLicenses ? 'View Games' : 'Purchase a License'}
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>Active Licenses</CardTitle>
-            <CardDescription>Licenses currently in use.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-bold">{activeLicenses?.length ?? 0}</p>
-          </CardContent>
-        </Card>
-      </div>
       
       <div>
         <h2 className="text-2xl font-semibold tracking-tight mb-4">Game Access</h2>
@@ -165,7 +138,7 @@ export default function DashboardPage() {
                     </CardHeader>
                     <CardContent>
                         <p className="text-sm text-muted-foreground mb-4">
-                            {status === 'active' ? 'Predictions available' : 'License required'}
+                            {status === 'active' ? 'Predictions available' : 'Admin activation required'}
                         </p>
                         <Button variant="ghost" size="sm" asChild>
                             <Link href={game.href}>Go to game <ArrowRight className="w-4 h-4 ml-2" /></Link>
@@ -181,3 +154,5 @@ export default function DashboardPage() {
     </div>
   );
 }
+
+    

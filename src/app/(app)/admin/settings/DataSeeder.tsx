@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -7,13 +8,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Database, Loader2 } from 'lucide-react';
-
-const defaultPlans = [
-    { id: 'vip-slip', name: 'VIP Slip', price: 1500, currency: 'KES', rounds: 100 },
-    { id: 'aviator', name: 'Aviator', price: 799, currency: 'KES', rounds: 100 },
-    { id: 'crash', name: 'Crash', price: 799, currency: 'KES', rounds: 100 },
-    { id: 'mines-gems', name: 'Mines & Gems', price: 999, currency: 'KES', rounds: 100 }
-];
 
 const defaultGameStatuses = [
     { id: 'vip-slip', name: 'VIP Slip', isEnabled: true, disabledReason: '' },
@@ -39,20 +33,6 @@ export function DataSeeder() {
         try {
             const batch = writeBatch(firestore);
 
-            // Check existing plans
-            const plansCollection = collection(firestore, 'plans');
-            const plansSnapshot = await getDocs(query(plansCollection));
-            const existingPlanIds = new Set(plansSnapshot.docs.map(d => d.id));
-            let plansSeeded = 0;
-
-            defaultPlans.forEach(plan => {
-                if (!existingPlanIds.has(plan.id)) {
-                    const planRef = doc(firestore, 'plans', plan.id);
-                    batch.set(planRef, plan);
-                    plansSeeded++;
-                }
-            });
-
             // Check existing game statuses
             const gameStatusCollection = collection(firestore, 'game_status');
             const gameStatusSnapshot = await getDocs(query(gameStatusCollection));
@@ -67,7 +47,7 @@ export function DataSeeder() {
                 }
             });
 
-            if (plansSeeded === 0 && gamesSeeded === 0) {
+            if (gamesSeeded === 0) {
                  toast({
                     title: 'No Action Needed',
                     description: 'All default platform data already exists.',
@@ -76,7 +56,7 @@ export function DataSeeder() {
                 await batch.commit();
                 toast({
                     title: 'Success!',
-                    description: `Seeded ${plansSeeded} new plans and ${gamesSeeded} new game statuses.`,
+                    description: `Seeded ${gamesSeeded} new game statuses.`,
                 });
             }
             
@@ -102,7 +82,7 @@ export function DataSeeder() {
                         <CardTitle>Platform Data Seeding</CardTitle>
                     </div>
                     <CardDescription>
-                        Populate the database with default game statuses and pricing plans. This is a one-time action
+                        Populate the database with default game statuses. This is a one-time action
                         that should be run after the initial setup.
                     </CardDescription>
                 </CardHeader>
@@ -120,3 +100,5 @@ export function DataSeeder() {
         </div>
     );
 }
+
+    

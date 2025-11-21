@@ -107,7 +107,7 @@ export default function GamesPage() {
       <div className="grid gap-6 md:grid-cols-2">
         {games.map(game => {
             const Icon = game.icon;
-            const hasActiveLicense = allLicenses?.some(l => l.gameType === game.name && l.isActive && l.paymentVerified);
+            const hasActiveLicense = allLicenses?.some(l => l.gameType === game.name && l.isActive);
             const status = hasActiveLicense ? 'active' : 'locked';
             
             return (
@@ -135,10 +135,10 @@ export default function GamesPage() {
                                     </Link>
                                 </Button>
                             ) : (
-                                <Button asChild variant="secondary" className="w-full">
-                                    <Link href={`/purchase/${game.planId}`}>
-                                        Buy License <ArrowRight className="w-4 h-4 ml-2" />
-                                    </Link>
+                                <Button asChild variant="secondary" className="w-full" disabled>
+                                    <div className="text-center">
+                                       <p>Contact an admin to activate a license</p>
+                                    </div>
                                 </Button>
                             )}
                         </div>
@@ -150,3 +150,5 @@ export default function GamesPage() {
     </div>
   );
 }
+
+    

@@ -8,12 +8,11 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Search, User, AlertCircle, Ticket, CreditCard, History, ArrowLeft } from 'lucide-react';
+import { Loader2, Search, User, AlertCircle, Ticket, History, ArrowLeft } from 'lucide-react';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { formatCurrency } from '@/lib/utils';
 import type { License, Prediction } from '@/lib/types';
 import Link from 'next/link';
 
@@ -26,15 +25,6 @@ interface UserProfile {
   oneXBetId?: string;
 }
 
-interface PaymentTransaction {
-    id: string;
-    description: string;
-    status: string;
-    userClaimedAmount: number;
-    currency: string;
-    createdAt: any;
-}
-
 
 function UserDetails({ user }: { user: UserProfile }) {
     const firestore = useFirestore();
@@ -43,19 +33,12 @@ function UserDetails({ user }: { user: UserProfile }) {
         !firestore ? null : query(collection(firestore, 'users', user.id, 'user_licenses'), orderBy('createdAt', 'desc'))
     , [firestore, user.id]);
 
-    const transactionsQuery = useMemoFirebase(() => 
-        !firestore ? null : query(collection(firestore, 'users', user.id, 'transactions'), orderBy('createdAt', 'desc'), limit(10))
-    , [firestore, user.id]);
-
     const predictionsQuery = useMemoFirebase(() =>
         !firestore ? null : query(collection(firestore, 'users', user.id, 'predictions'), orderBy('timestamp', 'desc'), limit(10))
     , [firestore, user.id]);
 
     const { data: licenses, isLoading: licensesLoading } = useCollection<License>(licensesQuery);
-    const { data: transactions, isLoading: transactionsLoading } = useCollection<PaymentTransaction>(transactionsQuery);
     const { data: predictions, isLoading: predictionsLoading } = useCollection<Prediction>(predictionsQuery);
-
-    const isLoading = licensesLoading || transactionsLoading || predictionsLoading;
 
     return (
         <div className="space-y-6 mt-6">
@@ -85,25 +68,6 @@ function UserDetails({ user }: { user: UserProfile }) {
                                 <TableCell>{l.roundsRemaining}</TableCell>
                             </TableRow>
                         )) : <TableRow><TableCell colSpan={3} className="text-center">No licenses found.</TableCell></TableRow>}
-                        </TableBody>
-                    </Table>
-                </CardContent>
-            </Card>
-            
-             <Card>
-                <CardHeader><CardTitle className="flex items-center gap-2"><CreditCard /> Recent Purchases</CardTitle></CardHeader>
-                <CardContent>
-                     <Table>
-                        <TableHeader><TableRow><TableHead>Date</TableHead><TableHead>Description</TableHead><TableHead>Amount</TableHead><TableHead>Status</TableHead></TableRow></TableHeader>
-                        <TableBody>
-                        {transactionsLoading ? <TableRow><TableCell colSpan={4}><Skeleton className="h-8"/></TableCell></TableRow> : transactions && transactions.length > 0 ? transactions.map(t => (
-                            <TableRow key={t.id}>
-                                <TableCell>{t.createdAt?.toDate().toLocaleDateString()}</TableCell>
-                                <TableCell>{t.description}</TableCell>
-                                <TableCell>{formatCurrency(t.userClaimedAmount, t.currency)}</TableCell>
-                                <TableCell><Badge variant={t.status === 'completed' || t.status === 'verified' ? 'default' : t.status === 'pending' ? 'secondary' : 'destructive'}>{t.status}</Badge></TableCell>
-                            </TableRow>
-                        )) : <TableRow><TableCell colSpan={4} className="text-center">No transactions found.</TableCell></TableRow>}
                         </TableBody>
                     </Table>
                 </CardContent>
@@ -213,3 +177,5 @@ export default function UserLookupPage() {
         </div>
     );
 }
+
+    

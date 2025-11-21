@@ -10,8 +10,6 @@ import {
 } from '@/components/ui/card';
 import {
   Users2,
-  CreditCard,
-  Tag,
   Gamepad2,
   Megaphone,
   LifeBuoy,
@@ -45,20 +43,6 @@ const adminFeatures = [
     icon: Users2,
     description: 'Promote, ban, and manage all users.',
     roles: ['SuperAdmin'],
-  },
-  {
-    href: '/admin/payments',
-    label: 'Payment Verification',
-    icon: CreditCard,
-    description: 'Approve or reject pending payments.',
-    roles: ['SuperAdmin', 'Admin'],
-  },
-  {
-    href: '/admin/pricing',
-    label: 'Plans & Pricing',
-    icon: Tag,
-    description: 'Edit license prices and rounds.',
-    roles: ['SuperAdmin', 'Admin'],
   },
   {
     href: '/admin/games',
@@ -148,3 +132,5 @@ export default function AdminDashboardPage() {
     </div>
   );
 }
+
+    

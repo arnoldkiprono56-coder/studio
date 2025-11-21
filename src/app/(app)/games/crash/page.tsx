@@ -38,9 +38,8 @@ export default function CrashPage() {
 
     const { data: licenses, isLoading: licensesLoading } = useCollection<License>(licensesQuery);
     
-    const activeLicense = licenses?.find(l => l.isActive && l.paymentVerified && l.roundsRemaining > 0);
-    const pendingLicense = licenses?.find(l => !l.paymentVerified);
-    const expiredLicense = licenses?.find(l => l.paymentVerified && l.roundsRemaining <= 0);
+    const activeLicense = licenses?.find(l => l.isActive && l.roundsRemaining > 0);
+    const expiredLicense = licenses?.find(l => l.roundsRemaining <= 0);
 
 
     const handleGetPrediction = async () => {
@@ -143,25 +142,22 @@ export default function CrashPage() {
             return (
                 <div className='text-center'>
                     <p>No Crash license found.</p>
-                    <Button asChild variant="link"><Link href="/purchase/crash">Purchase a License</Link></Button>
+                    <p className="text-xs text-muted-foreground">Licenses must be activated by an admin.</p>
                 </div>
             )
-        }
-        if (pendingLicense) {
-            return <p className="font-semibold text-warning flex items-center gap-2"><AlertCircle size={16}/> Payment verification is pending.</p>
         }
         if (expiredLicense) {
              return (
                 <div className='text-center'>
                     <p className="font-semibold text-warning">Your license has expired.</p>
-                    <Button asChild variant="link"><Link href="/purchase/crash">Renew License</Link></Button>
+                    <p className="text-xs text-muted-foreground">Contact an admin to reactivate your license.</p>
                 </div>
              )
         }
         if (activeLicense) {
             return <p>Ready to generate prediction.</p>
         }
-        return <p>Purchase a license to generate predictions.</p>
+        return <p>Contact an admin to get a license.</p>
     };
 
     return (
@@ -236,5 +232,3 @@ export default function CrashPage() {
         </div>
     );
 }
-
-    

@@ -8,37 +8,6 @@ import { collection, doc, setDoc, getDoc, Firestore } from 'firebase/firestore';
 import { config } from 'dotenv';
 config(); // Load environment variables
 
-const defaultPlans = [
-    {
-        id: 'vip-slip',
-        name: 'VIP Slip',
-        price: 1500,
-        currency: 'KES',
-        rounds: 100,
-    },
-    {
-        id: 'aviator',
-        name: 'Aviator',
-        price: 799,
-        currency: 'KES',
-        rounds: 100,
-    },
-    {
-        id: 'crash',
-        name: 'Crash',
-        price: 799,
-        currency: 'KES',
-        rounds: 100,
-    },
-    {
-        id: 'mines-gems',
-        name: 'Mines & Gems',
-        price: 999,
-        currency: 'KES',
-        rounds: 100,
-    }
-];
-
 const defaultGameStatuses = [
     {
         id: 'vip-slip',
@@ -66,23 +35,6 @@ const defaultGameStatuses = [
     }
 ]
 
-async function seedPlans(db: Firestore) {
-  const plansCollection = collection(db, 'plans');
-
-  for (const plan of defaultPlans) {
-    const planRef = doc(plansCollection, plan.id);
-    const docSnap = await getDoc(planRef);
-
-    if (!docSnap.exists()) {
-      console.log(`Creating plan: ${plan.name}...`);
-      await setDoc(planRef, plan);
-      console.log(`✅ Plan "${plan.name}" created.`);
-    } else {
-      console.log(`ℹ️ Plan "${plan.name}" already exists. Skipping.`);
-    }
-  }
-}
-
 async function seedGameStatuses(db: Firestore) {
     const gameStatusCollection = collection(db, 'game_status');
   
@@ -105,7 +57,6 @@ async function main() {
     const { firestore } = initializeFirebase();
     console.log('Firebase initialized. Starting to seed data...');
     try {
-        await seedPlans(firestore);
         await seedGameStatuses(firestore);
         console.log('\n🎉 All default data has been seeded successfully.');
     } catch (error) {

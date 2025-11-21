@@ -91,23 +91,14 @@ export default function ProfilePage() {
                          <Skeleton className="h-10 w-32" />
                     </CardContent>
                 </Card>
-                <Card>
-                    <CardHeader><Skeleton className="h-6 w-48" /></CardHeader>
-                    <CardContent className="space-y-4">
-                        <Skeleton className="h-16 w-full" />
-                        <Skeleton className="h-10 w-full" />
-                    </CardContent>
-                </Card>
             </div>
         )
     }
 
-    const { name, email, avatar, plan, mpesaNumber, role } = {
+    const { name, email, avatar, role } = {
         name: userProfile.email?.split('@')[0] || "Player",
         email: userProfile.email,
         avatar: `https://i.pravatar.cc/150?u=${userProfile.id}`,
-        plan: "Pro Plus", // This seems to be mock data
-        mpesaNumber: "0712345678", // This seems to be mock data
         role: userProfile.role as UserRole || 'User',
     };
     
@@ -136,14 +127,9 @@ export default function ProfilePage() {
                 <RoleBadge role={role}/>
               </div>
             </div>
-            <Button variant="outline" size="sm" disabled>Change Picture</Button>
           </div>
 
           <div className="grid sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="mpesa">MPESA Number</Label>
-              <Input id="mpesa" defaultValue={mpesaNumber} disabled />
-            </div>
             <div className="space-y-2">
               <Label htmlFor="1xbet-id">1xBet ID</Label>
               <Input 
@@ -161,25 +147,9 @@ export default function ProfilePage() {
           </Button>
         </CardContent>
       </Card>
-      
-      <Card>
-        <CardHeader>
-          <CardTitle>Subscription Plan</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-           <div className="flex items-center justify-between p-4 rounded-lg bg-accent/50">
-                <div>
-                    <h3 className="font-semibold">Current Plan</h3>
-                    <Badge variant="outline" className="text-base border-accent-pro text-accent-pro">
-                        <Star className="w-4 h-4 mr-2 fill-accent-pro" />
-                        {plan}
-                    </Badge>
-                </div>
-                <Button variant="secondary">Upgrade</Button>
-           </div>
-        </CardContent>
-      </Card>
 
     </div>
   );
 }
+
+    
