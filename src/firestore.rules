@@ -12,19 +12,31 @@ service cloud.firestore {
     function isUser() {
       return request.auth != null;
     }
+
+    // Checks if the user has an Admin or SuperAdmin role in their user document.
+    function isActualAdmin() {
+      // This requires that users can read their own user document.
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['Admin', 'SuperAdmin'];
+    }
     
     function isSuperAdmin() {
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'SuperAdmin';
     }
 
-    // User profiles can be read by their owner.
-    // They can be listed only by SuperAdmins for now to prevent accidental exposure.
+    // This rule allows Admins to perform collection group queries on these subcollections.
+    match /{path=**}/predictions/{predictionId} {
+      allow list: if isActualAdmin();
+    }
+
+
+    // User profiles can be read by their owner or an admin.
+    // They can be listed only by admins.
     // Users can create their own profile.
     // Their role can only be changed by a SuperAdmin.
     // Other fields can be written by their owner.
     match /users/{userId} {
-      allow get: if isOwner(userId);
-      allow list: if isSuperAdmin();
+      allow get: if isOwner(userId) || isActualAdmin();
+      allow list: if isActualAdmin();
       allow create: if isOwner(userId);
       // A user can update their own document as long as they are not changing their role.
       // A SuperAdmin can update any field, including the role.
@@ -33,11 +45,11 @@ service cloud.firestore {
 
       // Subcollections for a specific user
       match /user_licenses/{licenseId} {
-        allow read, write: if isOwner(userId) || isSuperAdmin();
+        allow read, write: if isOwner(userId) || isActualAdmin();
       }
 
       match /predictions/{predictionId} {
-          allow read, write: if isOwner(userId) || isSuperAdmin();
+          allow read, write: if isOwner(userId) || isActualAdmin();
       }
       
       // Admins can read/write their own chat messages
@@ -52,31 +64,29 @@ service cloud.firestore {
     }
 
     // Audit logs can be created by any authenticated user.
-    // Only SuperAdmins can get or list audit logs.
+    // Only admins can get or list audit logs.
     // No one can update or delete logs from the client.
     match /auditlogs/{auditLogId} {
       allow create: if isUser();
-      allow get, list: if isSuperAdmin();
+      allow get, list: if isActualAdmin();
       allow update, delete: if false;
     }
     
-    // Prompts can only be read and written by a SuperAdmin.
+    // Prompts can only be read and written by an admin.
     match /prompts/{promptId} {
-      allow read, write: if isSuperAdmin();
+      allow read, write: if isActualAdmin();
     }
 
-    // Game status can be read by anyone, but only written by a SuperAdmin.
+    // Game status can be read by anyone, but only written by an admin.
     match /game_status/{gameId} {
       allow read: if true;
-      allow write: if isSuperAdmin();
+      allow write: if isActualAdmin();
     }
     
-    // Notifications can be created by SuperAdmins and read by any authenticated user.
+    // Notifications can be created by Admins and read by any authenticated user.
     match /notifications/{notificationId} {
         allow read: if isUser();
-        allow create, update, delete: if isSuperAdmin();
+        allow create, update, delete: if isActualAdmin();
     }
   }
 }
-
-    
