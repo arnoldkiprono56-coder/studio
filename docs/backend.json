@@ -323,6 +323,52 @@
         }
       },
       "required": ["id", "text", "sender", "createdAt"]
+    },
+    "PendingActivation": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "PendingActivation",
+      "type": "object",
+      "description": "A user-submitted request for license activation, pending admin review.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique ID for the activation request."
+        },
+        "userId": {
+          "type": "string",
+          "description": "The ID of the user requesting activation."
+        },
+        "userEmail": {
+          "type": "string",
+          "description": "The email of the user for easy reference."
+        },
+        "gameType": {
+          "type": "string",
+          "description": "The game license being requested (e.g., 'Aviator')."
+        },
+        "paymentMessage": {
+          "type": "string",
+          "description": "The payment confirmation message submitted by the user."
+        },
+        "status": {
+          "type": "string",
+          "enum": ["pending", "verified", "rejected"],
+          "default": "pending"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "resolvedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "resolvedBy": {
+          "type": "string",
+          "description": "The ID of the admin who resolved the request."
+        }
+      },
+      "required": ["id", "userId", "userEmail", "gameType", "paymentMessage", "status", "createdAt"]
     }
   },
   "auth": {
@@ -463,8 +509,26 @@
             }
           ]
         }
+      },
+      {
+        "path": "/pending_activations/{activationId}",
+        "definition": {
+          "entityName": "PendingActivation",
+          "schema": {
+            "$ref": "#/backend/entities/PendingActivation"
+          },
+          "description": "A queue for license activation requests that require manual admin review.",
+          "params": [
+            {
+              "name": "activationId",
+              "description": "The unique identifier for the activation request."
+            }
+          ]
+        }
       }
     ],
     "reasoning": "The Firestore structure is updated to remove all payment and pricing-related collections (`plans`, `pending_payments`, `preVerifiedPayments`, `transactions`). The User entity has been simplified by removing `balance`. The License entity no longer has a `paymentVerified` field. This aligns with the request to completely remove all financial transaction functionality from the app."
   }
 }
+
+    

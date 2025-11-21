@@ -9,9 +9,9 @@ import { generateGamePredictions, GenerateGamePredictionsOutput } from '@/ai/flo
 import Link from 'next/link';
 import { useProfile } from '@/context/profile-context';
 import { useFirestore, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
-import { addDoc, collection, doc, query, where, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { addDoc, collection, doc, query, where, updateDoc, serverTimestamp, limit, orderBy, getDocs } from 'firebase/firestore';
 import { useCollection } from '@/firebase/firestore/use-collection';
-import type { License } from '@/lib/types';
+import type { License, Prediction } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 
 type CrashPredictionData = {
@@ -56,14 +56,27 @@ export default function CrashPage() {
         setPrediction(null);
         setFeedbackSent(false);
         try {
-            const result = await generateGamePredictions({ gameType: 'crash', userId: userProfile.id });
+             const historyQuery = query(
+                collection(firestore, 'users', userProfile.id, 'predictions'),
+                where('gameType', '==', 'Crash'),
+                orderBy('timestamp', 'desc'),
+                limit(10)
+            );
+            const historySnapshot = await getDocs(historyQuery);
+            const userHistory = historySnapshot.docs.map(d => d.data() as Prediction);
+
+            const result = await generateGamePredictions({
+                 gameType: 'crash',
+                 userId: userProfile.id,
+                 userHistory: userHistory.map(h => ({ predictionData: h.predictionData, status: h.status }))
+            });
             setPrediction(result);
 
             const predictionData = {
                 userId: userProfile.id,
                 licenseId: activeLicense.id,
                 gameType: 'Crash',
-                predictionData: JSON.stringify(result.predictionData),
+                predictionData: result.predictionData,
                 disclaimer: result.disclaimer,
                 status: 'pending',
                 timestamp: serverTimestamp(),
@@ -140,7 +153,9 @@ export default function CrashPage() {
             return (
                 <div className='text-center'>
                     <p>No Crash license found.</p>
-                    <p className="text-xs text-muted-foreground">Licenses must be activated by an admin.</p>
+                     <p className="text-xs text-muted-foreground">
+                        Click <Link href="/support/chat/system?message=I%20want%20to%20activate%20a%20Crash%20license" className="text-primary underline">here</Link> to activate.
+                    </p>
                 </div>
             )
         }
@@ -148,7 +163,9 @@ export default function CrashPage() {
              return (
                 <div className='text-center'>
                     <p className="font-semibold text-warning">Your license has expired.</p>
-                    <p className="text-xs text-muted-foreground">Contact an admin to reactivate your license.</p>
+                     <p className="text-xs text-muted-foreground">
+                        Click <Link href="/support/chat/system?message=I%20want%20to%20activate%20a%20Crash%20license" className="text-primary underline">here</Link> to reactivate.
+                    </p>
                 </div>
              )
         }
@@ -230,3 +247,5 @@ export default function CrashPage() {
         </div>
     );
 }
+
+    

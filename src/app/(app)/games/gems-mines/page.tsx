@@ -10,9 +10,9 @@ import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { useProfile } from '@/context/profile-context';
 import { useFirestore, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
-import { addDoc, collection, doc, query, where, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { addDoc, collection, doc, query, where, updateDoc, serverTimestamp, getDocs, limit, orderBy } from 'firebase/firestore';
 import { useCollection } from '@/firebase/firestore/use-collection';
-import type { License } from '@/lib/types';
+import type { License, Prediction } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 
 const GRID_SIZE = 25;
@@ -57,9 +57,19 @@ export default function GemsAndMinesPage() {
         setFeedbackSent(false);
 
         try {
+            const historyQuery = query(
+                collection(firestore, 'users', userProfile.id, 'predictions'),
+                where('gameType', '==', 'Gems & Mines'),
+                orderBy('timestamp', 'desc'),
+                limit(10)
+            );
+            const historySnapshot = await getDocs(historyQuery);
+            const userHistory = historySnapshot.docs.map(d => d.data() as Prediction);
+
             const result = await generateGamePredictions({ 
                 gameType: 'gems-mines', 
                 userId: userProfile.id,
+                userHistory: userHistory.map(h => ({ predictionData: h.predictionData, status: h.status }))
             });
             setPrediction(result);
             
@@ -67,7 +77,7 @@ export default function GemsAndMinesPage() {
                 userId: userProfile.id,
                 licenseId: activeLicense.id,
                 gameType: 'Gems & Mines',
-                predictionData: JSON.stringify(result.predictionData),
+                predictionData: result.predictionData,
                 disclaimer: result.disclaimer,
                 status: 'pending',
                 timestamp: serverTimestamp(),
@@ -148,7 +158,9 @@ export default function GemsAndMinesPage() {
             return (
                 <div className='text-center'>
                     <p>No Mines &amp; Gems license found.</p>
-                    <p className="text-xs text-muted-foreground">Licenses must be activated by an admin.</p>
+                     <p className="text-xs text-muted-foreground">
+                        Click <Link href="/support/chat/system?message=I%20want%20to%20activate%20a%20Mines%20&%20Gems%20license" className="text-primary underline">here</Link> to activate.
+                    </p>
                 </div>
             )
         }
@@ -156,7 +168,9 @@ export default function GemsAndMinesPage() {
              return (
                 <div className='text-center'>
                     <p className="font-semibold text-warning">Your license has expired.</p>
-                    <p className="text-xs text-muted-foreground">Contact an admin to reactivate your license.</p>
+                    <p className="text-xs text-muted-foreground">
+                        Click <Link href="/support/chat/system?message=I%20want%20to%20activate%20a%20Mines%20&%20Gems%20license" className="text-primary underline">here</Link> to reactivate.
+                    </p>
                 </div>
              )
         }
@@ -265,3 +279,5 @@ export default function GemsAndMinesPage() {
         </div>
     );
 }
+
+    

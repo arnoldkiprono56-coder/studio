@@ -176,3 +176,32 @@ export async function activateLicenseForUser({ email, gameId }: { email: string,
         return { success: false, message: `Failed to activate license: ${error.message}` };
     }
 }
+
+export async function createPendingLicenseRequest(
+    { userId, userEmail, gameType, paymentMessage }: 
+    { userId: string; userEmail: string; gameType: string; paymentMessage: string; }
+) {
+    try {
+        const pendingRef = collection(firestore, 'pending_activations');
+        const newDocRef = doc(pendingRef); // Create a new doc with a generated ID
+
+        const payload = {
+            id: newDocRef.id,
+            userId,
+            userEmail,
+            gameType,
+            paymentMessage,
+            status: 'pending',
+            createdAt: serverTimestamp(),
+        };
+
+        await setDoc(newDocRef, payload);
+
+        return { success: true, message: "Your activation request has been sent to the admins for verification. You will be notified once it's approved." };
+    } catch (error: any) {
+        console.error("Failed to create pending license request:", error);
+        return { success: false, message: `There was an error submitting your request: ${error.message}` };
+    }
+}
+
+    

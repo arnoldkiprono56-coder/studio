@@ -3,7 +3,7 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
-import { fetchUsers, fetchAuditLogs, createBroadcast, updateUserRole, suspendUser, activateLicenseForUser } from '@/services/firestore-service';
+import { fetchUsers, fetchAuditLogs, createBroadcast, updateUserRole, suspendUser, activateLicenseForUser, createPendingLicenseRequest } from '@/services/firestore-service';
 
 // Tool to get all users
 export const getAllUsers = ai.defineTool(
@@ -109,6 +109,27 @@ export const activateLicense = ai.defineTool(
     },
     async (input) => {
         return activateLicenseForUser(input);
+    }
+);
+
+// Tool for AI to request license activation
+export const requestLicenseActivation = ai.defineTool(
+    {
+        name: 'requestLicenseActivation',
+        description: 'Submits a user-provided payment message to the admin team for license activation verification. This creates a request in the pending queue.',
+        inputSchema: z.object({
+            userId: z.string().describe('The ID of the user requesting the activation.'),
+            userEmail: z.string().email().describe('The email of the user.'),
+            gameType: z.enum(['VIP Slip', 'Aviator', 'Crash', 'Mines & Gems']).describe('The user-friendly name of the game license being requested.'),
+            paymentMessage: z.string().describe('The full payment confirmation message provided by the user.'),
+        }),
+        outputSchema: z.object({
+            success: z.boolean(),
+            message: z.string().describe('A confirmation or error message about the request submission.'),
+        }),
+    },
+    async (input) => {
+        return createPendingLicenseRequest(input);
     }
 );
 

@@ -10,7 +10,7 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
-import { getAllUsers, getAuditLogs, sendBroadcastMessage, changeUserRole, suspendUserAccount, activateLicense } from '@/ai/tools/admin-tools';
+import { getAllUsers, getAuditLogs, sendBroadcastMessage, changeUserRole, suspendUserAccount, activateLicense, requestLicenseActivation } from '@/ai/tools/admin-tools';
 
 const promptText = `You are a support agent for PredictPro. PredictPro provides game predictions EXCLUSIVELY for the 1xBet platform. 
 
@@ -21,10 +21,10 @@ SECURITY POLICY:
 Your persona depends on the chat type.
 
 Chat Type: {{{chatType}}}
-Admin ID: {{{adminId}}}
+Admin/User ID: {{{adminId}}}
 
 Personas:
-- system: You are an automated AI assistant. Be concise, helpful, and stick to facts about the PredictPro platform.
+- system: You are an automated AI assistant. Be concise, helpful, and stick to facts about the PredictPro platform. Your main goal is to guide users through the license activation process. If a user wants to activate a license, ask them which game (e.g., Aviator, Crash). Then, tell them the exact price for that license and instruct them to send the payment to the official company number. After they confirm payment by pasting the transaction message, use the 'requestLicenseActivation' tool to submit their request to the admin team for verification.
 - assistant: You are a friendly and empathetic customer care agent.
 - manager: You are a support manager and security analyst. Your role is to help other admins troubleshoot system issues, identify system weaknesses, and detect potential fraud. You have access to tools to get all user data, search audit logs, send broadcast messages, change user roles, suspend users, and activate licenses. Be professional, authoritative, and handle escalations with a focus on security and system integrity. You can access anyone's referral link.
 
@@ -42,6 +42,7 @@ User: {{{message}}}
 
 Based on the persona for the given chat type and the conversation history, provide a helpful and relevant response to the user's latest message.
 Use your available tools if necessary to answer the user's question. If you use a tool that returns a markdown table, render that table directly in your response.
+If the user asks for activation, guide them through the payment and use the 'requestLicenseActivation' tool. Let the user know if the activation request was sent successfully or if it failed.
 `;
 
 const GenerateSupportResponseInputSchema = z.object({
@@ -51,7 +52,7 @@ const GenerateSupportResponseInputSchema = z.object({
     isUser: z.boolean(),
     text: z.string(),
   })).describe('The conversation history.'),
-   adminId: z.string().optional().describe('The ID of the admin performing the action.'),
+   adminId: z.string().optional().describe('The ID of the admin or user performing the action.'),
 });
 export type GenerateSupportResponseInput = z.infer<typeof GenerateSupportResponseInputSchema>;
 
@@ -72,7 +73,7 @@ const generateSupportResponseFlow = ai.defineFlow(
   },
   async input => {
     const model = 'googleai/gemini-2.5-pro';
-    const tools = [getAllUsers, getAuditLogs, sendBroadcastMessage, changeUserRole, suspendUserAccount, activateLicense];
+    const tools = [getAllUsers, getAuditLogs, sendBroadcastMessage, changeUserRole, suspendUserAccount, activateLicense, requestLicenseActivation];
 
     const {
       output,
@@ -115,3 +116,5 @@ const generateSupportResponseFlow = ai.defineFlow(
     return finalResponse.output!;
   }
 );
+
+    

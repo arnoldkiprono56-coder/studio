@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
-import { useParams } from 'next/navigation';
+import { useState, useEffect, useRef, Suspense } from 'react';
+import { useParams, useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -11,23 +11,51 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import { generateSupportResponse } from '@/ai/flows/generate-support-response';
+import { useProfile } from '@/context/profile-context';
+import { useFirestore, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
+import { addDoc, collection, query, where, orderBy, serverTimestamp } from 'firebase/firestore';
+import { useCollection } from '@/firebase/firestore/use-collection';
 
 type Message = {
-    id: number;
+    id: string;
     text: string;
     sender: 'user' | 'model';
+    isUser: boolean;
+    chatType: string;
+    createdAt: any;
 };
 
-export default function ChatPage() {
+function ChatComponent() {
     const params = useParams();
+    const searchParams = useSearchParams();
     const chatType = Array.isArray(params.chatType) ? params.chatType[0] : params.chatType;
+    const initialMessage = searchParams.get('message');
+
     const scrollAreaRef = useRef<HTMLDivElement>(null);
     const [isLoading, setIsLoading] = useState(false);
 
-    const [messages, setMessages] = useState<Message[]>([
-        { id: 1, text: `Welcome to ${chatType.replace('-', ' ')} support! How can I help you today?`, sender: 'model' }
-    ]);
+    const { userProfile } = useProfile();
+    const firestore = useFirestore();
+
     const [input, setInput] = useState('');
+
+     const messagesCollection = useMemoFirebase(() => {
+        if (!firestore || !userProfile?.id) return null;
+        return collection(firestore, 'users', userProfile.id, 'support_messages');
+    }, [firestore, userProfile?.id]);
+
+    const messagesQuery = useMemoFirebase(() => {
+        if (!messagesCollection) return null;
+        return query(messagesCollection, where('chatType', '==', chatType), orderBy('createdAt', 'asc'));
+    }, [messagesCollection, chatType]);
+
+    const { data: messages, isLoading: messagesLoading } = useCollection<Message>(messagesQuery);
+    
+    useEffect(() => {
+        if(initialMessage) {
+            setInput(initialMessage);
+        }
+    }, [initialMessage]);
 
     const getChatTitle = () => {
         if (!chatType) return 'Support Chat';
@@ -44,34 +72,61 @@ export default function ChatPage() {
     };
 
     const handleSendMessage = async () => {
-        if (input.trim() && !isLoading) {
+        if (input.trim() && !isLoading && messagesCollection && userProfile?.id) {
             const currentInput = input;
-            const userMessage: Message = { id: Date.now(), text: currentInput, sender: 'user' };
+            const userMessageData = {
+                text: currentInput,
+                sender: 'user' as const,
+                isUser: true,
+                chatType,
+                createdAt: serverTimestamp(),
+            };
             
-            // The history should only contain messages *before* the new one.
-            const conversationHistory = messages.map(m => ({
-                isUser: m.sender === 'user',
-                text: m.text
-            }));
-            
-            setMessages(prev => [...prev, userMessage]);
             setInput('');
             setIsLoading(true);
             scrollToBottom();
+            
+            // Add user message to Firestore
+            await addDoc(messagesCollection, userMessageData);
+            
+            const conversationHistory = (messages || []).map(m => ({
+                isUser: m.sender === 'user',
+                text: m.text
+            }));
 
+            // Add the new user message to the history for the AI
+            conversationHistory.push({
+                isUser: true,
+                text: currentInput,
+            });
+            
             try {
                 const result = await generateSupportResponse({
                     message: currentInput,
                     chatType: chatType,
                     history: conversationHistory,
+                    adminId: userProfile.id,
                 });
                 
-                const aiMessage: Message = { id: Date.now() + 1, text: result.response, sender: 'model' };
-                setMessages(prev => [...prev, aiMessage]);
+                const aiMessageData = {
+                    text: result.response,
+                    sender: 'model' as const,
+                    isUser: false,
+                    chatType,
+                    createdAt: serverTimestamp(),
+                };
+                await addDoc(messagesCollection, aiMessageData);
+
             } catch (error) {
                 console.error("Failed to get AI response:", error);
-                const errorMessage: Message = { id: Date.now() + 1, text: "Sorry, I'm having trouble connecting. Please try again later.", sender: 'model' };
-                setMessages(prev => [...prev, errorMessage]);
+                const errorMessageData = {
+                    text: "Sorry, I'm having trouble connecting. Please try again later.",
+                    sender: 'model' as const,
+                    isUser: false,
+                    chatType,
+                    createdAt: serverTimestamp(),
+                };
+                await addDoc(messagesCollection, errorMessageData);
             } finally {
                 setIsLoading(false);
                 scrollToBottom();
@@ -98,7 +153,7 @@ export default function ChatPage() {
                 <CardContent className="flex-1 p-0">
                     <ScrollArea className="h-full p-6" ref={scrollAreaRef}>
                         <div className="space-y-6">
-                            {messages.map((message) => (
+                            {(messages || []).map((message) => (
                                 <div key={message.id} className={cn(
                                     "flex items-start gap-3 w-full",
                                     message.sender === 'user' ? 'justify-end' : 'justify-start'
@@ -156,3 +211,13 @@ export default function ChatPage() {
         </div>
     );
 }
+
+export default function ChatPage() {
+    return (
+        <Suspense fallback={<div>Loading...</div>}>
+            <ChatComponent />
+        </Suspense>
+    )
+}
+
+    

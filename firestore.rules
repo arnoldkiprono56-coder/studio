@@ -16,7 +16,7 @@ service cloud.firestore {
     // Checks if the user has an Admin or SuperAdmin role in their user document.
     function isActualAdmin() {
       // This requires that users can read their own user document.
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['Admin', 'SuperAdmin'];
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['Admin', 'SuperAdmin', 'Assistant'];
     }
     
     function isSuperAdmin() {
@@ -83,5 +83,14 @@ service cloud.firestore {
         allow read: if isUser();
         allow create, update, delete: if isActualAdmin();
     }
+
+    // The AI running in a Genkit flow (server-side) can create these.
+    // Admins can read/update/delete them.
+    match /pending_activations/{activationId} {
+      allow create: if true;
+      allow read, list, update, delete: if isActualAdmin();
+    }
   }
 }
+
+    
