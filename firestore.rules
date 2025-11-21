@@ -30,9 +30,6 @@ service cloud.firestore {
     match /{path=**}/predictions/{predictionId} {
       allow list: if isActualAdmin();
     }
-    match /{path=**}/transactions/{transactionId} {
-      allow list: if isActualAdmin();
-    }
 
 
     // User profiles can be read by their owner or an admin.
@@ -58,7 +55,10 @@ service cloud.firestore {
           allow read, write: if isOwner(userId) || isActualAdmin();
       }
       
-      // DELETED transactions subcollection
+      // Admins can read/write their own chat messages
+      match /admin_chat_messages/{messageId} {
+        allow read, write: if request.auth.uid == userId;
+      }
     }
     
     // The /admins collection is no longer used for checking admin status.
