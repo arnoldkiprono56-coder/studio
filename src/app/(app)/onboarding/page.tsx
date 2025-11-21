@@ -16,15 +16,15 @@ export default function OnboardingPage() {
                     To ensure accuracy and maintain system integrity, we require your official 1xBet User ID.
                     Please provide it to continue.
                 </p>
-                <Button 
-                    size="lg" 
-                    className="bg-red-600 hover:bg-red-700 text-white"
-                    onClick={openOneXBetDialog}
-                >
-                    Continue
-                    <ArrowRight className="w-4 h-4 ml-2" />
-                </Button>
             </div>
+            <Button 
+                size="lg" 
+                className="fixed bottom-8 left-8 bg-red-600 hover:bg-red-700 text-white shadow-2xl"
+                onClick={openOneXBetDialog}
+            >
+                Continue
+                <ArrowRight className="w-4 h-4 ml-2" />
+            </Button>
         </div>
     );
 }
