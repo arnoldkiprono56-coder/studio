@@ -63,6 +63,7 @@ export default function VipSlipPage() {
                 licenseId: activeLicense.id,
                 team1: team1,
                 team2: team2,
+                premiumStatus: userProfile.premiumStatus,
             });
             setPrediction(result);
             

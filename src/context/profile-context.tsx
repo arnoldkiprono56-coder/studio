@@ -47,10 +47,12 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     return doc(firestore, 'users', user.uid);
   }, [user, firestore]);
 
-  const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserProfile>(userDocRef);
+  const { data: userProfile, isLoading: isProfileHookLoading } = useDoc<UserProfile>(userDocRef);
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [oneXBetId, setOneXBetId] = useState('');
+
+  const isProfileLoading = isUserLoading || isProfileHookLoading;
 
 
   const updateUserProfile = useCallback(async (data: Partial<UserProfile>) => {
@@ -80,11 +82,13 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         return;
       }
       
-      const publicPaths = ['/company-agreement', '/assistant-onboarding', '/login', '/register', '/suspended'];
-      const currentIsPublic = publicPaths.some(p => pathname === p);
+      const publicPaths = ['/company-agreement', '/assistant-onboarding', '/login', '/register', '/suspended', '/verify-otp', '/reset-password', '/terms'];
+      const currentIsPublic = publicPaths.some(p => pathname.startsWith(p));
       
+      if (currentIsPublic) return;
+
       // 2. Check for Company Agreement
-      if (!userProfile.companyAgreementAccepted && !currentIsPublic) {
+      if (!userProfile.companyAgreementAccepted) {
           router.replace('/company-agreement');
           return;
       }
@@ -93,7 +97,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       const isAssistant = userProfile.role === 'Assistant';
       const hasAcceptedAssistantAgreement = userProfile.assistantAgreementAccepted === true;
       
-      if (isAssistant && !hasAcceptedAssistantAgreement && pathname !== '/assistant-onboarding') {
+      if (isAssistant && !hasAcceptedAssistantAgreement) {
           router.replace('/assistant-onboarding');
           return;
       }
@@ -137,7 +141,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
 
   const value = {
     userProfile,
-    isProfileLoading: isUserLoading || isProfileLoading,
+    isProfileLoading: isProfileLoading,
     updateUserProfile,
     openOneXBetDialog: () => setIsDialogOpen(true),
   };
@@ -181,5 +185,3 @@ export function useProfile() {
   }
   return context;
 }
-
-    
