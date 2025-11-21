@@ -7,7 +7,7 @@ import { useProfile } from "@/context/profile-context";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowRight, Star } from "lucide-react";
+import { ArrowRight, Star, LifeBuoy } from "lucide-react";
 import Link from "next/link";
 import { Skeleton } from "@/components/ui/skeleton";
 import OnboardingPage from "@/app/(app)/onboarding/page";
@@ -126,7 +126,7 @@ export default function DashboardPage() {
       
       <div>
         <h2 className="text-2xl font-semibold tracking-tight mb-4">Game Access</h2>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {games.map(game => {
                  const hasLicense = activeLicenses?.some(l => l.gameType === game.name);
                  const status = hasLicense ? 'active' : 'locked';
@@ -147,6 +147,20 @@ export default function DashboardPage() {
                  </Card>
                  )
             })}
+             <Card className="hover:bg-accent/50 transition-colors border-dashed border-primary/50">
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                    <CardTitle className="text-lg">Support</CardTitle>
+                    <LifeBuoy className="w-6 h-6 text-primary" />
+                </CardHeader>
+                <CardContent>
+                    <p className="text-sm text-muted-foreground mb-4">
+                        Need help? Chat with our support team.
+                    </p>
+                    <Button variant="ghost" size="sm" asChild>
+                        <Link href="/support">Contact Support <ArrowRight className="w-4 h-4 ml-2" /></Link>
+                    </Button>
+                </CardContent>
+            </Card>
         </div>
       </div>
 
@@ -154,5 +168,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-
-    
