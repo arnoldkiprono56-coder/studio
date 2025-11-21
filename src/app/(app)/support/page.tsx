@@ -1,8 +1,12 @@
+
+'use client';
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { LifeBuoy, Bot, UserCheck, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
+import { useProfile } from "@/context/profile-context";
 
 const supportOptions = [
     {
@@ -10,18 +14,21 @@ const supportOptions = [
         description: "Get instant answers from our automated assistant.",
         icon: Bot,
         href: "/support/chat/system",
+        roles: ['User', 'Assistant', 'Admin', 'SuperAdmin'],
     },
     {
         title: "Customer Care",
         description: "Chat with an assistant for personalized help.",
         icon: UserCheck,
         href: "/support/chat/assistant",
+        roles: ['User', 'Assistant', 'Admin', 'SuperAdmin'],
     },
     {
         title: "Manager",
         description: "Escalate complex issues to a SuperAdmin.",
         icon: LifeBuoy,
         href: "/support/chat/manager",
+        roles: ['Admin', 'SuperAdmin'],
     },
 ];
 
@@ -32,6 +39,11 @@ const recentTickets = [
 ]
 
 export default function SupportPage() {
+  const { userProfile } = useProfile();
+  const userRole = userProfile?.role;
+
+  const accessibleOptions = supportOptions.filter(option => userRole && option.roles.includes(userRole));
+
   return (
     <div className="space-y-8 max-w-4xl mx-auto">
       <div>
@@ -40,7 +52,7 @@ export default function SupportPage() {
       </div>
 
       <div className="grid gap-6 md:grid-cols-3">
-        {supportOptions.map(option => {
+        {accessibleOptions.map(option => {
             const Icon = option.icon;
             return (
                 <Card key={option.title} className="hover:bg-accent/50 transition-colors">

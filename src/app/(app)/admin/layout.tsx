@@ -11,6 +11,7 @@ const assistantAllowedPaths = [
     '/admin/user-lookup',
     '/admin/assistant',
     '/admin/support',
+    '/admin/licenses',
 ];
 
 export default function AdminLayout({ children }: { children: ReactNode }) {

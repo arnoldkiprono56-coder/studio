@@ -16,7 +16,7 @@ service cloud.firestore {
     // Checks if the user has an Admin or SuperAdmin role in their user document.
     function isActualAdmin() {
       // This requires that users can read their own user document.
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['Admin', 'SuperAdmin', 'Assistant'];
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['Admin', 'SuperAdmin'];
     }
     
     function isSuperAdmin() {
@@ -29,32 +29,32 @@ service cloud.firestore {
     // Their role can only be changed by a SuperAdmin.
     // Other fields can be written by their owner.
     match /users/{userId} {
-      allow get: if isOwner(userId) || isActualAdmin();
-      allow list: if isActualAdmin(); // Allow admins to list users for management purposes
+      allow get: if isOwner(userId) || isActualAdmin() || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Assistant';
+      allow list: if isActualAdmin() || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Assistant'; // Allow admins to list users for management purposes
       allow create: if isOwner(userId);
       // A user can update their own document as long as they are not changing their role or photoURL.
       // A user can update their own photoURL.
       // A SuperAdmin can update any field, including the role.
-      allow update: if (isOwner(userId) && !('role' in request.resource.data && request.resource.data.role != resource.data.role)) || isSuperAdmin();
+      allow update: if (isOwner(userId) && !('role' in request.resource.data && request.resource.data.role != resource.data.role) && !('photoURL' in request.resource.data)) || (isOwner(userId) && 'photoURL' in request.resource.data && request.resource.data.keys().size() == 1) || isSuperAdmin();
 
 
       // Subcollections for a specific user
       match /user_licenses/{licenseId} {
-        allow read, write: if isOwner(userId) || isActualAdmin();
+        allow read, write: if isOwner(userId) || isActualAdmin() || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Assistant';
       }
 
       match /predictions/{predictionId} {
-          allow read, write: if isOwner(userId) || isActualAdmin();
+          allow read, write: if isOwner(userId) || isActualAdmin() || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Assistant';
       }
       
       // Admins can read/write their own chat messages
       match /admin_chat_messages/{messageId} {
-        allow read, write: if request.auth.uid == userId;
+        allow read, write: if isOwner(userId);
       }
       
-      // Users can read/write their own support messages
+      // Users can read/write their own support messages. Admins can access them too.
       match /support_messages/{messageId} {
-        allow read, write: if isOwner(userId);
+        allow read, write: if isOwner(userId) || isActualAdmin() || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Assistant';
       }
     }
     
@@ -69,7 +69,7 @@ service cloud.firestore {
     // No one can update or delete logs from the client.
     match /auditlogs/{auditLogId} {
       allow create: if isUser();
-      allow get, list: if isActualAdmin();
+      allow get, list: if isActualAdmin() || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Assistant';
       allow update, delete: if false;
     }
     
@@ -87,16 +87,14 @@ service cloud.firestore {
     // Notifications can be created by Admins and read by any authenticated user.
     match /notifications/{notificationId} {
         allow read: if isUser();
-        allow create, update, delete: if isActualAdmin();
+        allow create, update, delete: if isActualAdmin() || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Assistant';
     }
 
     // The AI running in a Genkit flow (server-side) can create these.
     // Admins can read/update/delete them.
     match /pending_activations/{activationId} {
       allow write: if true;
-      allow read, list, update, delete: if isActualAdmin();
+      allow read, list, update, delete: if isActualAdmin() || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Assistant';
     }
   }
 }
-
-    
