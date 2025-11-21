@@ -22,6 +22,7 @@ interface UserProfile {
   assistantAgreementAccepted?: boolean;
   companyAgreementAccepted?: boolean;
   photoURL?: string;
+  premiumStatus?: 'standard' | 'pro' | 'enterprise';
   [key: string]: any;
 }
 

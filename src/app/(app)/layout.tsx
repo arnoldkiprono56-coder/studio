@@ -4,6 +4,9 @@
 import { Header } from '@/components/header';
 import { BroadcastListener } from '@/components/BroadcastListener';
 import { AdminWelcomeToast } from '@/components/admin-welcome-toast';
+import { PremiumWrapper } from '@/components/premium-wrapper';
+import { PremiumActivationListener } from '@/components/premium-activation-listener';
+
 
 export default function AppLayout({
     children,
@@ -11,11 +14,16 @@ export default function AppLayout({
     children: React.ReactNode;
 }>) {
     return (
-        <div className="flex flex-col min-h-screen">
-            <Header />
-            <main className="flex-1 container py-8 flex flex-col">{children}</main>
-            <BroadcastListener />
-            <AdminWelcomeToast />
-        </div>
+        <PremiumWrapper>
+            <div className="flex flex-col min-h-screen">
+                <Header />
+                <main className="flex-1 container py-8 flex flex-col">{children}</main>
+                <BroadcastListener />
+                <AdminWelcomeToast />
+                <PremiumActivationListener />
+            </div>
+        </PremiumWrapper>
     );
 }
+
+    

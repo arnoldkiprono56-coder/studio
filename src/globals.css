@@ -1,0 +1,141 @@
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 213 69% 9%; /* #0A1A2F */
+    --foreground: 210 40% 98%;
+    --card: 216 28% 12%; /* #1B1F24 */
+    --card-foreground: 210 40% 98%;
+    --popover: 213 69% 9%; /* #0A1A2F */
+    --popover-foreground: 210 40% 98%;
+    --primary: 211 100% 40%; /* #0052CC */
+    --primary-foreground: 210 40% 98%;
+    --secondary: 217 33% 17%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 216 28% 12%; /* #1B1F24 */
+    --muted-foreground: 215 20% 65%;
+    --accent: 195 100% 50%; /* #00C2FF */
+    --accent-foreground: 214 53% 12%;
+    --destructive: 0 84% 60%; /* #FF3B30 */
+    --destructive-foreground: 210 40% 98%;
+    --border: 216 12% 52%; /* #C7CCD3 */
+    --input: 216 12% 52%;
+    --ring: 211 100% 40%;
+    --radius: 0.5rem;
+
+    --chart-1: 220 70% 50%;
+    --chart-2: 160 60% 45%;
+    --chart-3: 30 80% 55%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 340 75% 55%;
+
+    --success: 140 67% 44%; /* #30D158 */
+    --warning: 36 100% 50%; /* #FF9500 */
+    --error: 0 84% 60%; /* #FF3B30 */
+    
+    --gold: 51 100% 50%; /* #FFD700 */
+    --purple: 282 31% 56%; /* #9B59B6 */
+    --sky-blue: 195 100% 50%; /* #00C2FF */
+    --gray: 216 12% 81%; /* #C7CCD3 */
+
+
+    --accent-basic: 203 93% 60%;
+    --accent-standard: 217 82% 52%;
+    --accent-pro: 195 100% 50%; /* Cyan Glow */
+
+    --sidebar-background: 213 69% 12%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 211 100% 40%;
+    --sidebar-primary-foreground: 210 40% 98%;
+    --sidebar-accent: 217 33% 17%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 216 12% 52%;
+    --sidebar-ring: 211 100% 40%;
+  }
+
+  .dark {
+    --background: 213 69% 9%; /* #0A1A2F */
+    --foreground: 210 40% 98%;
+    --card: 216 28% 12%; /* #1B1F24 */
+    --card-foreground: 210 40% 98%;
+    --popover: 213 69% 9%; /* #0A1A2F */
+    --popover-foreground: 210 40% 98%;
+    --primary: 211 100% 40%; /* #0052CC */
+    --primary-foreground: 210 40% 98%;
+    --secondary: 217 33% 17%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 216 28% 12%; /* #1B1F24 */
+    --muted-foreground: 215 20% 65%;
+    --accent: 195 100% 50%; /* #00C2FF */
+    --accent-foreground: 214 53% 12%;
+    --destructive: 0 84% 60%; /* #FF3B30 */
+    --destructive-foreground: 210 40% 98%;
+    --border: 216 12% 52%; /* #C7CCD3 */
+    --input: 216 12% 52%;
+    --ring: 211 100% 40%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Inter', sans-serif;
+  }
+  .font-code {
+    font-family: 'Source Code Pro', monospace;
+  }
+
+  .premium-glow-border {
+    @apply pointer-events-none fixed inset-0 z-50 border-[3px] border-transparent rounded-none;
+    animation: premium-glow 8s ease-in-out infinite;
+    -webkit-mask: 
+        linear-gradient(#fff 0 0) content-box, 
+        linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+            mask-composite: exclude;
+  }
+
+  @keyframes premium-glow {
+    0% {
+      border-color: hsl(var(--primary) / 0.8);
+      box-shadow: 0 0 10px hsl(var(--primary) / 0.5), inset 0 0 10px hsl(var(--primary) / 0.5);
+    }
+    25% {
+      border-color: hsl(var(--accent) / 0.8);
+      box-shadow: 0 0 20px hsl(var(--accent) / 0.5), inset 0 0 20px hsl(var(--accent) / 0.5);
+    }
+    50% {
+      border-color: hsl(var(--accent-pro) / 0.8);
+      box-shadow: 0 0 10px hsl(var(--accent-pro) / 0.5), inset 0 0 10px hsl(var(--accent-pro) / 0.5);
+    }
+    75% {
+       border-color: hsl(var(--accent) / 0.8);
+      box-shadow: 0 0 20px hsl(var(--accent) / 0.5), inset 0 0 20px hsl(var(--accent) / 0.5);
+    }
+    100% {
+      border-color: hsl(var(--primary) / 0.8);
+      box-shadow: 0 0 10px hsl(var(--primary) / 0.5), inset 0 0 10px hsl(var(--primary) / 0.5);
+    }
+  }
+
+  @keyframes glow-line {
+      from { transform: translateX(-100%); }
+      to { transform: translateX(100%); }
+  }
+  
+  .animate-glow-line {
+      animation: glow-line 2s linear infinite;
+  }
+
+  .animate-pulse-slow {
+      animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+}
+
+    

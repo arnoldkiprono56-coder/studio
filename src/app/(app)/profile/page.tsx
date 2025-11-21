@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Star, Copy, Shield, Loader2, Upload } from "lucide-react";
+import { Star, Copy, Shield, Loader2, Upload, BadgeCheck } from "lucide-react";
 import { useProfile } from "@/context/profile-context";
 import { useState, useRef } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -46,6 +46,16 @@ const RoleBadge = ({ role }: { role: UserRole }) => {
         </Badge>
     );
 };
+
+const PremiumBadge = () => (
+    <div className="relative group">
+        <BadgeCheck className="w-6 h-6 text-blue-500 fill-current animate-pulse-slow" />
+         <span className="absolute -top-8 left-1/2 -translate-x-1/2 w-max px-2 py-1 bg-background border rounded-md text-xs font-semibold opacity-0 group-hover:opacity-100 transition-opacity">
+            Premium Member
+        </span>
+    </div>
+);
+
 
 export default function ProfilePage() {
     const { userProfile, isProfileLoading, updateUserProfile } = useProfile();
@@ -131,10 +141,11 @@ export default function ProfilePage() {
         )
     }
 
-    const { name, email, role } = {
+    const { name, email, role, premiumStatus } = {
         name: userProfile.email?.split('@')[0] || "Player",
         email: userProfile.email,
         role: userProfile.role as UserRole || 'User',
+        premiumStatus: userProfile.premiumStatus,
     };
     
   return (
@@ -171,11 +182,15 @@ export default function ProfilePage() {
                     accept="image/png, image/jpeg"
                 />
             </div>
-            <div className="flex-grow">
-              <h3 className="font-semibold text-xl">{name}</h3>
+            <div className="flex-grow space-y-2">
+              <div className="flex items-center gap-2">
+                <h3 className="font-semibold text-xl">{name}</h3>
+                {premiumStatus && <PremiumBadge />}
+              </div>
               <p className="text-sm text-muted-foreground">{email}</p>
-              <div className="mt-2">
+              <div className="flex items-center gap-2">
                 <RoleBadge role={role}/>
+                {premiumStatus && <Badge className="border-amber-500 text-amber-500 capitalize" variant="outline">{premiumStatus}</Badge>}
               </div>
             </div>
           </div>

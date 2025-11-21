@@ -56,6 +56,11 @@
             "type": "boolean",
             "description": "Indicates if the user has accepted the general company agreement.",
             "default": false
+        },
+        "premiumStatus": {
+          "type": "string",
+          "description": "Indicates the user's premium subscription level.",
+          "enum": ["standard", "pro", "enterprise"]
         }
       },
       "required": [
