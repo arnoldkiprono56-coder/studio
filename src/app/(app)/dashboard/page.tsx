@@ -7,7 +7,7 @@ import { useProfile } from "@/context/profile-context";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowRight, Star, LifeBuoy } from "lucide-react";
+import { ArrowRight, Star, LifeBuoy, Gem } from "lucide-react";
 import Link from "next/link";
 import { Skeleton } from "@/components/ui/skeleton";
 import OnboardingPage from "@/app/(app)/onboarding/page";
@@ -158,6 +158,20 @@ export default function DashboardPage() {
                     </p>
                     <Button variant="ghost" size="sm" asChild>
                         <Link href="/support">Contact Support <ArrowRight className="w-4 h-4 ml-2" /></Link>
+                    </Button>
+                </CardContent>
+            </Card>
+             <Card className="hover:bg-accent/50 transition-colors border-dashed border-amber-500/50">
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                    <CardTitle className="text-lg">Premium Upgrade</CardTitle>
+                    <Gem className="w-6 h-6 text-amber-500" />
+                </CardHeader>
+                <CardContent>
+                    <p className="text-sm text-muted-foreground mb-4">
+                        Unlock more features and higher accuracy.
+                    </p>
+                    <Button variant="ghost" size="sm" asChild>
+                        <Link href="/premium">Explore Premium <ArrowRight className="w-4 h-4 ml-2" /></Link>
                     </Button>
                 </CardContent>
             </Card>
