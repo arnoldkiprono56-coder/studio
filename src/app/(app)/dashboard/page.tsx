@@ -49,7 +49,7 @@ export default function DashboardPage() {
 
   const isLoading = isProfileLoading || licensesLoading;
 
-  if (isLoading || !userProfile) {
+  if (isLoading || !userProfile || !allLicenses) {
     return (
         <div className="space-y-8">
             <div className="flex justify-between items-center">
@@ -183,3 +183,5 @@ export default function DashboardPage() {
     </div>
   );
 }
+
+    
