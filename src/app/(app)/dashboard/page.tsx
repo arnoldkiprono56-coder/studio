@@ -39,8 +39,6 @@ export default function DashboardPage() {
 
   const { data: allLicenses, isLoading: licensesLoading } = useCollection<License>(licensesQuery);
 
-  const activeLicenses = allLicenses?.filter(l => l.isActive);
-
   useEffect(() => {
     if (!isProfileLoading && userProfile) {
       if (userProfile.role === 'SuperAdmin' || userProfile.role === 'Admin' || userProfile.role === 'Assistant') {
@@ -49,7 +47,9 @@ export default function DashboardPage() {
     }
   }, [userProfile, isProfileLoading, router]);
 
-  if (isProfileLoading || !userProfile || licensesLoading) {
+  const isLoading = isProfileLoading || licensesLoading;
+
+  if (isLoading || !userProfile) {
     return (
         <div className="space-y-8">
             <div className="flex justify-between items-center">
@@ -106,6 +106,7 @@ export default function DashboardPage() {
   }
 
   const userName = userProfile.email?.split('@')[0] || "Player";
+  const activeLicenses = allLicenses?.filter(l => l.isActive);
   const hasActiveLicenses = activeLicenses && activeLicenses.length > 0;
 
 
