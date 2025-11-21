@@ -37,17 +37,15 @@ export function PremiumActivationListener() {
     const [activatedTier, setActivatedTier] = useState<string | null>(null);
 
     useEffect(() => {
-        if (userProfile && userProfile.premiumStatus && userProfile.premiumStatus !== previousPremiumStatus) {
-            // Premium status has been added or changed
-            setActivatedTier(userProfile.premiumStatus);
-            setShowActivationDialog(true);
-            setPreviousPremiumStatus(userProfile.premiumStatus);
+        const currentStatus = userProfile?.premiumStatus;
+        // This condition now correctly triggers on any change, including from null/undefined to a status.
+        if (userProfile && currentStatus !== previousPremiumStatus) {
+            if (currentStatus) { // Only show dialog if they are gaining a premium status
+                setActivatedTier(currentStatus);
+                setShowActivationDialog(true);
+            }
+            setPreviousPremiumStatus(currentStatus);
         }
-         // Used to set the initial state without triggering the dialog on first load
-        if (userProfile && !previousPremiumStatus && userProfile.premiumStatus) {
-            setPreviousPremiumStatus(userProfile.premiumStatus);
-        }
-
     }, [userProfile, previousPremiumStatus]);
 
     const benefits = activatedTier ? benefitsByTier[activatedTier] : [];
@@ -88,5 +86,3 @@ export function PremiumActivationListener() {
         </Dialog>
     );
 }
-
-    

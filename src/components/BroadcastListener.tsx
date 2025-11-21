@@ -45,7 +45,7 @@ export function BroadcastListener() {
             const userIsTargeted = 
                 notification.targetAudience === 'all' ||
                 (notification.targetAudience === 'staff' && ['Admin', 'SuperAdmin', 'Assistant'].includes(userProfile.role)) ||
-                (notification.targetAudience === 'premium' && (userProfile?.hasPurchased || false));
+                (notification.targetAudience === 'premium' && !!userProfile.premiumStatus);
             
             if (userIsTargeted) {
                 const readStatus = localStorage.getItem(`notification_read_${notification.id}`);
