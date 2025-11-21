@@ -75,32 +75,46 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
   }, [userDocRef, firestore, user]);
 
   useEffect(() => {
-    if (!isProfileLoading && userProfile) {
-      // 1. Check for suspension first
-      if (userProfile.isSuspended && pathname !== '/suspended' && !pathname.startsWith('/support')) {
-        router.replace('/suspended');
+    // CRITICAL FIX: Do not execute any routing logic until the profile is loaded.
+    if (isProfileLoading) {
+      return;
+    }
+
+    if (!userProfile) {
+        // If profile is not found and user is not on an auth page, redirect to login
+        const isAuthPage = ['/login', '/register', '/reset-password', '/terms', '/verify-otp'].includes(pathname);
+        if (!isAuthPage) {
+            router.replace('/login');
+        }
         return;
-      }
-      
-      const publicPaths = ['/company-agreement', '/assistant-onboarding', '/login', '/register', '/suspended', '/verify-otp', '/reset-password', '/terms'];
-      const currentIsPublic = publicPaths.some(p => pathname.startsWith(p));
-      
-      if (currentIsPublic) return;
+    }
 
-      // 2. Check for Company Agreement
-      if (!userProfile.companyAgreementAccepted) {
-          router.replace('/company-agreement');
-          return;
-      }
+    // From here, we know userProfile exists.
 
-      // 3. Check for Assistant Onboarding
-      const isAssistant = userProfile.role === 'Assistant';
-      const hasAcceptedAssistantAgreement = userProfile.assistantAgreementAccepted === true;
-      
-      if (isAssistant && !hasAcceptedAssistantAgreement) {
-          router.replace('/assistant-onboarding');
-          return;
-      }
+    // 1. Check for suspension first
+    if (userProfile.isSuspended && pathname !== '/suspended' && !pathname.startsWith('/support')) {
+      router.replace('/suspended');
+      return;
+    }
+    
+    const publicPaths = ['/company-agreement', '/assistant-onboarding', '/login', '/register', '/suspended', '/verify-otp', '/reset-password', '/terms'];
+    const currentIsPublic = publicPaths.some(p => pathname.startsWith(p));
+    
+    if (currentIsPublic) return;
+
+    // 2. Check for Company Agreement
+    if (!userProfile.companyAgreementAccepted) {
+        router.replace('/company-agreement');
+        return;
+    }
+
+    // 3. Check for Assistant Onboarding
+    const isAssistant = userProfile.role === 'Assistant';
+    const hasAcceptedAssistantAgreement = userProfile.assistantAgreementAccepted === true;
+    
+    if (isAssistant && !hasAcceptedAssistantAgreement) {
+        router.replace('/assistant-onboarding');
+        return;
     }
   }, [userProfile, isProfileLoading, pathname, router]);
   
