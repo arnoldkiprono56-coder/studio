@@ -52,7 +52,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [oneXBetId, setOneXBetId] = useState('');
 
-  const isProfileLoading = isUserLoading || isProfileHookLoading;
+  const isProfileLoading = isUserLoading || (!!user && isProfileHookLoading);
 
 
   const updateUserProfile = useCallback(async (data: Partial<UserProfile>) => {
@@ -75,21 +75,33 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
   }, [userDocRef, firestore, user]);
 
   useEffect(() => {
-    // CRITICAL FIX: Do not execute any routing logic until the profile is loaded.
+    // Do not execute any routing logic until all loading is complete.
     if (isProfileLoading) {
       return;
     }
 
-    if (!userProfile) {
-        // If profile is not found and user is not on an auth page, redirect to login
-        const isAuthPage = ['/login', '/register', '/reset-password', '/terms', '/verify-otp'].includes(pathname);
+    const isAuthPage = ['/login', '/register', '/reset-password', '/terms', '/verify-otp'].includes(pathname);
+
+    // If there's no authenticated user and we're not on an auth page, redirect to login.
+    if (!user) {
         if (!isAuthPage) {
             router.replace('/login');
         }
         return;
     }
 
-    // From here, we know userProfile exists.
+    // If there IS an authenticated user, but we can't find their profile document in Firestore.
+    if (!userProfile) {
+        // This can happen if the user was just created and the document isn't available yet,
+        // or if something went wrong. We log them out to be safe.
+        if (!isAuthPage) {
+            console.error("User authenticated but profile not found. Logging out.");
+            router.replace('/login');
+        }
+        return;
+    }
+
+    // From here, we know `user` and `userProfile` exist.
 
     // 1. Check for suspension first
     if (userProfile.isSuspended && pathname !== '/suspended' && !pathname.startsWith('/support')) {
@@ -97,10 +109,11 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       return;
     }
     
-    const publicPaths = ['/company-agreement', '/assistant-onboarding', '/login', '/register', '/suspended', '/verify-otp', '/reset-password', '/terms'];
-    const currentIsPublic = publicPaths.some(p => pathname.startsWith(p));
+    // Define public paths that don't require further checks if the user is already past the main auth wall
+    const publicPaths = ['/company-agreement', '/assistant-onboarding', '/suspended'];
+    const isPublicAgreementPage = publicPaths.some(p => pathname.startsWith(p));
     
-    if (currentIsPublic) return;
+    if (isPublicAgreementPage) return;
 
     // 2. Check for Company Agreement
     if (!userProfile.companyAgreementAccepted) {
@@ -116,7 +129,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         router.replace('/assistant-onboarding');
         return;
     }
-  }, [userProfile, isProfileLoading, pathname, router]);
+  }, [user, userProfile, isProfileLoading, pathname, router]);
   
   useEffect(() => {
     if(userProfile?.oneXBetId) {
