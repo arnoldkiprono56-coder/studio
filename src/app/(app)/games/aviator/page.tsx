@@ -9,7 +9,7 @@ import { generateGamePredictions, GenerateGamePredictionsOutput } from '@/ai/flo
 import Link from 'next/link';
 import { useProfile } from '@/context/profile-context';
 import { useFirestore, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
-import { addDoc, collection, doc, updateDoc, query, where } from 'firebase/firestore';
+import { addDoc, collection, doc, updateDoc, query, where, serverTimestamp } from 'firebase/firestore';
 import type { License } from '@/lib/types';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { useToast } from '@/hooks/use-toast';
@@ -60,8 +60,6 @@ export default function AviatorPage() {
             const result = await generateGamePredictions({ gameType: 'aviator', userId: userProfile.id });
             setPrediction(result);
             
-            const timestamp = new Date().toISOString();
-            
             const predictionData = {
                 userId: userProfile.id,
                 licenseId: activeLicense.id,
@@ -69,7 +67,7 @@ export default function AviatorPage() {
                 predictionData: JSON.stringify(result.predictionData),
                 disclaimer: result.disclaimer,
                 status: 'pending',
-                timestamp: timestamp,
+                timestamp: serverTimestamp(),
             };
 
             addDoc(collection(firestore, 'users', userProfile.id, 'predictions'), predictionData)
@@ -85,8 +83,8 @@ export default function AviatorPage() {
                 userId: userProfile.id,
                 action: 'prediction_request',
                 details: `Game: Aviator, Prediction: ${JSON.stringify(result.predictionData)}`,
-                timestamp: timestamp,
-                ipAddress: 'not_collected',
+                timestamp: serverTimestamp(),
+                ipAddress: '127.0.0.1', // Placeholder IP
             };
 
             addDoc(collection(firestore, 'auditlogs'), auditLogData)

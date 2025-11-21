@@ -18,6 +18,7 @@ import {
   Bot,
   Ticket,
   History,
+  BarChart,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useProfile } from '@/context/profile-context';
@@ -36,6 +37,13 @@ const adminFeatures = [
     icon: Bot,
     description: 'Use the AI to manage the platform.',
     roles: ['SuperAdmin', 'Admin', 'Assistant'],
+  },
+  {
+    href: '/admin/analytics',
+    label: 'Analytics',
+    icon: BarChart,
+    description: 'View live platform metrics and graphs.',
+    roles: ['SuperAdmin', 'Admin'],
   },
    {
     href: '/admin/staff',
@@ -132,5 +140,3 @@ export default function AdminDashboardPage() {
     </div>
   );
 }
-
-    

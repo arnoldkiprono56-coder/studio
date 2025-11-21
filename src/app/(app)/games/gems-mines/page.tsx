@@ -10,7 +10,7 @@ import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { useProfile } from '@/context/profile-context';
 import { useFirestore, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
-import { addDoc, collection, doc, query, where, updateDoc } from 'firebase/firestore';
+import { addDoc, collection, doc, query, where, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import type { License } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
@@ -63,8 +63,6 @@ export default function GemsAndMinesPage() {
             });
             setPrediction(result);
             
-            const timestamp = new Date().toISOString();
-
             const predictionData = {
                 userId: userProfile.id,
                 licenseId: activeLicense.id,
@@ -72,7 +70,7 @@ export default function GemsAndMinesPage() {
                 predictionData: JSON.stringify(result.predictionData),
                 disclaimer: result.disclaimer,
                 status: 'pending',
-                timestamp: timestamp,
+                timestamp: serverTimestamp(),
             };
 
             addDoc(collection(firestore, 'users', userProfile.id, 'predictions'), predictionData)
@@ -88,8 +86,8 @@ export default function GemsAndMinesPage() {
                 userId: userProfile.id,
                 action: 'prediction_request',
                 details: `Game: Gems & Mines, Prediction: ${JSON.stringify(result.predictionData)}`,
-                timestamp: timestamp,
-                ipAddress: 'not_collected',
+                timestamp: serverTimestamp(),
+                ipAddress: '127.0.0.1', // Placeholder IP
             };
 
             addDoc(collection(firestore, 'auditlogs'), auditLogData)

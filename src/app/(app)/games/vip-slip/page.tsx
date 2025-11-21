@@ -89,7 +89,7 @@ export default function VipSlipPage() {
                 action: 'prediction_request',
                 details: `Game: VIP Slip, Prediction ID: ${newPredictionRef.id}`,
                 timestamp: serverTimestamp(),
-                ipAddress: 'not_collected',
+                ipAddress: '127.0.0.1', // Placeholder IP
             };
             addDoc(collection(firestore, 'auditlogs'), auditLogData)
                 .catch(error => {
