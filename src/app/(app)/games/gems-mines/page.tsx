@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -60,6 +59,7 @@ export default function GemsAndMinesPage() {
             const result = await generateGamePredictions({ 
                 gameType: 'gems-mines', 
                 userId: userProfile.id,
+                premiumStatus: userProfile.premiumStatus,
             });
             setPrediction(result);
             
