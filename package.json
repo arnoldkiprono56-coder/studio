@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "npm run genkit:dev",
+    "dev": "npm run genkit:dev -- --port 9002 --hostname 0.0.0.0",
     "genkit:dev": "genkit start",
     "genkit:watch": "genkit start --watch",
     "build": "NODE_ENV=production next build",
