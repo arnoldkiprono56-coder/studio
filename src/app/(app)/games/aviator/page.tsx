@@ -60,6 +60,7 @@ export default function AviatorPage() {
             const result = await generateGamePredictions({
                  gameType: 'aviator', 
                  userId: userProfile.id,
+                 premiumStatus: userProfile.premiumStatus,
             });
             setPrediction(result);
             
@@ -87,7 +88,7 @@ export default function AviatorPage() {
                 action: 'prediction_request',
                 details: `Game: Aviator, Prediction: ${JSON.stringify(result.predictionData)}`,
                 timestamp: serverTimestamp(),
-                ipAddress: '127.0.0.1', // Placeholder IP
+                ipAddress: 'not_collected',
             };
 
             addDoc(collection(firestore, 'auditlogs'), auditLogData)
@@ -116,17 +117,39 @@ export default function AviatorPage() {
 
         } catch (error) {
             console.error("Failed to get prediction:", error);
-            // Non-firestore errors can be handled here
         } finally {
             setIsLoading(false);
         }
     };
     
-    const handleFeedback = (feedback: 'won' | 'lost') => {
-        if (!prediction) return;
+    const handleFeedback = async (feedback: 'won' | 'lost') => {
+        if (!prediction || !firestore || !userProfile) return;
         setFeedbackSent(true);
-        toast({ title: 'Thank you!', description: 'Your feedback helps us improve.' });
-        // The backend flow for this was removed, so we just show the toast.
+        
+        try {
+            // Find the most recent "pending" prediction for this game
+            const predictionsRef = collection(firestore, 'users', userProfile.id, 'predictions');
+            const q = query(
+                predictionsRef, 
+                where('gameType', '==', 'Aviator'), 
+                where('status', '==', 'pending'),
+                orderBy('timestamp', 'desc'),
+                limit(1)
+            );
+            
+            const snapshot = await getDocs(q);
+            if (!snapshot.empty) {
+                const predictionDoc = snapshot.docs[0];
+                await updateDoc(predictionDoc.ref, { status: feedback });
+                toast({ title: 'Thank you!', description: 'Your feedback helps us improve.' });
+            } else {
+                 toast({ title: 'Note', description: 'Could not find a pending prediction to update, but thanks for the feedback!' });
+            }
+
+        } catch (error) {
+            console.error("Failed to update prediction status:", error);
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not save your feedback.' });
+        }
     };
 
 
