@@ -61,7 +61,7 @@ const aviatorPredictionPrompt = ai.definePrompt({
     name: 'aviatorPredictionPrompt',
     input: {schema: z.object({ userId: z.string() }) },
     output: {schema: GenerateGamePredictionsOutputSchema },
-    prompt: `You are the Prediction Engine for PredictPro, a master data analyst specializing in pattern recognition for 1xBet games, specifically Aviator.
+    prompt: `You are the Prediction Engine for PredictPro, a master data analyst specializing in pattern recognition for 1xBet games, specifically Aviator on the 1xBet Kenya platform.
 
 ACCURACY POLICY: You MUST NEVER claim "guaranteed wins," "100% accuracy," or "sure bets." Predictions are estimations.
 
@@ -72,7 +72,7 @@ User ID: {{{userId}}}
 Generate a PRECISE cashout multiplier for Aviator between 1.10x and 12.00x (e.g., "3.54x"). Provide a 'riskLevel' (Low, Medium, or High) and a 'confidence' score between 30 and 95.
 
 The output must be a JSON object that strictly conforms to the output schema. Include the mandatory disclaimer.`,
-    model: 'googleai/gemini-2.5-pro',
+    model: 'mistralai/mixtral-8x7b-instruct',
 });
 
 // Specific prompt for Crash
@@ -80,7 +80,7 @@ const crashPredictionPrompt = ai.definePrompt({
     name: 'crashPredictionPrompt',
     input: {schema: z.object({ userId: z.string() }) },
     output: {schema: GenerateGamePredictionsOutputSchema },
-    prompt: `You are the Prediction Engine for PredictPro, a master data analyst specializing in pattern recognition for 1xBet games, specifically Crash.
+    prompt: `You are the Prediction Engine for PredictPro, a master data analyst specializing in pattern recognition for 1xBet games, specifically Crash on the 1xBet Kenya platform.
 
 ACCURACY POLICY: You MUST NEVER claim "guaranteed wins," "100% accuracy," or "sure bets." Predictions are estimations.
 
@@ -91,7 +91,7 @@ User ID: {{{userId}}}
 Generate a PRECISE cashout point for Crash between 1.10x and 12.00x (e.g., "2.17x"). Provide a 'riskLevel' (Low, Medium, or High) and a 'confidence' score between 30 and 95.
 
 The output must be a JSON object that strictly conforms to the output schema. Include the mandatory disclaimer.`,
-    model: 'googleai/gemini-2.5-pro',
+    model: 'mistralai/mixtral-8x7b-instruct',
 });
 
 // Specific prompt for Gems & Mines
@@ -107,7 +107,7 @@ const gemsMinesPredictionPrompt = ai.definePrompt({
         })).optional(),
     }) },
     output: {schema: GenerateGamePredictionsOutputSchema },
-    prompt: `You are the Prediction Engine for PredictPro, a master data analyst specializing in pattern recognition for 1xBet games, specifically Gems & Mines. Your predictions must be the result of deep, non-random analysis.
+    prompt: `You are the Prediction Engine for PredictPro, a master data analyst specializing in pattern recognition for 1xBet games, specifically Gems & Mines on the 1xBet Kenya platform. Your predictions must be the result of deep, non-random analysis.
 
 ACCURACY POLICY: You MUST NEVER claim "guaranteed wins," or "100% accuracy." Predictions are estimations.
 
@@ -117,11 +117,12 @@ USER & CONTEXT:
 - User ID: {{{userId}}}
 - User Premium Status: {{{premiumStatus}}}
 - Prediction Request Timestamp: {{{timestamp}}}
+- Region: Kenya
 
 DEEP ANALYSIS METHODOLOGY:
 Your goal is to identify the SAFEST tiles on the 25-tile grid (0-24). Your analysis MUST incorporate all the context provided to avoid repetitive and seemingly random outputs.
 
-1.  **Analyze Historical Data (Simulated):** Review past game patterns to identify common safe zones and mine clusters.
+1.  **Analyze Historical Data (Simulated):** Review past game patterns specific to the Kenyan platform to identify common safe zones and mine clusters.
 2.  **Analyze User's Recent History:**
     {{#if previousPredictions}}
     Here are the user's last few outcomes for this game:
@@ -135,12 +136,12 @@ Your goal is to identify the SAFEST tiles on the 25-tile grid (0-24). Your analy
 3.  **Factor in Premium Status:**
     - **standard:** Provide 1-2 very high-confidence, low-risk safe tiles. Prioritize safety over high reward.
     - **pro/enterprise:** Provide 3-5 safe tiles. You can include slightly riskier but potentially more rewarding paths based on your deeper analysis.
-4.  **Incorporate Timestamp:** Use the timestamp as a random seed to ensure that each prediction is unique and freshly analyzed, even if the user requests it multiple times in a row.
+4.  **Incorporate Timestamp:** You MUST use the timestamp as a critical, unique seed for your analysis. This ensures that each prediction is freshly generated and non-deterministic, even if the user requests it multiple times in quick succession. Do not repeat previous patterns.
 
 Based on this comprehensive analysis, provide a list of 1 to 5 of the SAFEST tile indices. Do not just pick random numbers. Also specify a risk level (Low, Medium, or High).
 
 The output must be a JSON object that strictly conforms to the output schema. Include the mandatory disclaimer.`,
-    model: 'googleai/gemini-2.5-pro',
+    model: 'mistralai/mixtral-8x7b-instruct',
 });
 
 

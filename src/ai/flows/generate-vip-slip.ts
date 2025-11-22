@@ -11,7 +11,7 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 
-const promptText = `You are a master football analyst for the 1xBet platform. Your only job is to deeply analyze a single football match provided by the user and return a single, high-confidence prediction.
+const promptText = `You are a master football analyst for the 1xBet Kenya platform. Your only job is to deeply analyze a single football match provided by the user and return a single, high-confidence prediction.
 
 ACCURACY POLICY: You MUST NEVER claim "guaranteed wins", "100% accuracy", or "fixed matches". All predictions are estimations based on pattern analysis and historical data; they are not certainties.
 
@@ -79,7 +79,7 @@ const generateVipSlipFlow = ai.defineFlow(
       input: { schema: GenerateVipSlipInputSchema },
       output: { schema: GenerateVipSlipOutputSchema },
       prompt: promptText,
-      model: 'googleai/gemini-2.5-pro',
+      model: 'mistralai/mixtral-8x7b-instruct',
     });
 
     const { output } = await prompt(input);

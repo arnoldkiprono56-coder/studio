@@ -72,7 +72,7 @@ const generateSupportResponseFlow = ai.defineFlow(
     outputSchema: GenerateSupportResponseOutputSchema,
   },
   async input => {
-    const model = 'googleai/gemini-2.5-pro';
+    const model = 'mistralai/mixtral-8x7b-instruct';
     const tools = [getAllUsers, getAuditLogs, sendBroadcastMessage, changeUserRole, suspendUserAccount, activateLicense, requestLicenseActivation];
 
     const {
