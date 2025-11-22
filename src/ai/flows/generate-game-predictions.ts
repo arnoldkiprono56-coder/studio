@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -9,9 +10,8 @@
  */
 
 import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
-import { firestore } from '@/firebase/server-init';
-import { collection, query, where, orderBy, limit, getDocs } from 'firebase/firestore';
+import {z} from 'zod';
+import { getPreviousPredictions } from '@/services/firestore-service';
 
 // Schemas for game-specific predictions
 const AviatorPredictionSchema = z.object({
@@ -133,8 +133,8 @@ Your goal is to identify the SAFEST tiles on the 25-tile grid (0-24). Your analy
     This is one of the user's first games. Start with a more conservative, low-risk prediction.
     {{/if}}
 3.  **Factor in Premium Status:**
-    - **Standard:** Provide 1-2 very high-confidence, low-risk safe tiles. Prioritize safety over high reward.
-    - **Pro/Enterprise:** Provide 3-5 safe tiles. You can include slightly riskier but potentially more rewarding paths based on your deeper analysis.
+    - **standard:** Provide 1-2 very high-confidence, low-risk safe tiles. Prioritize safety over high reward.
+    - **pro/enterprise:** Provide 3-5 safe tiles. You can include slightly riskier but potentially more rewarding paths based on your deeper analysis.
 4.  **Incorporate Timestamp:** Use the timestamp as a random seed to ensure that each prediction is unique and freshly analyzed, even if the user requests it multiple times in a row.
 
 Based on this comprehensive analysis, provide a list of 1 to 5 of the SAFEST tile indices. Do not just pick random numbers. Also specify a risk level (Low, Medium, or High).
@@ -161,24 +161,14 @@ const generateGamePredictionsFlow = ai.defineFlow(
             return output!;
         }
         case 'gems-mines': {
-            // 1. Fetch the user's last 3 "Gems & Mines" predictions
-            const predictionsRef = collection(firestore, 'users', input.userId, 'predictions');
-            const q = query(
-                predictionsRef, 
-                where('gameType', '==', 'Gems & Mines'), 
-                orderBy('timestamp', 'desc'), 
-                limit(3)
-            );
-            const snapshot = await getDocs(q);
-            const previousPredictions = snapshot.docs.map(doc => {
-                const data = doc.data();
-                return {
-                    tiles: data.predictionData?.safeTileIndices || [],
-                    outcome: data.status || 'pending'
-                };
+            // 1. Fetch the user's recent prediction history from the secure service.
+            const previousPredictions = await getPreviousPredictions({
+              userId: input.userId,
+              gameType: 'Gems & Mines',
+              limit: 3,
             });
 
-            // 2. Call the prompt with the enriched data
+            // 2. Call the prompt with the enriched data.
             const { output } = await gemsMinesPredictionPrompt({ 
                 userId: input.userId,
                 premiumStatus: input.premiumStatus,

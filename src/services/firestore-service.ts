@@ -204,4 +204,39 @@ export async function createPendingLicenseRequest(
     }
 }
 
-    
+/**
+ * Fetches the last N predictions for a specific user and game type.
+ * This is a server-side function and uses admin privileges to bypass security rules.
+ */
+export async function getPreviousPredictions(
+    { userId, gameType, limit: queryLimit }:
+    { userId: string; gameType: string; limit: number; }
+): Promise<{ tiles: number[]; outcome: string; }[]> {
+    try {
+        const predictionsRef = collection(firestore, 'users', userId, 'predictions');
+        const q = query(
+            predictionsRef, 
+            where('gameType', '==', gameType), 
+            orderBy('timestamp', 'desc'), 
+            limit(queryLimit)
+        );
+
+        const snapshot = await getDocs(q);
+
+        if (snapshot.empty) {
+            return [];
+        }
+
+        return snapshot.docs.map(doc => {
+            const data = doc.data();
+            return {
+                tiles: data.predictionData?.safeTileIndices || [],
+                outcome: data.status || 'pending'
+            };
+        });
+    } catch (error) {
+        console.error(`Failed to get previous predictions for user ${userId}:`, error);
+        // Return an empty array on error to ensure the calling flow doesn't break.
+        return [];
+    }
+}
