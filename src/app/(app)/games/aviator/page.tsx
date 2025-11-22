@@ -22,6 +22,7 @@ type AviatorPredictionData = {
 
 export default function AviatorPage() {
     const [prediction, setPrediction] = useState<GenerateGamePredictionsOutput | null>(null);
+    const [lastPredictionId, setLastPredictionId] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [feedbackSent, setFeedbackSent] = useState(false);
     const { userProfile, openOneXBetDialog } = useProfile();
@@ -56,6 +57,8 @@ export default function AviatorPage() {
         setIsLoading(true);
         setPrediction(null);
         setFeedbackSent(false);
+        setLastPredictionId(null);
+
         try {
             const result = await generateGamePredictions({
                  gameType: 'aviator', 
@@ -70,18 +73,24 @@ export default function AviatorPage() {
                 gameType: 'Aviator',
                 predictionData: result.predictionData,
                 disclaimer: result.disclaimer,
-                status: 'pending',
+                status: 'pending' as const,
                 timestamp: serverTimestamp(),
             };
 
-            addDoc(collection(firestore, 'users', userProfile.id, 'predictions'), predictionData)
-                .catch(error => {
+            const newPredictionDoc = await addDoc(collection(firestore, 'users', userProfile.id, 'predictions'), predictionData)
+                 .catch(error => {
                     errorEmitter.emit('permission-error', new FirestorePermissionError({
                         path: `users/${userProfile.id}/predictions`,
                         operation: 'create',
                         requestResourceData: predictionData
                     }));
+                    return null;
                 });
+            
+            if (newPredictionDoc) {
+                setLastPredictionId(newPredictionDoc.id);
+            }
+
 
             const auditLogData = {
                 userId: userProfile.id,
@@ -123,29 +132,16 @@ export default function AviatorPage() {
     };
     
     const handleFeedback = async (feedback: 'won' | 'lost') => {
-        if (!prediction || !firestore || !userProfile) return;
+        if (!lastPredictionId || !firestore || !userProfile) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not save feedback. No prediction ID found.' });
+            return;
+        }
         setFeedbackSent(true);
         
         try {
-            // Find the most recent "pending" prediction for this game
-            const predictionsRef = collection(firestore, 'users', userProfile.id, 'predictions');
-            const q = query(
-                predictionsRef, 
-                where('gameType', '==', 'Aviator'), 
-                where('status', '==', 'pending'),
-                orderBy('timestamp', 'desc'),
-                limit(1)
-            );
-            
-            const snapshot = await getDocs(q);
-            if (!snapshot.empty) {
-                const predictionDoc = snapshot.docs[0];
-                await updateDoc(predictionDoc.ref, { status: feedback });
-                toast({ title: 'Thank you!', description: 'Your feedback helps us improve.' });
-            } else {
-                 toast({ title: 'Note', description: 'Could not find a pending prediction to update, but thanks for the feedback!' });
-            }
-
+            const predictionRef = doc(firestore, 'users', userProfile.id, 'predictions', lastPredictionId);
+            await updateDoc(predictionRef, { status: feedback });
+            toast({ title: 'Thank you!', description: 'Your feedback helps us improve.' });
         } catch (error) {
             console.error("Failed to update prediction status:", error);
             toast({ variant: 'destructive', title: 'Error', description: 'Could not save your feedback.' });
