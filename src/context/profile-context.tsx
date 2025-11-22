@@ -52,7 +52,11 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [oneXBetId, setOneXBetId] = useState('');
 
+  // This is the consolidated loading state. It's true if we're waiting for auth OR the profile.
   const isProfileLoading = isUserLoading || (!!user && isProfileHookLoading);
+  
+  // A new state to handle the specific case where auth is done but profile isn't, to avoid premature redirects.
+  const [isVerifyingProfile, setIsVerifyingProfile] = useState(false);
 
 
   const updateUserProfile = useCallback(async (data: Partial<UserProfile>) => {
@@ -75,61 +79,78 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
   }, [userDocRef, firestore, user]);
 
   useEffect(() => {
-    // Do not execute any routing logic until all loading is complete.
-    if (isProfileLoading) {
+    const isAuthPage = ['/login', '/register', '/reset-password', '/terms', '/verify-otp'].includes(pathname);
+
+    // While Firebase is checking auth state, do nothing.
+    if (isUserLoading) {
       return;
     }
 
-    const isAuthPage = ['/login', '/register', '/reset-password', '/terms', '/verify-otp'].includes(pathname);
-
-    // If there's no authenticated user and we're not on an auth page, redirect to login.
+    // If there is no authenticated user at all...
     if (!user) {
+        // And we are not on a public authentication page, redirect to login.
         if (!isAuthPage) {
             router.replace('/login');
         }
+        // If we are on an auth page, allow it.
         return;
     }
 
-    // If there IS an authenticated user, but we can't find their profile document in Firestore.
-    if (!userProfile) {
-        // This can happen if the user was just created and the document isn't available yet,
-        // or if something went wrong. We log them out to be safe.
+    // If we have an authenticated user, but are still waiting for their profile from Firestore...
+    if (user && !userProfile && isProfileHookLoading) {
+      // Set a "verifying" state. This prevents the next block from running prematurely.
+      setIsVerifyingProfile(true);
+      return; 
+    }
+    
+    // If we were verifying but now the profile has loaded, stop verifying.
+    if(isVerifyingProfile && userProfile) {
+        setIsVerifyingProfile(false);
+    }
+
+    // If we have an authenticated user, but their profile document doesn't exist in Firestore...
+    if (user && !userProfile && !isProfileHookLoading) {
+        // This is a critical error state. The user exists in Auth but not in the database.
+        // This should not happen in normal operation (e.g., after registration).
+        // To be safe, we log the error and log them out.
         if (!isAuthPage) {
             console.error("User authenticated but profile not found. Logging out.");
             router.replace('/login');
         }
         return;
     }
-
-    // From here, we know `user` and `userProfile` exist.
-
-    // 1. Check for suspension first
-    if (userProfile.isSuspended && pathname !== '/suspended' && !pathname.startsWith('/support')) {
-      router.replace('/suspended');
-      return;
-    }
     
-    // Define public paths that don't require further checks if the user is already past the main auth wall
-    const publicPaths = ['/company-agreement', '/assistant-onboarding', '/suspended'];
-    const isPublicAgreementPage = publicPaths.some(p => pathname.startsWith(p));
-    
-    if (isPublicAgreementPage) return;
+    // If we have both user and userProfile, proceed with app logic.
+    if (user && userProfile) {
+        // 1. Check for suspension first
+        if (userProfile.isSuspended && pathname !== '/suspended' && !pathname.startsWith('/support')) {
+          router.replace('/suspended');
+          return;
+        }
+        
+        // Define public paths that don't require further checks
+        const publicPaths = ['/company-agreement', '/assistant-onboarding', '/suspended'];
+        const isPublicAgreementPage = publicPaths.some(p => pathname.startsWith(p));
+        
+        if (isPublicAgreementPage) return;
 
-    // 2. Check for Company Agreement
-    if (!userProfile.companyAgreementAccepted) {
-        router.replace('/company-agreement');
-        return;
+        // 2. Check for Company Agreement
+        if (!userProfile.companyAgreementAccepted) {
+            router.replace('/company-agreement');
+            return;
+        }
+
+        // 3. Check for Assistant Onboarding
+        const isAssistant = userProfile.role === 'Assistant';
+        const hasAcceptedAssistantAgreement = userProfile.assistantAgreementAccepted === true;
+        
+        if (isAssistant && !hasAcceptedAssistantAgreement) {
+            router.replace('/assistant-onboarding');
+            return;
+        }
     }
 
-    // 3. Check for Assistant Onboarding
-    const isAssistant = userProfile.role === 'Assistant';
-    const hasAcceptedAssistantAgreement = userProfile.assistantAgreementAccepted === true;
-    
-    if (isAssistant && !hasAcceptedAssistantAgreement) {
-        router.replace('/assistant-onboarding');
-        return;
-    }
-  }, [user, userProfile, isProfileLoading, pathname, router]);
+  }, [user, userProfile, isUserLoading, isProfileHookLoading, pathname, router, isVerifyingProfile]);
   
   useEffect(() => {
     if(userProfile?.oneXBetId) {
@@ -168,7 +189,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
 
   const value = {
     userProfile,
-    isProfileLoading: isProfileLoading,
+    isProfileLoading: isProfileLoading || isVerifyingProfile, // The app is "loading" if we are verifying the profile
     updateUserProfile,
     openOneXBetDialog: () => setIsDialogOpen(true),
   };
