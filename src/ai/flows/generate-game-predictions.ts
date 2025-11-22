@@ -72,6 +72,7 @@ User ID: {{{userId}}}
 Generate a PRECISE cashout multiplier for Aviator between 1.10x and 12.00x (e.g., "3.54x"). Provide a 'riskLevel' (Low, Medium, or High) and a 'confidence' score between 30 and 95.
 
 The output must be a JSON object that strictly conforms to the output schema. Include the mandatory disclaimer.`,
+    model: 'googleai/gemini-2.5-pro',
 });
 
 // Specific prompt for Crash
@@ -90,6 +91,7 @@ User ID: {{{userId}}}
 Generate a PRECISE cashout point for Crash between 1.10x and 12.00x (e.g., "2.17x"). Provide a 'riskLevel' (Low, Medium, or High) and a 'confidence' score between 30 and 95.
 
 The output must be a JSON object that strictly conforms to the output schema. Include the mandatory disclaimer.`,
+    model: 'googleai/gemini-2.5-pro',
 });
 
 // Specific prompt for Gems & Mines
@@ -139,6 +141,7 @@ Your goal is to identify the SAFEST tiles on the 25-tile grid (0-24). Your analy
 Based on this comprehensive analysis, provide a list of 1 to 5 of the SAFEST tile indices. Do not just pick random numbers. Also specify a risk level (Low, Medium, or High).
 
 The output must be a JSON object that strictly conforms to the output schema. Include the mandatory disclaimer.`,
+    model: 'googleai/gemini-2.5-pro',
 });
 
 
