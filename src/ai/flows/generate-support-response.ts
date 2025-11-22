@@ -116,5 +116,3 @@ const generateSupportResponseFlow = ai.defineFlow(
     return finalResponse.output!;
   }
 );
-
-    
