@@ -214,8 +214,10 @@ export default function CrashPage() {
                             <p className="text-muted-foreground mt-2">Target Cashout</p>
                             <p className="text-6xl font-bold text-primary">{crashData.targetCashout}</p>
                             <p className="text-sm font-semibold text-muted-foreground mt-2">Cashout on or before this multiplier.</p>
-                             <p className="text-sm text-muted-foreground mt-4">Risk Level: {crashData.riskLevel}</p>
-                            <p className="text-sm text-muted-foreground">Confidence: {crashData.confidence}%</p>
+                            <div className="flex gap-4 justify-center mt-4 text-sm text-muted-foreground">
+                                <span>Risk Level: <span className="font-semibold text-foreground">{crashData.riskLevel}</span></span>
+                                <span>Confidence: <span className="font-semibold text-foreground">{crashData.confidence}%</span></span>
+                            </div>
                         </div>
                     ) : (
                          <div className="text-center text-muted-foreground">

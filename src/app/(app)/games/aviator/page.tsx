@@ -217,8 +217,10 @@ export default function AviatorPage() {
                             <p className="text-muted-foreground mt-2">Target Cashout</p>
                             <p className="text-6xl font-bold text-primary">{aviatorData.targetMultiplier}</p>
                             <p className="text-sm font-semibold text-muted-foreground mt-2">Cashout on or before this multiplier.</p>
-                            <p className="text-sm text-muted-foreground mt-4">Risk Level: {aviatorData.riskLevel}</p>
-                            <p className="text-sm text-muted-foreground">Confidence: {aviatorData.confidence}%</p>
+                            <div className="flex gap-4 justify-center mt-4 text-sm text-muted-foreground">
+                                <span>Risk Level: <span className="font-semibold text-foreground">{aviatorData.riskLevel}</span></span>
+                                <span>Confidence: <span className="font-semibold text-foreground">{aviatorData.confidence}%</span></span>
+                            </div>
                         </div>
                     ) : (
                          <div className="text-center text-muted-foreground">
