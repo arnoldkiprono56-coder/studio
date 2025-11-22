@@ -44,7 +44,8 @@ service cloud.firestore {
       }
 
       match /predictions/{predictionId} {
-          allow read, write: if isOwner(userId) || isActualAdmin() || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Assistant';
+          allow get, create, update, delete: if isOwner(userId) || isActualAdmin() || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Assistant';
+          allow list: if isOwner(userId) || isActualAdmin() || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Assistant';
       }
       
       // Admins can read/write their own chat messages
