@@ -8,5 +8,5 @@ export const ai = genkit({
         apiKey: process.env.OPENAI_API_KEY,
     }),
   ],
-  model: 'gpt-4o',
+  model: 'openai/gpt-4o',
 });
