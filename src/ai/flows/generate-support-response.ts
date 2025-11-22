@@ -72,14 +72,12 @@ const generateSupportResponseFlow = ai.defineFlow(
     outputSchema: GenerateSupportResponseOutputSchema,
   },
   async input => {
-    const model = 'mistralai/mixtral-8x7b-instruct';
     const tools = [getAllUsers, getAuditLogs, sendBroadcastMessage, changeUserRole, suspendUserAccount, activateLicense, requestLicenseActivation];
 
     const {
       output,
       history: responseHistory,
     } = await ai.generate({
-      model: model,
       tools: tools,
       prompt: {
         text: promptText,
@@ -101,7 +99,6 @@ const generateSupportResponseFlow = ai.defineFlow(
     // If there is no text output, it means the model used a tool.
     // We need to call it again with the tool output to get a natural language response.
     const finalResponse = await ai.generate({
-      model: model,
       tools: tools,
       prompt: {
         text: promptText,

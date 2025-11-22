@@ -79,7 +79,6 @@ const generateVipSlipFlow = ai.defineFlow(
       input: { schema: GenerateVipSlipInputSchema },
       output: { schema: GenerateVipSlipOutputSchema },
       prompt: promptText,
-      model: 'mistralai/mixtral-8x7b-instruct',
     });
 
     const { output } = await prompt(input);
