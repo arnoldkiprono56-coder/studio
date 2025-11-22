@@ -41,10 +41,11 @@ service cloud.firestore {
       // Subcollections for a specific user
       match /user_licenses/{licenseId} {
         allow read, write: if isOwner(userId) || isActualAdmin() || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Assistant';
+        allow list: if isOwner(userId) || isActualAdmin() || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Assistant';
       }
 
       match /predictions/{predictionId} {
-          allow get, create, update, delete: if isOwner(userId) || isActualAdmin() || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Assistant';
+          allow read, create, update, delete: if isOwner(userId) || isActualAdmin() || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Assistant';
           allow list: if isOwner(userId) || isActualAdmin() || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Assistant';
       }
       

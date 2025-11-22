@@ -164,7 +164,7 @@ const generateGamePredictionsFlow = ai.defineFlow(
             // 1. Fetch the user's recent prediction history from the secure service.
             const previousPredictions = await getPreviousPredictions({
               userId: input.userId,
-              gameType: 'Gems & Mines',
+              gameType: 'Mines & Gems',
               limit: 3,
             });
 

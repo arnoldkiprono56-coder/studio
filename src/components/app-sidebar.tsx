@@ -16,9 +16,7 @@ import { Logo } from '@/components/icons';
 import { useProfile } from '@/context/profile-context';
 import {
   Ticket,
-  CreditCard,
   History,
-  Tag,
   Gamepad2,
   LifeBuoy,
   Settings,
@@ -36,9 +34,7 @@ const superAdminNav = [
   { href: '/admin/user-lookup', label: 'User Lookup', icon: Search },
   { href: '/admin/assistant', label: 'AI Assistant', icon: Bot },
   { href: '/admin/licenses', label: 'Licenses', icon: Ticket },
-  { href: '/admin/payments', label: 'Payments', icon: CreditCard },
   { href: '/admin/predictions', label: 'Prediction Logs', icon: History },
-  { href: '/admin/pricing', label: 'Plans & Pricing', icon: Tag },
   { href: '/admin/games', label: 'Games Control', icon: Gamepad2 },
   { href: '/admin/broadcasts', label: 'Broadcasts', icon: Megaphone },
   { href: '/admin/support', label: 'Support Center', icon: LifeBuoy },
@@ -51,7 +47,6 @@ const adminNav = [
   { href: '/admin/user-lookup', label: 'User Lookup', icon: Search },
   { href: '/admin/assistant', label: 'AI Assistant', icon: Bot },
   { href: '/admin/licenses', label: 'Licenses', icon: Ticket },
-  { href: '/admin/payments', label: 'Payments', icon: CreditCard },
   { href: '/admin/predictions', label: 'Prediction Logs', icon: History },
   { href: '/admin/games', label: 'Games Control', icon: Gamepad2 },
   { href: '/admin/broadcasts', label: 'Broadcasts', icon: Megaphone },
@@ -62,8 +57,7 @@ const assistantNav = [
   { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/admin/user-lookup', label: 'User Lookup', icon: Search },
   { href: '/admin/assistant', label: 'AI Assistant', icon: Bot },
-  { href: '/admin/licenses', label: 'Licenses (Read)', icon: Ticket },
-  { href: '/admin/payments', label: 'Payments (Read)', icon: CreditCard },
+  { href: '/admin/licenses', label: 'Licenses', icon: Ticket },
   { href: '/admin/support', label: 'Support Center', icon: LifeBuoy },
 ];
 

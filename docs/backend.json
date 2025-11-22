@@ -587,5 +587,3 @@
     "reasoning": "The Firestore structure is updated to remove all payment and pricing-related collections (`plans`, `pending_payments`, `preVerifiedPayments`, `transactions`). The User entity has been simplified by removing `balance`. The License entity no longer has a `paymentVerified` field. This aligns with the request to completely remove all financial transaction functionality from the app."
   }
 }
-
-    

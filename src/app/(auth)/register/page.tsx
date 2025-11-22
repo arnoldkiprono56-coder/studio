@@ -42,12 +42,6 @@ const formSchema = z.object({
   path: ["confirmPassword"],
 });
 
-const defaultPlans = [
-    { id: 'vip-slip', name: 'VIP Slip', price: 1500, currency: 'KES', rounds: 100 },
-    { id: 'aviator', name: 'Aviator', price: 799, currency: 'KES', rounds: 100 },
-    { id: 'crash', name: 'Crash', price: 799, currency: 'KES', rounds: 100 },
-    { id: 'mines-gems', name: 'Mines & Gems', price: 999, currency: 'KES', rounds: 100 }
-];
 
 const defaultGameStatuses = [
     { id: 'vip-slip', name: 'VIP Slip', isEnabled: true, disabledReason: '' },
@@ -114,17 +108,12 @@ export default function RegisterPage() {
                 role: userRole,
                 isSuspended: false,
                 createdAt: new Date().toISOString(),
-                balance: 0,
             };
 
             batch.set(userRef, userData);
 
             if (isSuperAdmin) {
                 // Seed initial data
-                defaultPlans.forEach(plan => {
-                    const planRef = doc(firestore, 'plans', plan.id);
-                    batch.set(planRef, plan);
-                });
                 defaultGameStatuses.forEach(status => {
                     const statusRef = doc(firestore, 'game_status', status.id);
                     batch.set(statusRef, status);
