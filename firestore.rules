@@ -51,12 +51,13 @@ service cloud.firestore {
       
       // Admins can read/write their own chat messages
       match /admin_chat_messages/{messageId} {
-        allow read, write: if isOwner(userId);
+        allow read, write, list: if isOwner(userId);
       }
       
       // Users can read/write their own support messages. Admins can access them too.
       match /support_messages/{messageId} {
         allow read, write: if isOwner(userId) || isActualAdmin() || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Assistant';
+        allow list: if isOwner(userId) || isActualAdmin() || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Assistant';
       }
     }
     
