@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "genkit start --port 9002",
+    "dev": "next dev",
     "build": "NODE_ENV=production next build",
     "start": "next start",
     "lint": "next lint",
