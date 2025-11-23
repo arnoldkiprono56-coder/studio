@@ -94,7 +94,7 @@ The output must be a JSON object that strictly conforms to the output schema. In
     model: 'googleai/gemini-2.5-pro',
 });
 
-// Specific prompt for Gems & Mines
+// This prompt is no longer used for gems-mines, but is kept for reference.
 const gemsMinesPredictionPrompt = ai.definePrompt({
     name: 'gemsMinesPredictionPrompt',
     input: {schema: z.object({ 
@@ -145,6 +145,45 @@ The output must be a JSON object that strictly conforms to the output schema. In
 });
 
 
+/**
+ * Generates a random, non-AI prediction for the Gems & Mines game.
+ * @param premiumStatus The user's premium status, which affects the number of tiles.
+ * @returns A standard prediction output object.
+ */
+function generateLocalGemsMinesPrediction(premiumStatus?: string): GenerateGamePredictionsOutput {
+    const isPremium = premiumStatus === 'pro' || premiumStatus === 'enterprise';
+    const numTiles = isPremium 
+        ? Math.floor(Math.random() * 3) + 3 // 3, 4, or 5 tiles for premium
+        : Math.floor(Math.random() * 2) + 1; // 1 or 2 tiles for standard
+
+    const allIndices = Array.from({ length: 25 }, (_, i) => i);
+    const safeTileIndices: number[] = [];
+
+    // Shuffle and pick unique indices
+    for (let i = allIndices.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [allIndices[i], allIndices[j]] = [allIndices[j], allIndices[i]];
+    }
+
+    for (let i = 0; i < numTiles; i++) {
+        safeTileIndices.push(allIndices[i]);
+    }
+    
+    let risk = 'Low';
+    if (numTiles > 2) risk = 'Medium';
+    if (numTiles > 4) risk = 'High';
+    
+
+    return {
+        predictionData: {
+            safeTileIndices: safeTileIndices.sort((a, b) => a - b),
+            risk,
+        },
+        disclaimer: '⚠️ Predictions are for entertainment and not guaranteed. Play responsibly.',
+    };
+}
+
+
 const generateGamePredictionsFlow = ai.defineFlow(
   {
     name: 'generateGamePredictionsFlow',
@@ -162,21 +201,8 @@ const generateGamePredictionsFlow = ai.defineFlow(
             return output!;
         }
         case 'gems-mines': {
-            // 1. Fetch the user's recent prediction history from the secure service.
-            const previousPredictions = await getPreviousPredictions({
-              userId: input.userId,
-              gameType: 'Mines & Gems',
-              limit: 3,
-            });
-
-            // 2. Call the prompt with the enriched data.
-            const { output } = await gemsMinesPredictionPrompt({ 
-                userId: input.userId,
-                premiumStatus: input.premiumStatus,
-                timestamp: new Date().toISOString(),
-                previousPredictions: previousPredictions,
-            });
-            return output!;
+            // Generate the prediction locally instead of calling the AI.
+            return generateLocalGemsMinesPrediction(input.premiumStatus);
         }
         default: {
             throw new Error(`Unsupported game type: ${input.gameType}`);
