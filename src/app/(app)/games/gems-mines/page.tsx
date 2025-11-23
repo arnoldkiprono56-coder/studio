@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -58,12 +59,10 @@ export default function GemsAndMinesPage() {
         setFeedbackSent(false);
         setLastPredictionId(null);
 
-        const result = generateLocalPrediction({ gameType: 'gems-mines' });
+        const result = await generateLocalPrediction({ gameType: 'gems-mines' });
         
-        // Simulate a network delay for better UX
-        await new Promise(resolve => setTimeout(resolve, 1500));
-
         setPrediction(result);
+        setIsLoading(false); // Set loading to false immediately after getting the prediction
             
         try {
             const predictionData = {
@@ -129,8 +128,6 @@ export default function GemsAndMinesPage() {
                 title: 'Save Failed',
                 description: 'Could not save the prediction to the database. Please try again.',
             });
-        } finally {
-            setIsLoading(false);
         }
     };
     
@@ -229,8 +226,7 @@ export default function GemsAndMinesPage() {
                     </CardContent>
                     <CardFooter className="flex-col gap-4 border-t pt-6">
                         <div className="flex w-full items-center justify-between">
-                            <p className="text-sm">Rounds Remaining: <span className="font-bold">{roundsRemaining}</span></p>
-                             <Button 
+                            <p className="text-sm">Rounds Remaining: <span className="font-bold">{roundsRemaining}</span></p>                             <Button 
                                 onClick={handleGetPrediction} 
                                 disabled={isLoading || licensesLoading || !canGenerate} 
                                 size="lg"
@@ -288,3 +284,5 @@ export default function GemsAndMinesPage() {
         </div>
     );
 }
+
+    
