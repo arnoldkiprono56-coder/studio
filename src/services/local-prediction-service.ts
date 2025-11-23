@@ -36,7 +36,7 @@ function getRandomFloat(min: number, max: number, decimals: number): number {
 function generateMultiplierPrediction(): any {
     const riskLevels = ['Low', 'Medium', 'High'];
     return {
-        targetMultiplier: `${getRandomFloat(1.1, 12.0, 2)}x`,
+        targetCashout: `${getRandomFloat(1.1, 12.0, 2)}x`,
         riskLevel: riskLevels[getRandomInt(0, 2)],
         confidence: getRandomInt(30, 95),
     };
@@ -76,6 +76,7 @@ function generateVipSlipPrediction(teams: { team1: string, team2: string }): any
     const predictions = ['Home Win', 'Away Win', 'Draw', 'Yes', 'No', '1X', 'X2', '12'];
     
     return {
+        teams: `${teams.team1} vs ${teams.team2}`,
         market: markets[getRandomInt(0, markets.length - 1)],
         prediction: predictions[getRandomInt(0, predictions.length - 1)],
         confidence: getRandomInt(50, 95),
@@ -94,15 +95,9 @@ export async function generateLocalPrediction(input: PredictionInput): Promise<L
     switch (input.gameType) {
         case 'aviator':
             predictionData = generateMultiplierPrediction();
-            // Aviator prediction from the multiplier function has `targetMultiplier` but the page expects `targetCashout`. Let's align it.
-            predictionData.targetCashout = predictionData.targetMultiplier;
-            delete predictionData.targetMultiplier;
             break;
         case 'crash':
             predictionData = generateMultiplierPrediction();
-             // Crash prediction from the multiplier function has `targetMultiplier` but the page expects `targetCashout`. Let's align it.
-            predictionData.targetCashout = predictionData.targetMultiplier;
-            delete predictionData.targetMultiplier;
             break;
         case 'gems-mines':
             predictionData = generateGemsMinesPrediction();

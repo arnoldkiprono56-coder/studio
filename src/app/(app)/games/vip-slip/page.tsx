@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -57,33 +58,27 @@ export default function VipSlipPage() {
         setIsLoading(true);
         setPrediction(null);
         
-        const result = generateLocalPrediction({ gameType: 'vip-slip', teams: { team1, team2 } });
-
-        // Simulate a network delay for better UX
-        await new Promise(resolve => setTimeout(resolve, 1500));
+        const result = await generateLocalPrediction({ gameType: 'vip-slip', teams: { team1, team2 } });
         
         setPrediction(result);
         
         try {
-            const predictionData = {
+            const predictionPayload = {
                 userId: userProfile.id,
                 licenseId: activeLicense.id,
                 gameType: 'VIP Slip',
-                predictionData: {
-                    teams: `${team1} vs ${team2}`,
-                    ...result.predictionData
-                },
+                predictionData: result.predictionData,
                 disclaimer: result.disclaimer,
-                status: 'pending',
+                status: 'pending' as const,
                 timestamp: serverTimestamp(),
             };
 
-            const newPredictionRef = await addDoc(collection(firestore, 'users', userProfile.id, 'predictions'), predictionData)
+            const newPredictionRef = await addDoc(collection(firestore, 'users', userProfile.id, 'predictions'), predictionPayload)
                 .catch(error => {
                     errorEmitter.emit('permission-error', new FirestorePermissionError({
                         path: `users/${userProfile.id}/predictions`,
                         operation: 'create',
-                        requestResourceData: predictionData
+                        requestResourceData: predictionPayload
                     }));
                     return null;
                 });
@@ -225,7 +220,7 @@ export default function VipSlipPage() {
                  <Card className="animate-in fade-in-50">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2 text-primary"><BarChart /> Analysis Complete</CardTitle>
-                        <CardDescription>{team1} vs {team2}</CardDescription>
+                        <CardDescription>{(prediction.predictionData as any).teams}</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <div className="text-center p-6 bg-muted/50 rounded-lg">
