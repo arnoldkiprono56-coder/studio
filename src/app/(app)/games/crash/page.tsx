@@ -1,11 +1,10 @@
-
 'use client';
 
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Loader2, ArrowLeft, AlertCircle } from "lucide-react";
-import { generateGamePredictions, GenerateGamePredictionsOutput } from '@/ai/flows/generate-game-predictions';
+import { generateLocalPrediction, LocalPredictionOutput } from '@/services/local-prediction-service';
 import Link from 'next/link';
 import { useProfile } from '@/context/profile-context';
 import { useFirestore, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
@@ -21,7 +20,7 @@ type CrashPredictionData = {
 }
 
 export default function CrashPage() {
-    const [prediction, setPrediction] = useState<GenerateGamePredictionsOutput | null>(null);
+    const [prediction, setPrediction] = useState<LocalPredictionOutput | null>(null);
     const [lastPredictionId, setLastPredictionId] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [feedbackSent, setFeedbackSent] = useState(false);
@@ -57,15 +56,15 @@ export default function CrashPage() {
         setPrediction(null);
         setFeedbackSent(false);
         setLastPredictionId(null);
+        
+        const result = generateLocalPrediction({ gameType: 'crash' });
 
+        // Simulate a network delay for better UX
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        
+        setPrediction(result);
+        
         try {
-            const result = await generateGamePredictions({
-                 gameType: 'crash',
-                 userId: userProfile.id,
-                 premiumStatus: userProfile.premiumStatus,
-            });
-            setPrediction(result);
-
             const predictionData = {
                 userId: userProfile.id,
                 licenseId: activeLicense.id,
@@ -123,7 +122,7 @@ export default function CrashPage() {
                 });
 
         } catch (error) {
-            console.error("Failed to get prediction:", error);
+            console.error("Failed to save prediction:", error);
         } finally {
             setIsLoading(false);
         }
@@ -193,20 +192,20 @@ export default function CrashPage() {
                 </Button>
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight">Crash Predictions</h1>
-                    <p className="text-muted-foreground">Generate AI-powered predictions for the Crash game on 1xBet.</p>
+                    <p className="text-muted-foreground">Generate random predictions for the Crash game on 1xBet.</p>
                 </div>
             </div>
 
             <Card>
                 <CardHeader>
                     <CardTitle>New Prediction</CardTitle>
-                    <CardDescription>Click the button to get the latest prediction from our AI. This will consume one prediction round.</CardDescription>
+                    <CardDescription>Click the button to get the latest prediction. This will consume one prediction round.</CardDescription>
                 </CardHeader>
                 <CardContent className="flex flex-col items-center justify-center gap-6 min-h-[200px]">
                     {isLoading || licensesLoading ? (
                          <div className='text-center space-y-2'>
                            <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto" />
-                           <p className='font-semibold text-muted-foreground'>Connecting to 1xBet servers...</p>
+                           <p className='font-semibold text-muted-foreground'>Generating random prediction...</p>
                         </div>
                     ) : crashData ? (
                         <div className="text-center">

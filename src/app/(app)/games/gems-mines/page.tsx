@@ -1,11 +1,10 @@
-
 'use client';
 
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Loader2, ArrowLeft, Gem, AlertCircle } from "lucide-react";
-import { generateGamePredictions, GenerateGamePredictionsOutput } from '@/ai/flows/generate-game-predictions';
+import { generateLocalPrediction, LocalPredictionOutput } from '@/services/local-prediction-service';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { useProfile } from '@/context/profile-context';
@@ -23,7 +22,7 @@ type GemsMinesPredictionData = {
 }
 
 export default function GemsAndMinesPage() {
-    const [prediction, setPrediction] = useState<GenerateGamePredictionsOutput | null>(null);
+    const [prediction, setPrediction] = useState<LocalPredictionOutput | null>(null);
     const [lastPredictionId, setLastPredictionId] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [feedbackSent, setFeedbackSent] = useState(false);
@@ -59,14 +58,14 @@ export default function GemsAndMinesPage() {
         setFeedbackSent(false);
         setLastPredictionId(null);
 
-        try {
-            const result = await generateGamePredictions({ 
-                gameType: 'gems-mines', 
-                userId: userProfile.id,
-                premiumStatus: userProfile.premiumStatus,
-            });
-            setPrediction(result);
+        const result = generateLocalPrediction({ gameType: 'gems-mines' });
+        
+        // Simulate a network delay for better UX
+        await new Promise(resolve => setTimeout(resolve, 1500));
+
+        setPrediction(result);
             
+        try {
             const predictionData = {
                 userId: userProfile.id,
                 licenseId: activeLicense.id,
@@ -124,11 +123,11 @@ export default function GemsAndMinesPage() {
                 });
 
         } catch (error) {
-            console.error("Failed to get prediction:", error);
+            console.error("Failed to save prediction:", error);
             toast({
                 variant: 'destructive',
-                title: 'Prediction Failed',
-                description: 'Could not get a prediction from the AI. Please try again.',
+                title: 'Save Failed',
+                description: 'Could not save the prediction to the database. Please try again.',
             });
         } finally {
             setIsLoading(false);
@@ -199,7 +198,7 @@ export default function GemsAndMinesPage() {
                 </Button>
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight">Gems &amp; Mines Predictions</h1>
-                    <p className="text-muted-foreground">Generate AI-powered predictions for the Gems &amp; Mines game on 1xBet.</p>
+                    <p className="text-muted-foreground">Generate random predictions for the Gems &amp; Mines game on 1xBet.</p>
                 </div>
             </div>
 
@@ -213,7 +212,7 @@ export default function GemsAndMinesPage() {
                         {isLoading ? (
                              <div className='text-center space-y-2'>
                                 <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto" />
-                                <p className='font-semibold text-muted-foreground'>Analyzing patterns...</p>
+                                <p className='font-semibold text-muted-foreground'>Generating random patterns...</p>
                             </div>
                         ) : gemsMinesData ? (
                             <div className='space-y-2 text-center'>

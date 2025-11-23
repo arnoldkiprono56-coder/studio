@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -7,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2, ArrowLeft, Ticket, AlertCircle, BarChart } from "lucide-react";
-import { generateVipSlip, GenerateVipSlipOutput } from '@/ai/flows/generate-vip-slip';
+import { generateLocalPrediction, LocalPredictionOutput } from '@/services/local-prediction-service';
 import Link from 'next/link';
 import { useProfile } from '@/context/profile-context';
 import { useFirestore, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
@@ -17,7 +16,7 @@ import { useCollection } from '@/firebase/firestore/use-collection';
 import { useToast } from '@/hooks/use-toast';
 
 export default function VipSlipPage() {
-    const [prediction, setPrediction] = useState<GenerateVipSlipOutput | null>(null);
+    const [prediction, setPrediction] = useState<LocalPredictionOutput | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [team1, setTeam1] = useState('');
     const [team2, setTeam2] = useState('');
@@ -57,23 +56,22 @@ export default function VipSlipPage() {
 
         setIsLoading(true);
         setPrediction(null);
+        
+        const result = generateLocalPrediction({ gameType: 'vip-slip', teams: { team1, team2 } });
+
+        // Simulate a network delay for better UX
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        
+        setPrediction(result);
+        
         try {
-            const result = await generateVipSlip({
-                userId: userProfile.id,
-                licenseId: activeLicense.id,
-                team1: team1,
-                team2: team2,
-                premiumStatus: userProfile.premiumStatus,
-            });
-            setPrediction(result);
-            
             const predictionData = {
                 userId: userProfile.id,
                 licenseId: activeLicense.id,
                 gameType: 'VIP Slip',
                 predictionData: {
                     teams: `${team1} vs ${team2}`,
-                    ...result
+                    ...result.predictionData
                 },
                 disclaimer: result.disclaimer,
                 status: 'pending',
@@ -125,11 +123,11 @@ export default function VipSlipPage() {
                 });
 
         } catch (error) {
-            console.error("Failed to get VIP slip:", error);
+            console.error("Failed to save prediction:", error);
             toast({
                 variant: 'destructive',
                 title: 'Error',
-                description: 'Could not generate prediction. Please try again.',
+                description: 'Could not save prediction. Please try again.',
             });
         } finally {
             setIsLoading(false);
@@ -179,14 +177,14 @@ export default function VipSlipPage() {
                 </Button>
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight">VIP Match Analysis</h1>
-                    <p className="text-muted-foreground">Provide a match for our AI to analyze on 1xBet.</p>
+                    <p className="text-muted-foreground">Provide a match for local random analysis on 1xBet.</p>
                 </div>
             </div>
 
             <Card>
                 <CardHeader>
                     <CardTitle>Match Details</CardTitle>
-                    <CardDescription>Enter the two opposing teams you want the AI to analyze. This will consume one round.</CardDescription>
+                    <CardDescription>Enter the two opposing teams you want to analyze. This will consume one round.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -218,8 +216,7 @@ export default function VipSlipPage() {
                 <Card>
                     <CardContent className="flex flex-col items-center justify-center gap-4 min-h-[200px] pt-6">
                         <Loader2 className="h-12 w-12 animate-spin text-primary" />
-                        <p className='font-semibold text-muted-foreground'>Connecting to servers...</p>
-                        <p className='text-sm text-muted-foreground'>The match is being deeply analyzed...</p>
+                        <p className='font-semibold text-muted-foreground'>Generating random analysis...</p>
                     </CardContent>
                 </Card>
             )}
@@ -227,24 +224,24 @@ export default function VipSlipPage() {
             {prediction && (
                  <Card className="animate-in fade-in-50">
                     <CardHeader>
-                        <CardTitle className="flex items-center gap-2 text-primary"><BarChart /> AI Analysis Complete</CardTitle>
+                        <CardTitle className="flex items-center gap-2 text-primary"><BarChart /> Analysis Complete</CardTitle>
                         <CardDescription>{team1} vs {team2}</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <div className="text-center p-6 bg-muted/50 rounded-lg">
                             <p className="text-muted-foreground">Prediction</p>
-                            <p className="text-3xl font-bold">{prediction.prediction}</p>
-                            <p className="text-sm text-muted-foreground mt-1">Market: {prediction.market}</p>
+                            <p className="text-3xl font-bold">{(prediction.predictionData as any).prediction}</p>
+                            <p className="text-sm text-muted-foreground mt-1">Market: {(prediction.predictionData as any).market}</p>
                         </div>
 
                          <div className="p-4 bg-muted/30 rounded-lg">
                             <p className="text-sm font-semibold mb-2">Analysis Summary</p>
-                            <p className="text-sm text-muted-foreground">{prediction.analysisSummary}</p>
+                            <p className="text-sm text-muted-foreground">{(prediction.predictionData as any).analysisSummary}</p>
                         </div>
                         
                         <div className="flex justify-between items-center text-sm">
                             <span className="font-semibold">Confidence Score:</span>
-                            <span className="font-bold text-lg text-primary">{prediction.confidence}%</span>
+                            <span className="font-bold text-lg text-primary">{(prediction.predictionData as any).confidence}%</span>
                         </div>
                     </CardContent>
                     <CardFooter className="text-xs text-muted-foreground pt-4 border-t">
