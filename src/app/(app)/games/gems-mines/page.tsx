@@ -77,8 +77,14 @@ export default function GemsAndMinesPage() {
         setLastPredictionId(null);
         setSelectedMines([]);
         
+        // Sanitize history data before sending to server action
+        const sanitizedHistory = (history || []).map(p => {
+            const { timestamp, ...rest } = p;
+            return rest;
+        });
+
         // Generate prediction using history
-        const result = await generateLocalPrediction({ gameType: 'gems-mines', history: history || [] });
+        const result = await generateLocalPrediction({ gameType: 'gems-mines', history: sanitizedHistory });
         
         // Simulate analysis delay
         await new Promise(resolve => setTimeout(resolve, 10000));
@@ -180,7 +186,7 @@ export default function GemsAndMinesPage() {
         
         try {
             const predictionRef = doc(firestore, 'users', userProfile.id, 'predictions', lastPredictionId);
-            const updatePayload: { status: 'won' | 'lost', mineLocations?: number[] } = { status: feedback };
+            const updatePayload: { status: 'won' | 'lost'; mineLocations?: number[] } = { status: feedback };
             
             if (feedback === 'lost') {
                 updatePayload.mineLocations = selectedMines;
@@ -367,3 +373,5 @@ export default function GemsAndMinesPage() {
         </div>
     );
 }
+
+    
