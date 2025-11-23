@@ -1,3 +1,4 @@
+
 'use server';
 
 type GameType = 'aviator' | 'crash' | 'gems-mines' | 'vip-slip';
@@ -87,7 +88,7 @@ function generateVipSlipPrediction(teams: { team1: string, team2: string }): any
  * @param input - The prediction input specifying the game type.
  * @returns A prediction output object.
  */
-export function generateLocalPrediction(input: PredictionInput): LocalPredictionOutput {
+export async function generateLocalPrediction(input: PredictionInput): Promise<LocalPredictionOutput> {
     let predictionData: any;
 
     switch (input.gameType) {
