@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState } from 'react';
@@ -54,7 +53,6 @@ export default function GemsAndMinesPage() {
         return query(
             collection(firestore, 'users', userProfile.id, 'predictions'),
             where('gameType', '==', 'Mines & Gems'),
-            orderBy('timestamp', 'desc'),
             limit(5) // Learn from the last 5 games
         );
     }, [userProfile?.id, firestore]);
@@ -288,7 +286,7 @@ export default function GemsAndMinesPage() {
                                 )}
                                  {feedbackState === 'lost_prompting' && (
                                      <p className="text-sm text-warning font-semibold animate-in fade-in-50">Click the tile where the mine was.</p>
-                                )}
+                                 )}
                                 <p className="text-xs text-muted-foreground">{prediction.disclaimer}</p>
                             </div>
                         )}
