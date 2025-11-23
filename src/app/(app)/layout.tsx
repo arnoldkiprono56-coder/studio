@@ -6,7 +6,7 @@ import { BroadcastListener } from '@/components/BroadcastListener';
 import { AdminWelcomeToast } from '@/components/admin-welcome-toast';
 import { PremiumWrapper } from '@/components/premium-wrapper';
 import { PremiumActivationListener } from '@/components/premium-activation-listener';
-import { NetworkBlocker } from '@/components/NetworkBlocker';
+import { LocationBlocker } from '@/components/LocationBlocker';
 
 
 export default function AppLayout({
@@ -22,7 +22,7 @@ export default function AppLayout({
                 <BroadcastListener />
                 <AdminWelcomeToast />
                 <PremiumActivationListener />
-                <NetworkBlocker />
+                <LocationBlocker />
             </div>
         </PremiumWrapper>
     );
