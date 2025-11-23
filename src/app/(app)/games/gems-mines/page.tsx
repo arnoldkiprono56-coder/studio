@@ -70,7 +70,7 @@ export default function GemsAndMinesPage() {
             const predictionData = {
                 userId: userProfile.id,
                 licenseId: activeLicense.id,
-                gameType: 'Gems & Mines',
+                gameType: 'Mines & Gems',
                 predictionData: result.predictionData,
                 disclaimer: result.disclaimer,
                 status: 'pending' as const,
@@ -213,7 +213,7 @@ export default function GemsAndMinesPage() {
                         {isLoading ? (
                              <div className='text-center space-y-2'>
                                 <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto" />
-                                <p className='font-semibold text-muted-foreground'>Connecting to 1xBet servers...</p>
+                                <p className='font-semibold text-muted-foreground'>Analyzing patterns...</p>
                             </div>
                         ) : gemsMinesData ? (
                             <div className='space-y-2 text-center'>
