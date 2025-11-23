@@ -1,10 +1,11 @@
 
+
 'use client';
 
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { Loader2, ArrowLeft, Gem, AlertCircle } from "lucide-react";
+import { Loader2, ArrowLeft, Gem, AlertCircle, Bomb } from "lucide-react";
 import { generateLocalPrediction, LocalPredictionOutput } from '@/services/local-prediction-service';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
@@ -22,15 +23,20 @@ type GemsMinesPredictionData = {
     risk: string;
 }
 
+type FeedbackState = 'none' | 'pending' | 'won' | 'lost_prompting' | 'lost_complete';
+
+
 export default function GemsAndMinesPage() {
     const [prediction, setPrediction] = useState<LocalPredictionOutput | null>(null);
     const [lastPredictionId, setLastPredictionId] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
-    const [feedbackSent, setFeedbackSent] = useState(false);
+    const [feedbackState, setFeedbackState] = useState<FeedbackState>('none');
+
     const { userProfile, openOneXBetDialog } = useProfile();
     const firestore = useFirestore();
     const { toast } = useToast();
 
+    // Fetch active license for this game
     const licensesQuery = useMemoFirebase(() => {
         if (!userProfile?.id || !firestore) return null;
         return query(
@@ -38,11 +44,22 @@ export default function GemsAndMinesPage() {
             where('gameType', '==', 'Mines & Gems')
         );
     }, [userProfile?.id, firestore]);
-
     const { data: licenses, isLoading: licensesLoading } = useCollection<License>(licensesQuery);
-    
     const activeLicense = licenses?.find(l => l.isActive && l.roundsRemaining > 0);
     const expiredLicense = licenses?.find(l => l.roundsRemaining <= 0);
+
+    // Fetch user's prediction history to learn from
+    const historyQuery = useMemoFirebase(() => {
+        if (!userProfile?.id || !firestore) return null;
+        return query(
+            collection(firestore, 'users', userProfile.id, 'predictions'),
+            where('gameType', '==', 'Mines & Gems'),
+            orderBy('timestamp', 'desc'),
+            limit(5) // Learn from the last 5 games
+        );
+    }, [userProfile?.id, firestore]);
+    const { data: history, isLoading: historyLoading } = useCollection<Prediction>(historyQuery);
+
 
     const handleGetPrediction = async () => {
         if (!userProfile?.oneXBetId) {
@@ -56,13 +73,15 @@ export default function GemsAndMinesPage() {
 
         setIsLoading(true);
         setPrediction(null);
-        setFeedbackSent(false);
+        setFeedbackState('none');
         setLastPredictionId(null);
-
-        const result = await generateLocalPrediction({ gameType: 'gems-mines' });
+        
+        // Generate prediction using history
+        const result = await generateLocalPrediction({ gameType: 'gems-mines', history: history || [] });
         
         setPrediction(result);
-        setIsLoading(false); // Set loading to false immediately after getting the prediction
+        setIsLoading(false); 
+        setFeedbackState('pending');
             
         try {
             const predictionData = {
@@ -131,17 +150,35 @@ export default function GemsAndMinesPage() {
         }
     };
     
-    const handleFeedback = async (feedback: 'won' | 'lost') => {
+    const handleFeedback = async (feedback: 'won' | 'lost', mineLocation?: number) => {
        if (!lastPredictionId || !firestore || !userProfile) {
             toast({ variant: 'destructive', title: 'Error', description: 'Could not save feedback. No prediction ID found.' });
             return;
         }
-        setFeedbackSent(true);
+
+        if (feedback === 'lost' && typeof mineLocation !== 'number') {
+            setFeedbackState('lost_prompting');
+            toast({ title: 'You Lost?', description: 'Please click on the tile where the mine was.' });
+            return;
+        }
         
         try {
             const predictionRef = doc(firestore, 'users', userProfile.id, 'predictions', lastPredictionId);
-            await updateDoc(predictionRef, { status: feedback });
-            toast({ title: 'Thank you!', description: 'Your feedback helps us improve.' });
+            const updatePayload: { status: 'won' | 'lost', mineLocation?: number } = { status: feedback };
+            
+            if (feedback === 'lost' && typeof mineLocation === 'number') {
+                updatePayload.mineLocation = mineLocation;
+            }
+
+            await updateDoc(predictionRef, updatePayload);
+            toast({ title: 'Thank you!', description: 'Your feedback helps us improve future predictions.' });
+
+            if (feedback === 'won') {
+                setFeedbackState('won');
+            } else {
+                setFeedbackState('lost_complete');
+            }
+
         } catch (error) {
             console.error("Failed to update prediction status:", error);
             toast({ variant: 'destructive', title: 'Error', description: 'Could not save your feedback.' });
@@ -153,7 +190,7 @@ export default function GemsAndMinesPage() {
     const canGenerate = !!activeLicense && !!userProfile?.oneXBetId && roundsRemaining > 0;
 
     const renderStatus = () => {
-        if (licensesLoading) {
+        if (licensesLoading || historyLoading) {
             return <p>Checking license status...</p>
         }
         if (!userProfile?.oneXBetId) {
@@ -195,7 +232,7 @@ export default function GemsAndMinesPage() {
                 </Button>
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight">Gems &amp; Mines Predictions</h1>
-                    <p className="text-muted-foreground">Generate random predictions for the Gems &amp; Mines game on 1xBet.</p>
+                    <p className="text-muted-foreground">Generate smart predictions for the Gems &amp; Mines game on 1xBet.</p>
                 </div>
             </div>
 
@@ -209,7 +246,7 @@ export default function GemsAndMinesPage() {
                         {isLoading ? (
                              <div className='text-center space-y-2'>
                                 <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto" />
-                                <p className='font-semibold text-muted-foreground'>Generating random patterns...</p>
+                                <p className='font-semibold text-muted-foreground'>Analyzing your history...</p>
                             </div>
                         ) : gemsMinesData ? (
                             <div className='space-y-2 text-center'>
@@ -226,17 +263,18 @@ export default function GemsAndMinesPage() {
                     </CardContent>
                     <CardFooter className="flex-col gap-4 border-t pt-6">
                         <div className="flex w-full items-center justify-between">
-                            <p className="text-sm">Rounds Remaining: <span className="font-bold">{roundsRemaining}</span></p>                             <Button 
+                            <p className="text-sm">Rounds Remaining: <span className="font-bold">{roundsRemaining}</span></p>                             
+                            <Button 
                                 onClick={handleGetPrediction} 
-                                disabled={isLoading || licensesLoading || !canGenerate} 
+                                disabled={isLoading || licensesLoading || historyLoading || !canGenerate} 
                                 size="lg"
                             >
-                                {isLoading ? 'Loading...' : 'Get Prediction'}
+                                {isLoading || licensesLoading || historyLoading ? 'Loading...' : 'Get Prediction'}
                             </Button>
                         </div>
                         {prediction && (
                             <div className="w-full text-center space-y-3 pt-4">
-                                {!feedbackSent ? (
+                                {feedbackState === 'pending' && (
                                     <div className="animate-in fade-in-50 space-y-2">
                                         <p className="text-sm font-semibold">Did you win?</p>
                                         <div className="flex justify-center gap-2">
@@ -244,8 +282,12 @@ export default function GemsAndMinesPage() {
                                             <Button variant="outline" size="sm" onClick={() => handleFeedback('lost')}>No</Button>
                                         </div>
                                     </div>
-                                ) : (
+                                )}
+                                {(feedbackState === 'won' || feedbackState === 'lost_complete') && (
                                      <p className="text-sm text-success font-semibold animate-in fade-in-50">Thanks for your feedback!</p>
+                                )}
+                                 {feedbackState === 'lost_prompting' && (
+                                     <p className="text-sm text-warning font-semibold animate-in fade-in-50">Click the tile where the mine was.</p>
                                 )}
                                 <p className="text-xs text-muted-foreground">{prediction.disclaimer}</p>
                             </div>
@@ -257,24 +299,30 @@ export default function GemsAndMinesPage() {
                     <CardHeader>
                         <CardTitle>Prediction Grid</CardTitle>
                         <CardDescription>
-                             {gemsMinesData ? "Follow the path of gems." : "Your prediction will appear here."}
+                             {gemsMinesData ? "Follow the path of gems. Click a tile to mark it as a mine if you lost." : "Your prediction will appear here."}
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
                          <div className="grid grid-cols-5 gap-2">
                             {Array.from({ length: GRID_SIZE }).map((_, index) => {
                                 const isSafe = gemsMinesData?.safeTileIndices?.includes(index);
+                                const isMinePrompt = feedbackState === 'lost_prompting';
                                 
                                 return (
-                                    <div
+                                    <button
                                         key={index}
+                                        disabled={!isMinePrompt}
+                                        onClick={() => handleFeedback('lost', index)}
                                         className={cn(
-                                            "w-full aspect-square rounded-md flex items-center justify-center border",
-                                            isSafe ? 'bg-green-500/20 border-green-500' : 'bg-muted/30',
+                                            "w-full aspect-square rounded-md flex items-center justify-center border transition-colors",
+                                            isSafe && 'bg-green-500/20 border-green-500',
+                                            !isSafe && 'bg-muted/30',
+                                            isMinePrompt && 'cursor-pointer hover:bg-destructive/20 hover:border-destructive'
                                         )}
                                     >
-                                        {isSafe && <Gem className="w-6 h-6 text-green-400" />}
-                                    </div>
+                                        {isSafe && !isMinePrompt && <Gem className="w-6 h-6 text-green-400" />}
+                                        {isMinePrompt && <Bomb className="w-6 h-6 text-muted-foreground" />}
+                                    </button>
                                 );
                             })}
                         </div>

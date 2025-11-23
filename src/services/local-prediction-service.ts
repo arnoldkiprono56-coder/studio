@@ -1,11 +1,15 @@
 
+
 'use server';
+
+import type { Prediction } from '@/lib/types';
 
 type GameType = 'aviator' | 'crash' | 'gems-mines' | 'vip-slip';
 
 interface PredictionInput {
     gameType: GameType;
-    teams?: { team1: string, team2: string };
+    teams?: { team1: string, team2:string };
+    history?: Prediction[];
 }
 
 export interface LocalPredictionOutput {
@@ -43,24 +47,55 @@ function generateMultiplierPrediction(): any {
 }
 
 /**
- * Generates a random prediction for Gems & Mines.
+ * Generates a "smarter" prediction for Gems & Mines by learning from user history.
  */
-function generateGemsMinesPrediction(): any {
-    const numSafeTiles = getRandomInt(1, 5);
-    const safeTileIndices: number[] = [];
-    while (safeTileIndices.length < numSafeTiles) {
-        const tile = getRandomInt(0, 24);
-        if (!safeTileIndices.includes(tile)) {
-            safeTileIndices.push(tile);
+function generateGemsMinesPrediction(history: Prediction[] = []): any {
+    const allTiles = Array.from({ length: 25 }, (_, i) => i);
+    const tileScores: Record<number, number> = {};
+
+    // Initialize all tiles with a neutral score
+    allTiles.forEach(tile => {
+        tileScores[tile] = 0;
+    });
+
+    // Learn from history
+    history.forEach(game => {
+        const gameTiles = game.predictionData?.safeTileIndices || [];
+        if (game.status === 'won') {
+            // Boost score for tiles in winning games
+            gameTiles.forEach((tile: number) => {
+                tileScores[tile] = (tileScores[tile] || 0) + 2;
+            });
+        } else if (game.status === 'lost') {
+            // Heavily penalize the tile the user marked as a mine
+            if (typeof game.mineLocation === 'number') {
+                tileScores[game.mineLocation] = (tileScores[game.mineLocation] || 0) - 50;
+            }
+            // Slightly penalize other tiles from the losing set
+            gameTiles.forEach((tile: number) => {
+                 if (tile !== game.mineLocation) {
+                    tileScores[tile] = (tileScores[tile] || 0) - 1;
+                }
+            });
         }
-    }
-    
+    });
+
+    // Sort tiles by score in descending order
+    const sortedTiles = allTiles.sort((a, b) => tileScores[b] - tileScores[a]);
+
+    // Determine number of safe tiles to return (can be random or based on confidence)
+    const numSafeTiles = getRandomInt(1, 5);
+
+    // Get the top N safest tiles
+    const safeTileIndices = sortedTiles.slice(0, numSafeTiles);
+
     const riskLevels = ['Low', 'Medium', 'High'];
     return {
         safeTileIndices: safeTileIndices.sort((a, b) => a - b),
         risk: riskLevels[getRandomInt(0, 2)],
     };
 }
+
 
 /**
  * Generates a random prediction for a VIP Slip football match.
@@ -100,7 +135,7 @@ export async function generateLocalPrediction(input: PredictionInput): Promise<L
             predictionData = generateMultiplierPrediction();
             break;
         case 'gems-mines':
-            predictionData = generateGemsMinesPrediction();
+            predictionData = generateGemsMinesPrediction(input.history);
             break;
         case 'vip-slip':
             if (!input.teams) {
