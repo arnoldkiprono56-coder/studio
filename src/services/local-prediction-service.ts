@@ -58,26 +58,29 @@ function generateGemsMinesPrediction(history: Prediction[] = []): any {
         tileScores[tile] = Math.random() * 0.1;
     });
 
-    // Learn from history
-    history.forEach(game => {
+    // Learn from history with weighted scores
+    history.forEach((game, index) => {
+        // More recent games have a higher weight. The most recent game (index 0) has the highest weight.
+        const weight = (history.length - index) / history.length;
+        
         const gameTiles = game.predictionData?.safeTileIndices || [];
         if (game.status === 'won') {
             // Boost score for tiles in winning games
             gameTiles.forEach((tile: number) => {
-                tileScores[tile] = (tileScores[tile] || 0) + 2;
+                tileScores[tile] = (tileScores[tile] || 0) + (2 * weight);
             });
         } else if (game.status === 'lost') {
             // Heavily penalize the tiles the user marked as mines
             if (Array.isArray(game.mineLocations)) {
                  game.mineLocations.forEach((mineTile: number) => {
-                    tileScores[mineTile] = (tileScores[mineTile] || 0) - 50;
+                    tileScores[mineTile] = (tileScores[mineTile] || 0) - (50 * weight); // Stronger penalty for recent mines
                  });
             }
             // Slightly penalize other tiles from the losing set that weren't mines
             const mineSet = new Set(game.mineLocations);
             gameTiles.forEach((tile: number) => {
                  if (!mineSet.has(tile)) {
-                    tileScores[tile] = (tileScores[tile] || 0) - 1;
+                    tileScores[tile] = (tileScores[tile] || 0) - (1 * weight);
                 }
             });
         }
