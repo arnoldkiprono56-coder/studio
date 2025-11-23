@@ -10,7 +10,7 @@ import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { useProfile } from '@/context/profile-context';
 import { useFirestore, useMemoFirebase, errorEmitter, FirestorePermissionError } from '@/firebase';
-import { addDoc, collection, doc, query, where, updateDoc, serverTimestamp, getDocs, limit, orderBy } from 'firebase/firestore';
+import { addDoc, collection, doc, query, where, updateDoc, serverTimestamp, getDocs, limit } from 'firebase/firestore';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import type { License, Prediction } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
@@ -77,8 +77,11 @@ export default function GemsAndMinesPage() {
         // Generate prediction using history
         const result = await generateLocalPrediction({ gameType: 'gems-mines', history: history || [] });
         
-        setPrediction(result);
+        // Simulate analysis delay
+        await new Promise(resolve => setTimeout(resolve, 2000));
+
         setIsLoading(false); 
+        setPrediction(result);
         setFeedbackState('pending');
             
         try {
