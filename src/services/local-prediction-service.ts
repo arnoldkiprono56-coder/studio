@@ -35,7 +35,7 @@ function getRandomFloat(min: number, max: number, decimals: number): number {
 }
 
 /**
- * Generates a random prediction for Aviator or Crash.
+ * Generates a prediction for Aviator or Crash.
  */
 function generateMultiplierPrediction(): any {
     const riskLevels = ['Low', 'Medium', 'High'];
@@ -53,9 +53,9 @@ function generateGemsMinesPrediction(history: Prediction[] = []): any {
     const allTiles = Array.from({ length: 25 }, (_, i) => i);
     const tileScores: Record<number, number> = {};
 
-    // Initialize all tiles with a neutral score
+    // Initialize all tiles with a neutral score + a small random factor to prevent ties
     allTiles.forEach(tile => {
-        tileScores[tile] = 0;
+        tileScores[tile] = Math.random() * 0.1;
     });
 
     // Learn from history
@@ -67,13 +67,16 @@ function generateGemsMinesPrediction(history: Prediction[] = []): any {
                 tileScores[tile] = (tileScores[tile] || 0) + 2;
             });
         } else if (game.status === 'lost') {
-            // Heavily penalize the tile the user marked as a mine
-            if (typeof game.mineLocation === 'number') {
-                tileScores[game.mineLocation] = (tileScores[game.mineLocation] || 0) - 50;
+            // Heavily penalize the tiles the user marked as mines
+            if (Array.isArray(game.mineLocations)) {
+                 game.mineLocations.forEach((mineTile: number) => {
+                    tileScores[mineTile] = (tileScores[mineTile] || 0) - 50;
+                 });
             }
-            // Slightly penalize other tiles from the losing set
+            // Slightly penalize other tiles from the losing set that weren't mines
+            const mineSet = new Set(game.mineLocations);
             gameTiles.forEach((tile: number) => {
-                 if (tile !== game.mineLocation) {
+                 if (!mineSet.has(tile)) {
                     tileScores[tile] = (tileScores[tile] || 0) - 1;
                 }
             });
@@ -98,7 +101,7 @@ function generateGemsMinesPrediction(history: Prediction[] = []): any {
 
 
 /**
- * Generates a random prediction for a VIP Slip football match.
+ * Generates a prediction for a VIP Slip football match.
  */
 function generateVipSlipPrediction(teams: { team1: string, team2: string }): any {
     const markets = [
@@ -120,7 +123,7 @@ function generateVipSlipPrediction(teams: { team1: string, team2: string }): any
 }
 
 /**
- * A local, standalone function to generate random predictions without any API calls.
+ * A local, standalone function to generate predictions without any API calls.
  * @param input - The prediction input specifying the game type.
  * @returns A prediction output object.
  */

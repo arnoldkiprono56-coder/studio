@@ -30,6 +30,8 @@ export default function GemsAndMinesPage() {
     const [lastPredictionId, setLastPredictionId] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [feedbackState, setFeedbackState] = useState<FeedbackState>('none');
+    const [selectedMines, setSelectedMines] = useState<number[]>([]);
+
 
     const { userProfile, openOneXBetDialog } = useProfile();
     const firestore = useFirestore();
@@ -73,6 +75,7 @@ export default function GemsAndMinesPage() {
         setPrediction(null);
         setFeedbackState('none');
         setLastPredictionId(null);
+        setSelectedMines([]);
         
         // Generate prediction using history
         const result = await generateLocalPrediction({ gameType: 'gems-mines', history: history || [] });
@@ -80,8 +83,8 @@ export default function GemsAndMinesPage() {
         // Simulate analysis delay
         await new Promise(resolve => setTimeout(resolve, 10000));
 
-        setIsLoading(false); 
         setPrediction(result);
+        setIsLoading(false); 
         setFeedbackState('pending');
             
         try {
@@ -151,24 +154,36 @@ export default function GemsAndMinesPage() {
         }
     };
     
-    const handleFeedback = async (feedback: 'won' | 'lost', mineLocation?: number) => {
+     const handleMineSelection = (index: number) => {
+        setSelectedMines(prev => {
+            if (prev.includes(index)) {
+                return prev.filter(i => i !== index);
+            } else {
+                return [...prev, index];
+            }
+        });
+    };
+
+    const handleFeedback = async (feedback: 'won' | 'lost') => {
        if (!lastPredictionId || !firestore || !userProfile) {
             toast({ variant: 'destructive', title: 'Error', description: 'Could not save feedback. No prediction ID found.' });
             return;
         }
 
-        if (feedback === 'lost' && typeof mineLocation !== 'number') {
-            setFeedbackState('lost_prompting');
-            toast({ title: 'You Lost?', description: 'Please click on the tile where the mine was.' });
-            return;
+        if (feedback === 'lost') {
+            if (selectedMines.length === 0) {
+                 setFeedbackState('lost_prompting');
+                 toast({ title: 'You Lost?', description: 'Please click all tiles where the mines were, then submit.' });
+                 return;
+            }
         }
         
         try {
             const predictionRef = doc(firestore, 'users', userProfile.id, 'predictions', lastPredictionId);
-            const updatePayload: { status: 'won' | 'lost', mineLocation?: number } = { status: feedback };
+            const updatePayload: { status: 'won' | 'lost', mineLocations?: number[] } = { status: feedback };
             
-            if (feedback === 'lost' && typeof mineLocation === 'number') {
-                updatePayload.mineLocation = mineLocation;
+            if (feedback === 'lost') {
+                updatePayload.mineLocations = selectedMines;
             }
 
             await updateDoc(predictionRef, updatePayload);
@@ -185,6 +200,7 @@ export default function GemsAndMinesPage() {
             toast({ variant: 'destructive', title: 'Error', description: 'Could not save your feedback.' });
         }
     };
+
 
     const gemsMinesData = prediction?.predictionData as GemsMinesPredictionData | undefined;
     const roundsRemaining = activeLicense?.roundsRemaining ?? 0;
@@ -288,7 +304,12 @@ export default function GemsAndMinesPage() {
                                      <p className="text-sm text-success font-semibold animate-in fade-in-50">Thanks for your feedback!</p>
                                 )}
                                  {feedbackState === 'lost_prompting' && (
-                                     <p className="text-sm text-warning font-semibold animate-in fade-in-50">Click the tile where the mine was.</p>
+                                    <div className="animate-in fade-in-50 space-y-2">
+                                        <p className="text-sm text-warning font-semibold">Click the tiles where the mines were, then submit.</p>
+                                        <Button size="sm" variant="destructive" onClick={() => handleFeedback('lost')} disabled={selectedMines.length === 0}>
+                                            Submit {selectedMines.length} {selectedMines.length === 1 ? 'Mine' : 'Mines'}
+                                        </Button>
+                                    </div>
                                  )}
                                 <p className="text-xs text-muted-foreground">{prediction.disclaimer}</p>
                             </div>
@@ -300,7 +321,11 @@ export default function GemsAndMinesPage() {
                     <CardHeader>
                         <CardTitle>Prediction Grid</CardTitle>
                         <CardDescription>
-                             {gemsMinesData ? "Follow the path of gems. Click a tile to mark it as a mine if you lost." : "Your prediction will appear here."}
+                             {feedbackState === 'lost_prompting' 
+                                ? "Select all tiles that contained a mine."
+                                : gemsMinesData 
+                                ? "Follow the path of gems. If you lose, provide feedback." 
+                                : "Your prediction will appear here."}
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -308,21 +333,30 @@ export default function GemsAndMinesPage() {
                             {Array.from({ length: GRID_SIZE }).map((_, index) => {
                                 const isSafe = gemsMinesData?.safeTileIndices?.includes(index);
                                 const isMinePrompt = feedbackState === 'lost_prompting';
+                                const isSelectedMine = selectedMines.includes(index);
                                 
                                 return (
                                     <button
                                         key={index}
                                         disabled={!isMinePrompt}
-                                        onClick={() => handleFeedback('lost', index)}
+                                        onClick={() => handleMineSelection(index)}
                                         className={cn(
-                                            "w-full aspect-square rounded-md flex items-center justify-center border transition-colors",
+                                            "w-full aspect-square rounded-md flex items-center justify-center border transition-all",
+                                            // Default state
+                                            'bg-muted/30',
+                                            // Predicted safe tile
                                             isSafe && 'bg-green-500/20 border-green-500',
-                                            !isSafe && 'bg-muted/30',
-                                            isMinePrompt && 'cursor-pointer hover:bg-destructive/20 hover:border-destructive'
+                                            // When prompting for mines
+                                            isMinePrompt && 'cursor-pointer hover:bg-destructive/20 hover:border-destructive',
+                                            // When a mine is selected by user
+                                            isSelectedMine && 'bg-destructive/50 border-destructive ring-2 ring-destructive-foreground'
                                         )}
                                     >
-                                        {isSafe && !isMinePrompt && <Gem className="w-6 h-6 text-green-400" />}
-                                        {isMinePrompt && <Bomb className="w-6 h-6 text-muted-foreground" />}
+                                        {isMinePrompt ? (
+                                            <Bomb className={cn("w-6 h-6", isSelectedMine ? "text-white" : "text-muted-foreground")} />
+                                        ) : isSafe ? (
+                                            <Gem className="w-6 h-6 text-green-400" />
+                                        ) : null}
                                     </button>
                                 );
                             })}
@@ -333,4 +367,3 @@ export default function GemsAndMinesPage() {
         </div>
     );
 }
-

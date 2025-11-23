@@ -18,5 +18,5 @@ export interface Prediction {
     disclaimer: string;
     timestamp: any; // Can be Date or Firestore Timestamp
     status: 'pending' | 'won' | 'lost';
-    mineLocation?: number; // The index of the mine when a user loses
+    mineLocations?: number[]; // The index of the mine when a user loses
 }
