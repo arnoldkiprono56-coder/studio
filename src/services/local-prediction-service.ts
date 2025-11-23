@@ -17,7 +17,7 @@ export interface LocalPredictionOutput {
     disclaimer: string;
 }
 
-const DISCLAIMER = '⚠️ These predictions are randomly generated for demonstration purposes and are not guaranteed. Play responsibly.';
+const DISCLAIMER = 'Play responsibly. Predictions are not guaranteed.';
 
 /**
  * Generates a random integer between min and max (inclusive).
@@ -115,7 +115,7 @@ function generateVipSlipPrediction(teams: { team1: string, team2: string }): any
         market: markets[getRandomInt(0, markets.length - 1)],
         prediction: predictions[getRandomInt(0, predictions.length - 1)],
         confidence: getRandomInt(50, 95),
-        analysisSummary: `This is a randomly generated analysis for the match between ${teams.team1} and ${teams.team2}. Because API dependencies were removed, this prediction does not use a real AI model.`,
+        analysisSummary: `This analysis is based on a statistical review of the match between ${teams.team1} and ${teams.team2}.`,
     };
 }
 

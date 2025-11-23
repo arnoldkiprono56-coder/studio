@@ -78,7 +78,7 @@ export default function GemsAndMinesPage() {
         const result = await generateLocalPrediction({ gameType: 'gems-mines', history: history || [] });
         
         // Simulate analysis delay
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        await new Promise(resolve => setTimeout(resolve, 10000));
 
         setIsLoading(false); 
         setPrediction(result);
@@ -334,4 +334,3 @@ export default function GemsAndMinesPage() {
     );
 }
 
-    
